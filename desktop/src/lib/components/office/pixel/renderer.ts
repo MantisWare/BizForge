@@ -38,32 +38,32 @@ const TIME_COLORS: Record<
   }
 > = {
   dawn: {
-    ambient: "#e8c8a0",
-    overlay: "#ff8844",
-    overlayAlpha: 0.06,
-    wallColor: "#3a3658",
-    voidColor: "#c8b890",
+    ambient: "#f5dcc0",
+    overlay: "#fbb98a",
+    overlayAlpha: 0.05,
+    wallColor: "#5a5078",
+    voidColor: "#e8d8c0",
   },
   day: {
-    ambient: "#f0e8d0",
+    ambient: "#f8f0e0",
     overlay: "#ffffff",
     overlayAlpha: 0.0,
-    wallColor: "#3a3a5c",
-    voidColor: "#d4c8a0",
+    wallColor: "#6b6590",
+    voidColor: "#e0d8c8",
   },
   dusk: {
-    ambient: "#c0a080",
-    overlay: "#cc6644",
-    overlayAlpha: 0.08,
-    wallColor: "#352848",
-    voidColor: "#8a6840",
+    ambient: "#d4a8a0",
+    overlay: "#e08878",
+    overlayAlpha: 0.06,
+    wallColor: "#504068",
+    voidColor: "#b89888",
   },
   night: {
-    ambient: "#181828",
-    overlay: "#0808ff",
-    overlayAlpha: 0.12,
-    wallColor: "#1a1a30",
-    voidColor: "#0a0a18",
+    ambient: "#1e2038",
+    overlay: "#4040a0",
+    overlayAlpha: 0.08,
+    wallColor: "#2a2848",
+    voidColor: "#161828",
   },
 };
 
@@ -285,7 +285,7 @@ export function renderOffice(
         // Selection/hover glow
         if (isSelected || isHovered) {
           c.save();
-          c.shadowColor = isSelected ? "#6366f1" : "#ffffff";
+          c.shadowColor = isSelected ? "#a78bfa" : "#c4b5fd";
           c.shadowBlur = 8 * zoom;
           c.drawImage(spriteCanvas, px + offX, py + offY);
           c.restore();
@@ -328,18 +328,18 @@ export function renderOffice(
         const labelX = px + ts / 2;
         const labelY = py + offY - 4 * zoom;
 
-        c.fillStyle = "rgba(10, 10, 20, 0.75)";
+        c.fillStyle = "rgba(15, 17, 23, 0.72)";
         c.beginPath();
         c.roundRect(
           labelX - labelWidth / 2,
           labelY - labelFontSize,
           labelWidth,
           labelFontSize + 3 * zoom,
-          2 * zoom,
+          3 * zoom,
         );
         c.fill();
 
-        c.fillStyle = isSelected ? "#a5b4fc" : "#ccccdd";
+        c.fillStyle = isSelected ? "#c4b5fd" : "#d0d4e0";
         c.fillText(labelText, labelX, labelY - 1 * zoom);
         c.textAlign = "left";
 
@@ -361,7 +361,7 @@ export function renderOffice(
         if (char.state === CharacterState.SLEEP) {
           const zFontSize = Math.max(6, 7 * zoom);
           c.font = `bold ${zFontSize}px monospace`;
-          c.fillStyle = "#8888cc";
+          c.fillStyle = "#c4b5fd";
           const zOff = Math.sin(now * 0.002) * 3 * zoom;
           c.globalAlpha = 0.6 + Math.sin(now * 0.003) * 0.3;
           c.fillText("z", px + ts - 2 * zoom, py + offY - 2 * zoom + zOff);
@@ -414,7 +414,7 @@ export function renderMinimap(
   const scale = Math.min(minimapWidth / cols, minimapHeight / rows);
 
   // Background
-  ctx.fillStyle = "rgba(10, 10, 20, 0.85)";
+  ctx.fillStyle = "rgba(15, 17, 23, 0.88)";
   ctx.fillRect(0, 0, minimapWidth, minimapHeight);
 
   // Rooms
@@ -426,7 +426,7 @@ export function renderMinimap(
       room.width * scale,
       room.height * scale,
     );
-    ctx.strokeStyle = "#3a3a5c";
+    ctx.strokeStyle = "#5a5078";
     ctx.lineWidth = 1;
     ctx.strokeRect(
       room.x * scale,
@@ -464,7 +464,7 @@ export function renderMinimap(
   ctx.globalAlpha = 1.0;
 
   // Border
-  ctx.strokeStyle = "#3a3a5c";
+  ctx.strokeStyle = "#5a5078";
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, minimapWidth, minimapHeight);
 }
@@ -489,20 +489,20 @@ function drawSpeechBubble(
   const bubbleY = y - bubbleH;
 
   // Bubble background
-  ctx.fillStyle = "rgba(15, 15, 30, 0.9)";
+  ctx.fillStyle = "rgba(22, 27, 38, 0.88)";
   ctx.beginPath();
-  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 3 * zoom);
+  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 4 * zoom);
   ctx.fill();
 
   // Bubble border
-  ctx.strokeStyle = "#4a4270";
+  ctx.strokeStyle = "rgba(167, 139, 250, 0.3)";
   ctx.lineWidth = zoom;
   ctx.beginPath();
-  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 3 * zoom);
+  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 4 * zoom);
   ctx.stroke();
 
   // Tail
-  ctx.fillStyle = "rgba(15, 15, 30, 0.9)";
+  ctx.fillStyle = "rgba(22, 27, 38, 0.88)";
   ctx.beginPath();
   ctx.moveTo(x - 3 * zoom, bubbleY + bubbleH);
   ctx.lineTo(x, bubbleY + bubbleH + 4 * zoom);
@@ -510,7 +510,7 @@ function drawSpeechBubble(
   ctx.fill();
 
   // Text
-  ctx.fillStyle = "rgba(34, 197, 94, 0.7)";
+  ctx.fillStyle = "#6ee7b7";
   ctx.textAlign = "center";
   ctx.fillText(text, x, bubbleY + fontSize + padY - 1);
   ctx.textAlign = "left";

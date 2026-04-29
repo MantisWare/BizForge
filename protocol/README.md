@@ -1,8 +1,6 @@
-# Protocol -- Formal Specifications
+# Protocol — The Spec
 
-The formal definitions for workspace structure, agent format, signal encoding,
-and executable spec layers. These are the standards that all workspaces,
-operations, and tooling conform to.
+Formal definitions for workspace structure, agent format, signal encoding, and executable spec layers. These are the standards. All workspaces, operations, and tooling conform to them.
 
 ## Files
 
@@ -19,12 +17,10 @@ operations, and tooling conform to.
 
 ## How to Use
 
-If you are **building a workspace**, start with `workspace-protocol.md` for the
-directory structure and `agent-format.md` for writing agents.
+**Building a workspace?** Start with `workspace-protocol.md` for the directory structure and `agent-format.md` for writing agents.
 
-If you are **building tooling** that reads or validates workspaces, these files
-are the canonical reference for every format and constraint.
+**Building tooling** that reads or validates workspaces? These files are the canonical reference for every format and constraint.
 
 ---
 
-*Protocol v1.0 -- Workspace format specifications*
+*Protocol v1.0 — Workspace format specifications*

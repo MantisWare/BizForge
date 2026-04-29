@@ -11,8 +11,8 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      {
+    "windows": [{
+        "label": "main",
         "title": "Bizforge",
         "width": 1440,
         "height": 900,
@@ -21,7 +21,20 @@
         "decorations": true,
         "transparent": false,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "visible": false
+      },
+      {
+        "label": "splash",
+        "url": "splash.html",
+        "title": "Bizforge",
+        "width": 380,
+        "height": 320,
+        "decorations": false,
+        "transparent": false,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "center": true
       }
     ],
     "security": {

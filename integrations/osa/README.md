@@ -1,7 +1,6 @@
-# OSA Integration
+# OSA — The Native Runtime
 
-OSA natively supports the Workspace Protocol. Point it at any workspace
-and it auto-discovers SYSTEM.md, agents, skills, and reference files.
+OSA speaks the Workspace Protocol natively. Point it at any workspace and it auto-discovers SYSTEM.md, agents, skills, reference files. Zero config.
 
 ## Connect a Workspace
 
@@ -33,7 +32,7 @@ OSA has its own base configuration at `~/.osa/`:
 └── hooks/                             Pre/post tool use automation
 ```
 
-When OSA enters a workspace, the workspace config layers on top:
+When OSA enters a workspace, that workspace config layers on top:
 
 ```
 Base (~/.osa/)          +  Workspace (sales-engine/)     =  Active Config
@@ -56,7 +55,7 @@ Global skills              Workspace skills                 Both available
                              CRM, email API, DB             engine underneath
 ```
 
-## OSA Features That Map to Workspaces
+## Feature Mapping
 
 | OSA Component | What It Does | Workspace Equivalent |
 |---|---|---|
@@ -82,10 +81,11 @@ cp library/agents/technology/software-engineering/*/*.md ~/.osa/agents/
 cp library/agents/operations/*/*.md ~/.osa/agents/
 ```
 
+330+ agents available in the library. Pick what you need.
+
 ## Multiple Workspaces
 
-OSA can switch between workspaces. Each workspace provides different
-domain capabilities while the base config stays constant:
+OSA switches between workspaces. Each one gives different domain capabilities while the base config stays constant:
 
 ```bash
 osa connect ~/workspaces/sales-engine    # becomes a sales agent
@@ -93,6 +93,4 @@ osa connect ~/workspaces/dev-shop        # becomes a coding agent
 osa connect ~/workspaces/content-factory # becomes a content agent
 ```
 
-The workspace SYSTEM.md tells OSA who it becomes. When OSA leaves a
-workspace, it drops that domain context and picks up the next one.
-The base config (global agents, memory, channels) persists across all.
+The workspace SYSTEM.md tells OSA who it becomes. Leave a workspace, drop that domain context, pick up the next one. Base config (global agents, memory, channels) persists across all of them.

@@ -1,9 +1,6 @@
 # OpenClaw Integration
 
-OpenClaw agents are installed as workspaces containing `SOUL.md`, `AGENTS.md`,
-and `IDENTITY.md` files. The installer copies each workspace into
-`~/.openclaw/osa-operations/` and registers it when the `openclaw` CLI is
-available.
+OpenClaw agents install as workspaces containing `SOUL.md`, `AGENTS.md`, and `IDENTITY.md` files. The installer copies each workspace into `~/.openclaw/bizforge/` and registers it when the `openclaw` CLI is available.
 
 Before installing, generate the OpenClaw workspaces:
 
@@ -21,7 +18,7 @@ Before installing, generate the OpenClaw workspaces:
 
 After installation, agents are available by `agentId` in OpenClaw sessions.
 
-If the OpenClaw gateway is already running, restart it after installation:
+If the OpenClaw gateway is already running, restart it:
 
 ```bash
 openclaw gateway restart

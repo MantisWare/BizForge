@@ -1,6 +1,6 @@
 # Bizforge Backend
 
-> Elixir/Phoenix API server powering the Bizforge workspace protocol.
+> Elixir/Phoenix API server. The engine behind everything.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ just logs backend  # Tail logs
 
 ## Configuration
 
-Database credentials are in `config/dev.exs`. The default username is `symac` — update it to match your local PostgreSQL role if different.
+Database credentials live in `config/dev.exs`. Default username is `symac` — update it to match your local PostgreSQL role if different.
 
 ## Key Modules
 

@@ -1,7 +1,6 @@
-# Guides -- Learn the System
+# Guides — Learn the System
 
-Teaching docs for understanding and building workspaces. Start with
-`getting-started.md` and read others as needed.
+Teaching docs for understanding and building workspaces. Start with `getting-started.md`, read others as you need them.
 
 ## Contents
 
@@ -17,15 +16,14 @@ Teaching docs for understanding and building workspaces. Start with
 
 ## Reading Order
 
-1. **getting-started.md** -- Build and run your first workspace
-2. **agent-design.md** + **skill-design.md** -- Understand the core building blocks
-3. **workflow-design.md** -- Add multi-agent orchestration
-4. **company-setup.md** -- Add governance and budgets
-5. **signal-theory-quickstart.md** -- Understand the quality framework
+1. **getting-started.md** — Build and run your first workspace
+2. **agent-design.md** + **skill-design.md** — Core building blocks
+3. **workflow-design.md** — Multi-agent orchestration
+4. **company-setup.md** — Governance and budgets
+5. **signal-theory-quickstart.md** — The quality framework
 
-For formal specifications, see `protocol/`. For complete working examples,
-see `operations/`.
+For formal specifications, see `protocol/`. For complete working examples, see `operations/`.
 
 ---
 
-*Guides v1.0 -- Learning docs for workspace builders*
+*Guides v1.0 — Learning docs for workspace builders*

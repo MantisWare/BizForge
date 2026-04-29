@@ -1,8 +1,6 @@
-# Strategy -- NEXUS Orchestration Framework
+# Strategy — NEXUS Orchestration Framework
 
-The 7-phase orchestration framework for standing up a complete AI operation
-from zero. Includes playbooks, runbooks, coordination templates, and agent
-activation prompts.
+The 7-phase framework for standing up a complete AI operation from zero. Playbooks, runbooks, coordination templates, agent activation prompts — everything you need to go from idea to running system.
 
 ## Phases
 
@@ -25,9 +23,8 @@ Each phase has defined entry criteria, deliverables, and exit gates.
 
 ## When to Use
 
-Use this framework when building a new operation from scratch. For existing
-operations that just need a new agent or skill, the `guides/` are sufficient.
+Building a new operation from scratch? Start here. For existing operations that just need a new agent or skill, the `guides/` are enough.
 
 ---
 
-*Strategy v1.0 -- NEXUS 7-phase orchestration framework*
+*Strategy v1.0 — NEXUS 7-phase orchestration framework*

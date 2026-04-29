@@ -1,7 +1,6 @@
 # Gemini CLI Integration
 
-Packages all 61 agents as a Gemini CLI extension. The extension
-installs to `~/.gemini/extensions/osa-operations/`.
+Packages 330+ agents as a Gemini CLI extension. Installs to `~/.gemini/extensions/bizforge/`.
 
 ## Install
 
@@ -24,7 +23,7 @@ Use the frontend-developer skill to help me build this UI.
 ## Extension Structure
 
 ```
-~/.gemini/extensions/osa-operations/
+~/.gemini/extensions/bizforge/
   gemini-extension.json
   skills/
     frontend-developer/SKILL.md

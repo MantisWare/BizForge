@@ -54,12 +54,12 @@
   // ─── Agent → Character sync ─────────────────────────────
   function statusToColor(status: string): string {
     switch (status) {
-      case 'running': return 'rgba(34, 197, 94, 0.7)';
-      case 'idle': return '#6366f1';
-      case 'sleeping': return '#64748b';
-      case 'paused': return '#f59e0b';
-      case 'terminated': case 'error': return '#ef4444';
-      default: return '#8888a0';
+      case 'running': return '#6ee7b7';
+      case 'idle': return '#a78bfa';
+      case 'sleeping': return '#6b7a8d';
+      case 'paused': return '#fcd34d';
+      case 'terminated': case 'error': return '#fca5a5';
+      default: return '#8a94a8';
     }
   }
 
@@ -138,7 +138,7 @@
         });
 
         // Add spawn event
-        untrack(() => addEvent(`${agent.display_name || agent.name} joined the office`, '#6366f1'));
+        untrack(() => addEvent(`${agent.display_name || agent.name} joined the office`, '#a78bfa'));
       }
     });
 
@@ -500,7 +500,7 @@
     display: flex;
     width: 100%;
     height: 100%;
-    background: #0a0a14;
+    background: var(--bg-primary, #0f1117);
     position: relative;
     overflow: hidden;
   }
@@ -508,15 +508,15 @@
   /* ─── Sidebar ─── */
   .po-sidebar {
     width: 220px;
-    background: #0f0f1a;
-    border-right: 1px solid #1e1e35;
+    background: var(--bg-secondary, #161b26);
+    border-right: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
   }
   .po-sidebar-header {
     padding: 12px 14px;
-    border-bottom: 1px solid #1e1e35;
+    border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
     display: flex;
     align-items: center;
     gap: 8px;
@@ -524,32 +524,32 @@
   .po-team-name {
     font-size: 14px;
     font-weight: 700;
-    color: #e0e0f0;
+    color: var(--text-primary, #f0f2f5);
     letter-spacing: 1px;
   }
   .po-team-count {
     font-size: 11px;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
   }
   .po-sidebar-tabs {
     display: flex;
     padding: 8px 10px;
     gap: 4px;
-    border-bottom: 1px solid #1e1e35;
+    border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-tab {
     padding: 4px 10px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     background: transparent;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
     cursor: pointer;
   }
   .po-tab--active {
-    background: #1e1e35;
-    color: #a5b4fc;
+    background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
+    color: var(--accent-primary, #a78bfa);
   }
   .po-sidebar-list {
     flex: 1;
@@ -568,12 +568,12 @@
     text-align: left;
     transition: background 100ms;
   }
-  .po-agent-row:hover { background: #1a1a2e; }
-  .po-agent-row--selected { background: #1e1e40; }
+  .po-agent-row:hover { background: var(--bg-elevated, rgba(148, 163, 184, 0.08)); }
+  .po-agent-row--selected { background: rgba(167, 139, 250, 0.10); }
   .po-agent-avatar {
     width: 28px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -591,14 +591,14 @@
   .po-agent-name {
     font-size: 12px;
     font-weight: 600;
-    color: #d0d0e0;
+    color: var(--text-primary, #f0f2f5);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .po-agent-role {
     font-size: 10px;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -616,11 +616,11 @@
   }
   .po-status-text {
     font-size: 10px;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
   }
   .po-empty {
     padding: 16px;
-    color: #4a4a70;
+    color: var(--text-muted, #3d4a5c);
     font-size: 11px;
     text-align: center;
   }
@@ -649,10 +649,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 6px 12px;
-    background: rgba(10, 10, 20, 0.8);
-    backdrop-filter: blur(8px);
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
+    backdrop-filter: blur(12px);
     z-index: 10;
-    border-bottom: 1px solid rgba(30, 30, 50, 0.5);
+    border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-toolbar-left, .po-toolbar-right {
     display: flex;
@@ -661,33 +661,34 @@
   }
   .po-tool-btn {
     padding: 4px 10px;
-    border: 1px solid #2a2a45;
-    border-radius: 4px;
-    background: rgba(20, 20, 40, 0.8);
-    color: #8888bb;
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: 6px;
+    background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
+    color: var(--text-secondary, #a8b2c1);
     font-size: 11px;
     cursor: pointer;
     transition: all 100ms;
   }
   .po-tool-btn:hover {
-    background: rgba(30, 30, 60, 0.8);
-    color: #aaaad0;
+    background: rgba(167, 139, 250, 0.12);
+    color: var(--accent-primary, #a78bfa);
+    border-color: rgba(167, 139, 250, 0.20);
   }
   .po-stat {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #8888a0;
+    color: var(--text-tertiary, #6b7a8d);
   }
   .po-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
   }
-  .po-dot--active { background: rgba(34, 197, 94, 0.7); }
-  .po-dot--idle { background: #6366f1; }
-  .po-dot--away { background: #64748b; }
+  .po-dot--active { background: #6ee7b7; }
+  .po-dot--idle { background: #a78bfa; }
+  .po-dot--away { background: #6b7a8d; }
 
   /* ─── Zoom ─── */
   .po-zoom {
@@ -701,17 +702,17 @@
   }
   .po-zoom-pct {
     font-size: 11px;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
     min-width: 36px;
     text-align: center;
   }
   .po-zoom-btn {
     width: 24px;
     height: 24px;
-    border: 1px solid #2a2a45;
-    border-radius: 4px;
-    background: rgba(15, 15, 30, 0.85);
-    color: #8888bb;
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: 6px;
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
+    color: var(--text-secondary, #a8b2c1);
     font-size: 12px;
     cursor: pointer;
     display: flex;
@@ -719,8 +720,8 @@
     justify-content: center;
   }
   .po-zoom-btn:hover {
-    background: rgba(30, 30, 60, 0.85);
-    color: white;
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--accent-primary, #a78bfa);
   }
 
   /* ─── Time of day ─── */
@@ -730,29 +731,29 @@
     right: 12px;
     display: flex;
     gap: 2px;
-    background: rgba(10, 10, 20, 0.85);
-    border-radius: 6px;
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
+    border-radius: 8px;
     padding: 2px;
     z-index: 10;
-    border: 1px solid #1e1e35;
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-time-btn {
     padding: 3px 8px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 10px;
     font-weight: 600;
     background: transparent;
-    color: #6666a0;
+    color: var(--text-tertiary, #6b7a8d);
     cursor: pointer;
     letter-spacing: 0.5px;
   }
   .po-time-btn--active {
-    background: #6366f1;
+    background: var(--accent-primary, #a78bfa);
     color: white;
   }
   .po-time-btn:hover:not(.po-time-btn--active) {
-    color: #aaaacc;
+    color: var(--text-secondary, #a8b2c1);
   }
 
   /* ─── Minimap ─── */
@@ -761,20 +762,20 @@
     bottom: 12px;
     right: 12px;
     z-index: 10;
-    border-radius: 6px;
+    border-radius: 10px;
     overflow: hidden;
-    border: 2px solid #2a2a45;
-    background: rgba(10, 10, 20, 0.9);
+    border: 2px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
   }
   .po-minimap-label {
     font-size: 9px;
     font-weight: 700;
-    color: #4a4a70;
+    color: var(--text-tertiary, #6b7a8d);
     letter-spacing: 1px;
     padding: 3px 6px;
-    background: rgba(10, 10, 20, 0.95);
+    background: var(--bg-primary, #0f1117);
     text-align: center;
-    border-bottom: 1px solid #1e1e35;
+    border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-minimap canvas {
     display: block;
@@ -790,10 +791,10 @@
     right: 190px;
     z-index: 10;
     max-height: 100px;
-    background: rgba(10, 10, 20, 0.88);
-    backdrop-filter: blur(8px);
-    border: 1px solid #1e1e35;
-    border-radius: 8px;
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: 10px;
     overflow: hidden;
   }
   .po-events-header {
@@ -802,8 +803,8 @@
     gap: 6px;
     padding: 5px 10px;
     font-size: 10px;
-    color: #6666a0;
-    border-bottom: 1px solid #1e1e35;
+    color: var(--text-tertiary, #6b7a8d);
+    border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-events-list {
     overflow-y: auto;
@@ -812,7 +813,7 @@
   }
   .po-events-empty {
     font-size: 11px;
-    color: #4a4a70;
+    color: var(--text-muted, #3d4a5c);
     padding: 4px;
   }
   .po-event {
@@ -823,7 +824,7 @@
   }
   .po-event-time {
     font-size: 10px;
-    color: #4a4a70;
+    color: var(--text-muted, #3d4a5c);
     font-family: monospace;
   }
   .po-event-dot {
@@ -834,6 +835,6 @@
   }
   .po-event-text {
     font-size: 11px;
-    color: #8888cc;
+    color: var(--text-secondary, #a8b2c1);
   }
 </style>

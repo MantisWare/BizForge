@@ -66,6 +66,7 @@
         class="ob-input ob-input--path"
         type="text"
         placeholder="~/.bizforge"
+        autocomplete="off"
         bind:value={workspacePath}
       />
       <button class="ob-btn ob-btn--secondary ob-btn--sm" onclick={choosePath}>
@@ -82,6 +83,7 @@
       class="ob-input"
       type="text"
       placeholder="My Workspace"
+      autocomplete="off"
       bind:value={workspaceName}
     />
   </div>
@@ -93,6 +95,7 @@
       class="ob-input"
       type="text"
       placeholder="What this workspace is for..."
+      autocomplete="off"
       bind:value={workspaceDesc}
     />
   </div>

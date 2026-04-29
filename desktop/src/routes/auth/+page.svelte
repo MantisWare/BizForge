@@ -177,14 +177,7 @@
   <div class="auth-container">
     <!-- Logo / Branding -->
     <header class="auth-header">
-      <div class="auth-logo" aria-label="Bizforge logo">
-        <!-- Tree / branching icon -->
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-hidden="true">
-          <rect width="32" height="32" rx="8" fill="rgba(59,130,246,0.15)"/>
-          <path d="M16 6 L16 26 M16 26 L10 20 M16 26 L22 20 M16 16 L10 12 M16 16 L22 12" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <span class="auth-wordmark">Bizforge</span>
+      <img class="auth-logo-img" src="/logo.png" alt="BizForge" width="220" height="auto" />
     </header>
 
     <!-- Card -->
@@ -396,14 +389,15 @@
     overflow: hidden;
   }
 
-  /* Subtle radial accent */
+  /* Radial accent — brighter top halo for logo visibility */
   .auth-root::before {
     content: '';
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 30% at 80% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
+      radial-gradient(ellipse 90% 55% at 50% -5%, rgba(167, 139, 250, 0.22) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 40% at 50% 10%, rgba(124, 58, 237, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 30% at 80% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 60%);
     pointer-events: none;
   }
 
@@ -413,8 +407,8 @@
     inset: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      linear-gradient(rgba(148,163,184,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.02) 1px, transparent 1px);
     background-size: 40px 40px;
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
   }
@@ -436,39 +430,38 @@
   .auth-header {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
-  }
-
-  .auth-logo {
-    display: flex;
-    align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    flex-shrink: 0;
+    position: relative;
   }
 
-  .auth-wordmark {
-    font-size: 1.125rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: var(--text-primary, #ffffff);
+  .auth-logo-img {
+    height: auto;
+    max-width: 220px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.4)) drop-shadow(0 0 60px rgba(124, 58, 237, 0.2));
+  }
+
+  .auth-header::before {
+    content: '';
+    position: absolute;
+    width: 280px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(167, 139, 250, 0.18) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
   }
 
   /* ── Card ─────────────────────────────────────────────────────────────── */
 
   .auth-card {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-surface, rgba(148, 163, 184, 0.04));
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.25),
-      0 2px 8px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: var(--radius-xl, 22px);
+    box-shadow: var(--shadow-xl, 0 20px 32px -5px rgba(15, 17, 23, 0.22));
     padding: 2rem;
     min-height: 200px;
     display: flex;
@@ -533,34 +526,34 @@
 
   .field-input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
+    background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: var(--radius-sm, 10px);
     padding: 0.625rem 0.875rem;
     font-size: 0.875rem;
-    color: var(--text-primary, #ffffff);
+    color: var(--text-primary);
     outline: none;
     transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
     box-sizing: border-box;
   }
 
   .field-input::placeholder {
-    color: var(--text-tertiary, #666666);
+    color: var(--text-tertiary);
   }
 
   .field-input:focus {
-    border-color: rgba(59, 130, 246, 0.6);
-    background: rgba(59, 130, 246, 0.04);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--accent-primary, #a78bfa);
+    background: rgba(167, 139, 250, 0.04);
+    box-shadow: 0 0 0 3px var(--accent-glow, rgba(167, 139, 250, 0.18));
   }
 
   .field-input--error {
-    border-color: rgba(239, 68, 68, 0.6) !important;
-    background: rgba(239, 68, 68, 0.04) !important;
+    border-color: var(--accent-error, #fca5a5) !important;
+    background: rgba(252, 165, 165, 0.04) !important;
   }
 
   .field-input--error:focus {
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    box-shadow: 0 0 0 3px rgba(252, 165, 165, 0.12) !important;
   }
 
   .field-input--with-action {
@@ -609,10 +602,10 @@
     align-items: flex-start;
     gap: 0.5rem;
     padding: 0.75rem;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 10px;
-    color: #fca5a5;
+    background: rgba(252, 165, 165, 0.08);
+    border: 1px solid rgba(252, 165, 165, 0.20);
+    border-radius: var(--radius-sm, 10px);
+    color: var(--accent-error, #fca5a5);
     font-size: 0.8125rem;
     line-height: 1.5;
   }
@@ -631,9 +624,9 @@
     gap: 0.5rem;
     width: 100%;
     padding: 0.75rem 1.25rem;
-    background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    border-radius: 10px;
+    background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+    border: 1px solid rgba(167, 139, 250, 0.4);
+    border-radius: var(--radius-sm, 10px);
     color: #ffffff;
     font-size: 0.875rem;
     font-weight: 500;
@@ -641,7 +634,7 @@
     transition: opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease;
     box-shadow:
       0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-      0 4px 16px 0 rgba(29, 78, 216, 0.3);
+      0 4px 16px 0 rgba(109, 40, 217, 0.3);
     margin-top: 0.5rem;
     position: relative;
     overflow: hidden;
@@ -661,7 +654,7 @@
     transform: translateY(-1px);
     box-shadow:
       0 1px 0 0 rgba(255, 255, 255, 0.15) inset,
-      0 6px 24px 0 rgba(29, 78, 216, 0.4);
+      0 6px 24px 0 rgba(109, 40, 217, 0.4);
   }
 
   .auth-submit:not(:disabled):active {
@@ -689,8 +682,8 @@
   .spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: rgba(255, 255, 255, 0.6);
+    border: 2px solid rgba(148, 163, 184, 0.15);
+    border-top-color: var(--accent-primary, #a78bfa);
   }
 
   .btn-spinner {
@@ -709,16 +702,16 @@
     gap: 0.375rem;
     margin-top: 1.25rem;
     padding-top: 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
     font-size: 0.8125rem;
-    color: var(--text-tertiary, #666666);
+    color: var(--text-tertiary);
   }
 
   .auth-toggle-link {
     background: none;
     border: none;
     padding: 0;
-    color: var(--accent-primary, #3b82f6);
+    color: var(--accent-primary, #a78bfa);
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
@@ -727,7 +720,7 @@
   }
 
   .auth-toggle-link:hover {
-    color: #60a5fa;
+    color: #c4b5fd;
     text-decoration: underline;
   }
 

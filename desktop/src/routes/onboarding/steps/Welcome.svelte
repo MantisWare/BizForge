@@ -85,6 +85,7 @@
       class="ob-input"
       type="text"
       placeholder="e.g. Roberto"
+      autocomplete="off"
       bind:value={displayName}
     />
   </div>

@@ -1,10 +1,8 @@
-# Library -- Reusable Agents and Skills
+# Library — Agents and Skills You Can Actually Use
 
-A catalog of agent definitions and skill definitions that can be composed into
-any workspace. Pick what you need, copy it into your operation's `agents/` or
-`skills/` directory, and customize.
+A catalog of agent definitions and skill definitions that compose into any workspace. Pick what you need, copy it into your operation's `agents/` or `skills/` directory, customize, ship.
 
-## Agents (159 definitions, 13 categories)
+## Agents (330+ definitions, 19 categories)
 
 ```
 library/agents/
@@ -15,9 +13,7 @@ library/agents/
 └── testing/
 ```
 
-Each agent is a markdown file with YAML frontmatter following the standard in
-`protocol/agent-format.md`. Agents define identity, core rules, process,
-deliverables, communication style, and success metrics.
+Each agent is a markdown file with YAML frontmatter following the standard in `protocol/agent-format.md`. Defines identity, core rules, process, deliverables, communication style, and success metrics.
 
 ## Skills (76 definitions, 11 categories)
 
@@ -28,9 +24,7 @@ library/skills/
 ├── content/      ├── learning/      ├── security/
 ```
 
-Each skill is a `SKILL.md` file that defines usage, implementation steps, and
-examples. Skills are the command interface between the agent and the underlying
-engine or toolchain.
+Each skill is a `SKILL.md` file defining usage, implementation steps, and examples. Skills are the command interface between agent and engine.
 
 ## Usage
 
@@ -44,4 +38,4 @@ cp -r library/skills/development/build/ my-operation/skills/
 
 ---
 
-*Library v1.0 -- 159 agents, 76 skills*
+*Library v1.0 — 330+ agents, 76 skills*

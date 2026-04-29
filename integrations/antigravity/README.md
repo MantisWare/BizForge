@@ -1,7 +1,6 @@
 # Antigravity Integration
 
-Installs all 61 agents as Antigravity skills. Each agent is prefixed
-with `agency-` to avoid conflicts with existing skills.
+Installs 330+ agents as Antigravity skills. Each agent is prefixed with `agency-` to avoid conflicts with existing skills.
 
 ## Install
 
@@ -9,8 +8,7 @@ with `agency-` to avoid conflicts with existing skills.
 ./scripts/install.sh --tool antigravity
 ```
 
-This copies files from `integrations/antigravity/` to
-`~/.gemini/antigravity/skills/`.
+Copies files from `integrations/antigravity/` to `~/.gemini/antigravity/skills/`.
 
 ## Activate a Skill
 
@@ -20,7 +18,7 @@ In Antigravity, activate an agent by its slug:
 Use the agency-frontend-developer skill to review this component.
 ```
 
-Available slugs follow the pattern `agency-<agent-name>`, e.g.:
+Available slugs follow the pattern `agency-<agent-name>`:
 - `agency-frontend-developer`
 - `agency-backend-architect`
 - `agency-reality-checker`

@@ -1,5 +1,17 @@
 mod filesystem;
 
+use tauri::Manager;
+
+#[tauri::command]
+fn close_splash(app: tauri::AppHandle) {
+    if let Some(splash) = app.get_webview_window("splash") {
+        let _ = splash.close();
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.show();
+        let _ = main.set_focus();
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +25,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            close_splash,
             filesystem::scan_bizforge_dir,
             filesystem::list_bizforge_agents,
             filesystem::list_bizforge_projects,

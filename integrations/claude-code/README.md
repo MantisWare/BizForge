@@ -1,7 +1,6 @@
 # Claude Code Integration
 
-The Agency was built for Claude Code. No conversion needed — agents work
-natively with the existing `.md` + YAML frontmatter format.
+Bizforge was built for Claude Code. No conversion needed — agents work natively with the `.md` + YAML frontmatter format.
 
 ## Install
 
@@ -27,5 +26,4 @@ Use the Reality Checker agent to verify this feature is production-ready.
 
 ## Agent Directory
 
-Agents are organized into divisions. See the [main README](../../README.md) for
-the full current roster.
+330+ agents organized into 19 categories. See the [main README](../../README.md) for the full roster.

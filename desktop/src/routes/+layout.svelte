@@ -1,7 +1,26 @@
 <script lang="ts">
   import '../app.css';
+  import { onMount } from 'svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
   let { children } = $props();
+
+  onMount(() => {
+    if (!isTauri()) return;
+
+    const dismissSplash = async () => {
+      const { invoke } = await import('@tauri-apps/api/core');
+      try {
+        const response = await fetch('/api/v1/health');
+        if (!response.ok) throw new Error('Backend not ready');
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return dismissSplash();
+      }
+      await invoke('close_splash');
+    };
+
+    dismissSplash();
+  });
 </script>
 
 {#if isTauri() && isMacOS()}

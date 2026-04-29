@@ -1,21 +1,21 @@
 # Integrations
 
-Converted formats and installation scripts for supported agent runtimes.
+This folder ships converted formats and installers so **330+** agents land cleanly on every major runtime. Pick your weapon.
 
-## Supported Tools
+## Your stack, your call
 
-- **[OSA](#osa)** — Native Workspace Protocol support, auto-discovers everything
-- **[Claude Code](#claude-code)** — `.md` agents, use the repo directly
-- **[GitHub Copilot](#github-copilot)** — `.md` agents, use the repo directly
-- **[Antigravity](#antigravity)** — `SKILL.md` per agent in `antigravity/`
-- **[Gemini CLI](#gemini-cli)** — extension + `SKILL.md` files in `gemini-cli/`
-- **[OpenCode](#opencode)** — `.md` agent files in `opencode/`
-- **[OpenClaw](#openclaw)** — `SOUL.md` + `AGENTS.md` + `IDENTITY.md` workspaces
-- **[Cursor](#cursor)** — `.mdc` rule files in `cursor/`
-- **[Aider](#aider)** — `CONVENTIONS.md` in `aider/`
-- **[Windsurf](#windsurf)** — `.windsurfrules` in `windsurf/`
+- **[OSA](#osa)** — Workspace Protocol native. Point it at a workspace. It finds everything. No conversion drama.
+- **[Claude Code](#claude-code)** — Plain `.md` agents. Clone the repo and go.
+- **[GitHub Copilot](#github-copilot)** — Same `.md` deal. Repo is the source of truth.
+- **[Antigravity](#antigravity)** — One `SKILL.md` per agent under `antigravity/`.
+- **[Gemini CLI](#gemini-cli)** — Extension plus `SKILL.md` files in `gemini-cli/`.
+- **[OpenCode](#opencode)** — `.md` agent files in `opencode/`.
+- **[OpenClaw](#openclaw)** — Full workspaces: `SOUL.md`, `AGENTS.md`, `IDENTITY.md`.
+- **[Cursor](#cursor)** — `.mdc` rules in `cursor/`.
+- **[Aider](#aider)** — `CONVENTIONS.md` in `aider/`.
+- **[Windsurf](#windsurf)** — `.windsurfrules` in `windsurf/`.
 
-## Quick Install
+## Ship it in one shot
 
 ```bash
 # Install for all detected tools automatically
@@ -32,13 +32,11 @@ Converted formats and installation scripts for supported agent runtimes.
 ./scripts/install.sh --tool gemini-cli
 ```
 
-For project-scoped tools such as OpenCode, Cursor, Aider, and Windsurf, run
-the installer from your target project root as shown in the tool-specific
-sections below.
+OpenCode, Cursor, Aider, and Windsurf are **project-scoped**. Run the installer from that project’s root. The per-tool sections spell it out.
 
-## Regenerating Integration Files
+## Blow away stale exports — regenerate
 
-If you add or modify agents, regenerate all integration files:
+You touch the **330+** agent library, you rerun conversion. Non-negotiable.
 
 ```bash
 ./scripts/convert.sh
@@ -48,8 +46,7 @@ If you add or modify agents, regenerate all integration files:
 
 ## OSA
 
-OSA natively supports the Workspace Protocol. Point it at any workspace and it
-auto-discovers SYSTEM.md, agents, skills, and reference files. No conversion needed.
+OSA speaks Workspace Protocol fluently. Hand it a workspace path. It pulls in `SYSTEM.md`, agents, skills, references. Zero conversion layer.
 
 ```bash
 # Connect to a workspace
@@ -59,18 +56,15 @@ osa connect /path/to/workspace
 ./scripts/install.sh --tool osa
 ```
 
-OSA layers workspace agents and skills on top of your base config at `~/.osa/`.
-When you switch workspaces, the domain context changes but your base config
-(global agents, memory, channels) persists.
+Workspace agents and skills stack on your base at `~/.osa/`. Swap workspaces, domain context follows you. Base config — global agents, memory, channels — stays put.
 
-See [osa/README.md](osa/README.md) for the full architecture.
+Full story: [osa/README.md](osa/README.md).
 
 ---
 
 ## Claude Code
 
-Agent definitions were originally designed for Claude Code. Agents work natively
-without conversion.
+We built the agent format for Claude Code first. It still runs **330+** agents raw — no transform step.
 
 ```bash
 cp -r <category>/*.md ~/.claude/agents/
@@ -78,118 +72,109 @@ cp -r <category>/*.md ~/.claude/agents/
 ./scripts/install.sh --tool claude-code
 ```
 
-See [claude-code/README.md](claude-code/README.md) for details.
+Dig in: [claude-code/README.md](claude-code/README.md).
 
 ---
 
 ## GitHub Copilot
 
-Agent definitions also work natively with GitHub Copilot. Agents can be copied
-directly into `~/.github/agents/` and `~/.copilot/agents/` without conversion.
+Copilot eats the same `.md` agents. Copy straight into `~/.github/agents/` and `~/.copilot/agents/`. Still no conversion.
 
 ```bash
 ./scripts/install.sh --tool copilot
 ```
 
-See [github-copilot/README.md](github-copilot/README.md) for details.
+Details: [github-copilot/README.md](github-copilot/README.md).
 
 ---
 
 ## Antigravity
 
-Skills are installed to `~/.gemini/antigravity/skills/`. Each agent becomes
-a separate skill prefixed with `agency-` to avoid naming conflicts.
+Skills land in `~/.gemini/antigravity/skills/`. Each agent is its own skill, prefixed `agency-` so names never collide.
 
 ```bash
 ./scripts/install.sh --tool antigravity
 ```
 
-See [antigravity/README.md](antigravity/README.md) for details.
+More: [antigravity/README.md](antigravity/README.md).
 
 ---
 
 ## Gemini CLI
 
-Agents are packaged as a Gemini CLI extension with individual skill files.
-The extension is installed to `~/.gemini/extensions/osa-operations/`.
-Because the Gemini manifest and skill folders are generated artifacts, run
-`./scripts/convert.sh --tool gemini-cli` before installing from a fresh clone.
+Bizforge packs agents as a Gemini CLI extension with per-agent skill files. Install target: `~/.gemini/extensions/bizforge/`. Manifest and skill folders are generated — run `./scripts/convert.sh --tool gemini-cli` once after a fresh clone, **then** install.
 
 ```bash
 ./scripts/convert.sh --tool gemini-cli
 ./scripts/install.sh --tool gemini-cli
 ```
 
-See [gemini-cli/README.md](gemini-cli/README.md) for details.
+Read this: [gemini-cli/README.md](gemini-cli/README.md).
 
 ---
 
 ## OpenCode
 
-Each agent becomes a project-scoped `.md` file in `.opencode/agents/`.
+Every agent becomes a project-scoped `.md` under `.opencode/agents/`.
 
 ```bash
-cd /your/project && /path/to/osa-operations/scripts/install.sh --tool opencode
+cd /your/project && /path/to/bizforge/scripts/install.sh --tool opencode
 ```
 
-See [opencode/README.md](opencode/README.md) for details.
+[opencode/README.md](opencode/README.md) has the rest.
 
 ---
 
 ## OpenClaw
 
-Each agent becomes an OpenClaw workspace containing `SOUL.md`, `AGENTS.md`,
-and `IDENTITY.md`.
+Each agent spins up an OpenClaw workspace: `SOUL.md`, `AGENTS.md`, `IDENTITY.md`.
 
-Before installing, generate the OpenClaw workspaces:
+Generate workspaces first:
 
 ```bash
 ./scripts/convert.sh --tool openclaw
 ```
 
-Then install them:
+Then install:
 
 ```bash
 ./scripts/install.sh --tool openclaw
 ```
 
-See [openclaw/README.md](openclaw/README.md) for details.
+[openclaw/README.md](openclaw/README.md) walks through it.
 
 ---
 
 ## Cursor
 
-Each agent becomes a `.mdc` rule file. Rules are project-scoped — run the
-installer from your project root.
+Each agent maps to a `.mdc` rule. Rules stick to the project — run from project root.
 
 ```bash
-cd /your/project && /path/to/osa-operations/scripts/install.sh --tool cursor
+cd /your/project && /path/to/bizforge/scripts/install.sh --tool cursor
 ```
 
-See [cursor/README.md](cursor/README.md) for details.
+[cursor/README.md](cursor/README.md).
 
 ---
 
 ## Aider
 
-All agents are consolidated into a single `CONVENTIONS.md` file that Aider
-reads automatically when present in your project root.
+All **330+** agents collapse into one `CONVENTIONS.md`. Aider picks it up automatically from project root.
 
 ```bash
-cd /your/project && /path/to/osa-operations/scripts/install.sh --tool aider
+cd /your/project && /path/to/bizforge/scripts/install.sh --tool aider
 ```
 
-See [aider/README.md](aider/README.md) for details.
+[aider/README.md](aider/README.md).
 
 ---
 
 ## Windsurf
 
-All agents are consolidated into a single `.windsurfrules` file for your
-project root.
+Same idea — one `.windsurfrules` at project root, whole library inside.
 
 ```bash
-cd /your/project && /path/to/osa-operations/scripts/install.sh --tool windsurf
+cd /your/project && /path/to/bizforge/scripts/install.sh --tool windsurf
 ```
 
-See [windsurf/README.md](windsurf/README.md) for details.
+[windsurf/README.md](windsurf/README.md).

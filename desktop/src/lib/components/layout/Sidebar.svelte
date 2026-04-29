@@ -93,6 +93,12 @@
 <aside class="sb-sidebar" class:collapsed={isCollapsed} aria-label="Main navigation">
   <!-- Toggle button -->
   <div class="sb-toggle-row">
+    {#if !isCollapsed}
+      <img class="sb-brand-logo" src="/logo.png" alt="BizForge" width="110" height="auto" />
+    {:else}
+      <img class="sb-brand-icon" src="/logo.png" alt="BizForge" width="28" height="28" />
+    {/if}
+    <span class="sb-toggle-spacer"></span>
     <button
       class="sb-toggle"
       onclick={onToggle}
@@ -383,6 +389,24 @@
     align-items: center;
     padding: 38px 8px 4px;
     flex-shrink: 0;
+  }
+
+  .sb-brand-logo {
+    height: auto;
+    max-width: 110px;
+    object-fit: contain;
+    margin-left: 4px;
+  }
+
+  .sb-brand-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: var(--radius-xs);
+  }
+
+  .sb-toggle-spacer {
+    flex: 1;
   }
 
   .sb-toggle {

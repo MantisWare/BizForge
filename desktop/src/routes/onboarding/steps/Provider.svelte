@@ -94,6 +94,7 @@
               class="ob-input ob-input--key"
               type="password"
               placeholder="sk-..."
+              autocomplete="off"
               value={providerKeys[p.slug] ?? ''}
               oninput={(e) => { providerKeys[p.slug] = (e.currentTarget as HTMLInputElement).value; }}
             />
@@ -132,6 +133,7 @@
                 class="ob-input ob-input--key"
                 type="password"
                 placeholder="API key..."
+                autocomplete="off"
                 value={providerKeys[p.slug] ?? ''}
                 oninput={(e) => { providerKeys[p.slug] = (e.currentTarget as HTMLInputElement).value; }}
               />

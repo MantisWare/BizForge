@@ -1,11 +1,10 @@
-# Workspace Templates
+# Pick a tier. Copy it. Ship.
 
-> Starter templates for different workspace sizes. Pick the tier that matches your
-> needs, copy the directory, and customize.
+> Workspace starters scaled to how big your setup actually is. Grab the folder that fits. Wire `SYSTEM.md`. Done.
 
 ---
 
-## Template Tiers
+## Four tiers — stop over-building
 
 | Tier | Files | Use Case | Time to Customize |
 |------|-------|----------|-------------------|
@@ -14,11 +13,13 @@
 | **full** | ~30 | Multi-team operation (4+ agents, workflows, governance) | 2-3 hours |
 | **enterprise** | ~40+ | Large organization (teams, budgets, governance, compliance) | Half day |
 
+Bizforge’s agent library clocks in at **330+** definitions when you want to pull more firepower than these starters give you.
+
 ---
 
-## How to Use
+## Run this playbook
 
-### 1. Pick Your Tier
+### 1. Grab the tier
 
 ```bash
 # Start with the tier that matches your scale
@@ -28,41 +29,39 @@ cp -r templates/micro/ my-operation/
 cp -r templates/full/ my-operation/
 ```
 
-### 2. Customize SYSTEM.md
+### 2. Own `SYSTEM.md`
 
-Every template includes a `SYSTEM.md` with placeholder values. Replace:
-- `{{OPERATION_NAME}}` — your operation's name
-- `{{MISSION}}` — one-line mission statement
-- `{{DOMAIN}}` — your domain (engineering, sales, consulting, etc.)
-- Agent names and roles to match your team
+Every template ships a `SYSTEM.md` full of placeholders. Swap them:
 
-### 3. Configure Agents
+- `{{OPERATION_NAME}}` → your operation name
+- `{{MISSION}}` → one line that states the mission
+- `{{DOMAIN}}` → engineering, sales, consulting, whatever
+- Agent names and roles → mirror your real team
 
-Each agent file has YAML frontmatter + markdown body following the standard
-in `protocol/agent-format.md`. Customize:
-- Identity and personality
-- Critical rules for your domain
-- Process/methodology specific to your workflows
-- Deliverable templates your team actually uses
+### 3. Tune the agents
 
-### 4. Configure Skills
+Each agent file runs YAML frontmatter plus markdown body — spec lives in `protocol/agent-format.md`. Dial in:
 
-Skills are slash commands your agents can invoke. Each skill has:
-- `SKILL.md` defining usage, implementation steps, and examples
-- Customize for your toolchain, repos, and deployment targets
+- Identity and voice
+- Non-negotiable rules for your domain
+- Process that matches how you actually work
+- Deliverable templates your people really use
 
-### 5. Validate
+### 4. Wire the skills
+
+Skills are slash commands your agents hit. Every skill packs a `SKILL.md` with usage, steps, examples. Point them at your repos, your toolchain, your deploy targets.
+
+### 5. Prove it
 
 ```bash
 /validate my-operation/
 ```
 
-This checks: SYSTEM.md structure, YAML frontmatter validity, agent cross-references,
-Signal encoding completeness, and workflow phase references.
+That run checks `SYSTEM.md` shape, YAML frontmatter, agent cross-refs, Signal encoding, workflow phase pointers. Green means you didn’t phone it in.
 
 ---
 
-## Tier Details
+## What each tier gives you
 
 ### micro (~5 files)
 
@@ -76,8 +75,7 @@ micro/
         └── SKILL.md       # One skill: the agent's primary action
 ```
 
-Best for: Single-purpose bots. Email responder. Code reviewer. Meeting summarizer.
-No governance, no workflows, no budgets. Just one agent doing one thing well.
+One job. One agent. Email triage, code review, meeting notes — whatever. No governance theater. No workflow YAML. Just execution.
 
 ### small (~15 files)
 
@@ -104,8 +102,7 @@ small/
     └── default.yaml       # Single workflow
 ```
 
-Best for: Small teams. A lead + specialist setup with basic routing. Simple
-governance through the lead agent. One workflow.
+Lead plus specialist. Routing lives in `SYSTEM.md`. Lead holds the line on governance. One workflow. This is the smallest setup that still feels like a team.
 
 ### full (~30 files)
 
@@ -147,8 +144,7 @@ full/
     └── review.yaml
 ```
 
-Best for: Multi-team operations. 4 agents with clear ownership. 8 skills covering
-the full development cycle. Workflows for sprints and reviews.
+Multi-team energy. Four agents with clean ownership. Eight skills cover the loop from build to deploy. Sprint and review workflows ship in the box.
 
 ### enterprise (~40+ files)
 
@@ -189,22 +185,20 @@ enterprise/
     └── onboarding.yaml
 ```
 
-Best for: Organizations with compliance requirements, multiple teams, budget
-tracking, and formal governance. Includes approval gates, audit trails, and
-escalation procedures.
+You run compliance, multiple teams, real budget numbers, and processes auditors can read. Approval gates, audit policy, escalation — all first-class. This tier is for when “move fast” still has to pass legal.
 
 ---
 
-## Upgrading Between Tiers
+## Level up without nuking your folder
 
-You can start small and grow:
+Start where you are. Grow when the org catches up.
 
-1. **micro → small**: Add `company.yaml`, a second agent, routing in SYSTEM.md
-2. **small → full**: Add more agents, skills, reference docs, second workflow
-3. **full → enterprise**: Add governance/, budgets/, compliance reference, security agent
+1. **micro → small**: Drop in `company.yaml`, add a second agent, teach `SYSTEM.md` to route.
+2. **small → full**: Stack agents, skills, reference docs, second workflow.
+3. **full → enterprise**: Add `governance/`, `budgets/`, compliance reference, security lead.
 
-Each tier is a superset of the previous. No structural changes needed — just additions.
+Every tier is a superset of the last one. You extend. You don’t rip out structure.
 
 ---
 
-*Templates v1.0 — OSA Operations workspace starters*
+*Templates v1.0 — Bizforge workspace starters*

@@ -1,14 +1,13 @@
 # Windsurf Integration
 
-All 61 agents are consolidated into a single `.windsurfrules` file.
-Rules are **project-scoped** — install them from your project root.
+All 330+ agents consolidated into a single `.windsurfrules` file. Rules are **project-scoped** — install from your project root.
 
 ## Install
 
 ```bash
 # Run from your project root
 cd /your/project
-/path/to/osa-operations/scripts/install.sh --tool windsurf
+/path/to/bizforge/scripts/install.sh --tool windsurf
 ```
 
 ## Activate an Agent

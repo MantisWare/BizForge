@@ -1,22 +1,20 @@
-# Operations — Complete AI Businesses in a Folder
+# Operations — AI Businesses in a Folder
 
-> An Operation is a self-contained AI business. It has agents with defined roles,
-> skills they can execute, reference knowledge they draw from, workflows that govern
-> process, and a SYSTEM.md that ties it all together. Drop it into any agent runtime
-> and it runs.
+> An Operation is a self-contained AI business. Agents with defined roles.
+> Skills they execute. Reference knowledge they pull from. Workflows that govern
+> process. One `SYSTEM.md` that ties it all together. Drop it into any agent runtime
+> and it runs. Period.
 
 ---
 
 ## What Is an Operation?
 
-An Operation is a directory that contains everything an AI agent (or team of AI agents)
-needs to run a business function autonomously. Not a chatbot. Not a prompt template.
-A complete operational unit with:
+A directory. Everything an AI agent (or a team of them) needs to run a business function autonomously. Not a chatbot. Not a prompt template. A complete operational unit:
 
 - **Identity**: Who the system is and what it does (SYSTEM.md)
 - **Agents**: Specialists with defined roles, skills, and communication styles
 - **Skills**: Executable commands the agents can invoke
-- **Reference**: Domain knowledge the agents load on demand
+- **Reference**: Domain knowledge loaded on demand
 - **Workflows**: Multi-phase processes with handoff gates between agents
 - **Handoffs**: Structured transition protocols between agents/phases
 - **Spec** (optional): Executable FSMs, typed procedures, and module topology
@@ -33,15 +31,13 @@ my-operation/
 └── spec/               ← (Optional) FSMs, procedures, topology
 ```
 
-The key insight: **SYSTEM.md is the only file the runtime needs to discover.** Everything
-else is referenced from there. An agent reads SYSTEM.md, discovers what skills exist,
-what agents are available, what reference to load, and how to operate.
+The key insight: **SYSTEM.md is the only file the runtime needs to discover.** Everything else is referenced from there. Agent reads SYSTEM.md, discovers skills, finds agents, loads reference, starts operating.
 
 ---
 
 ## The 5-Layer Stack
 
-Operations exist at Layer 3 of a 5-layer stack. Each layer is independently swappable.
+Operations live at Layer 3. Each layer is independently swappable.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -71,43 +67,33 @@ Operations exist at Layer 3 of a 5-layer stack. Each layer is independently swap
 
 ### Layer 2: Agent Libraries
 
-Agent libraries are collections of reusable personality templates stored as markdown
-files. Each template defines an agent's identity, core rules, communication style,
-and domain expertise. Think of them as "character sheets" for AI agents.
+Character sheets for AI agents. Each template defines identity, core rules, communication style, and domain expertise — stored as markdown.
 
-An Operation imports the agents it needs from libraries into its `agents/` directory.
-A sales operation pulls in a prospector, closer, and researcher. A dev shop pulls in
-a tech lead, frontend dev, and QA engineer. Same library, different compositions.
+An Operation imports what it needs into `agents/`. Sales operation pulls a prospector, closer, researcher. Dev shop pulls a tech lead, frontend dev, QA engineer. Same library, different compositions.
 
-Agent libraries enable:
+Agent libraries give you:
 - **Consistency**: The same "closer" personality works across different sales operations
-- **Versioning**: Update a template in the library, propagate to operations
+- **Versioning**: Update a template in the library, propagate everywhere
 - **Marketplace**: Share and sell agent templates independently of full operations
 - **Specialization**: Deep domain experts that carry knowledge across deployments
 
 ### Layer 5: Company Orchestration
 
-The company orchestration layer manages the human side of AI operations: org charts
-that define reporting hierarchies, budgets that constrain spending per agent and per
-project, goals that cascade from company mission to individual agent objectives, and
-governance rules that require human approval for high-stakes actions.
+The human layer. Org charts defining reporting hierarchies. Budgets constraining spend per agent and per project. Goals cascading from company mission to individual agent objectives. Governance rules requiring human approval for high-stakes actions.
 
-This layer answers questions Operations alone cannot:
+This layer answers the questions Operations alone can't:
 - "How much can this agent spend before it needs approval?"
 - "Who does this agent escalate to when it's stuck?"
 - "What's the company-wide priority when two operations compete for resources?"
 - "Which actions require human sign-off before execution?"
 
-Company orchestration is defined in `company.yaml` at the operation level and in
-governance policies at the platform level. It is optional for simple operations
-but essential for multi-agent, multi-team deployments.
+Defined in `company.yaml` at the operation level and in governance policies at the platform level. Optional for simple operations. Essential for multi-agent, multi-team deployments.
 
 ---
 
 ## Connecting to a Runtime
 
-An Operation is runtime-agnostic. The same directory works with any agent that can
-read markdown files and execute shell commands. Here's how to connect:
+An Operation is runtime-agnostic. Same directory, any agent that reads markdown and executes shell commands. Here's how:
 
 ### With OSA (Native Runtime)
 
@@ -120,9 +106,7 @@ osa connect /path/to/sales-engine
 # company.yaml configures budgets, org chart, governance
 ```
 
-OSA is the native runtime. It understands the full spec: heartbeat protocol, session
-persistence, workspace management, budget enforcement, governance gates, and the
-spec layer (FSMs, procedures, topology). Everything just works.
+OSA is the native runtime. It understands the full spec: heartbeat protocol, session persistence, workspace management, budget enforcement, governance gates, and the spec layer (FSMs, procedures, topology). Everything just works.
 
 ### With Claude Code
 
@@ -146,9 +130,7 @@ cp /path/to/sales-engine/SYSTEM.md ./CLAUDE.md
 #    Procedures → Claude Code invokes the declared implementations
 ```
 
-Claude Code supports most of the Operation format natively. The main difference is
-session persistence (Claude Code manages its own context window) and governance
-(approval gates are manual rather than automated).
+Claude Code supports most of the format natively. Main difference: session persistence (Claude Code manages its own context window) and governance (approval gates are manual, not automated).
 
 ### With Cursor / Windsurf
 
@@ -184,10 +166,7 @@ agent.set_reference_path("reference/")
 agent.run()
 ```
 
-The format is intentionally simple. SYSTEM.md is plain markdown. Skills are
-markdown files that describe shell commands. Agents are markdown files with YAML
-frontmatter. Reference files are markdown. No proprietary format. No SDK required.
-Any agent that reads files can operate a workspace.
+The format is intentionally simple. SYSTEM.md is plain markdown. Skills are markdown files describing shell commands. Agents are markdown with YAML frontmatter. Reference files are markdown. No proprietary format. No SDK required. If it reads files, it runs Bizforge.
 
 ---
 
@@ -195,57 +174,29 @@ Any agent that reads files can operate a workspace.
 
 ### [Sales Engine](./sales-engine/)
 
-A B2B SaaS sales operation that runs the full pipeline from prospect identification
-through closed-won deals. Five specialist agents (VP Sales, SDR, AE, Research Analyst,
-Sales Copywriter) execute a 7-phase deal cycle governed by MEDDPICC qualification,
-ICP scoring, and multi-threaded account strategy. Skills include `/prospect`, `/pipeline`,
-`/qualify`, `/close-plan`, and `/battlecard`. Every deal is scored at every phase gate,
-and handoffs between agents follow structured protocols.
+B2B SaaS sales. Full pipeline from prospect identification to closed-won deals. Five specialist agents (VP Sales, SDR, AE, Research Analyst, Sales Copywriter) executing a 7-phase deal cycle governed by MEDDPICC qualification, ICP scoring, and multi-threaded account strategy. Skills: `/prospect`, `/pipeline`, `/qualify`, `/close-plan`, `/battlecard`. Every deal scored at every phase gate. Structured handoffs between agents.
 
 ### [Dev Shop](./dev-shop/)
 
-A software development operation that delivers production-grade software through a
-disciplined engineering pipeline. Six specialist agents (Tech Lead, Solutions Architect,
-Frontend Dev, Backend Dev, QA Engineer, DevOps Engineer) execute a 7-phase feature
-cycle with a parallel fast-track bug fix pipeline. QA defaults to NEEDS WORK — nothing
-ships without QA approval. Skills include `/build`, `/test`, `/review`, `/deploy`,
-`/spec`, and `/debug`. The dev-QA loop enforces quality with retry limits and tech
-lead escalation.
+Software development operation delivering production-grade software through a disciplined pipeline. Six specialist agents (Tech Lead, Solutions Architect, Frontend Dev, Backend Dev, QA Engineer, DevOps Engineer) running a 7-phase feature cycle with a parallel fast-track bug fix pipeline. QA defaults to NEEDS WORK — nothing ships without QA approval. Skills: `/build`, `/test`, `/review`, `/deploy`, `/spec`, `/debug`. Dev-QA loop enforces quality with retry limits and tech lead escalation.
 
 ### [Content Factory](./content-factory/)
 
-A content production operation that turns ideas into published, optimized, multi-platform
-content. Five specialist agents (Editor-in-Chief, Writer, Social Media Manager, SEO
-Specialist, Visual Designer) execute a 7-phase content cycle from ideation through
-performance analysis. Every piece is audience-targeted, SEO-optimized, and repurposed
-across platforms. Skills include `/ideate`, `/write`, `/repurpose`, `/schedule`, and
-`/analyze`. Brand voice is enforced at every editorial gate.
+Content production turning ideas into published, optimized, multi-platform content. Five specialist agents (Editor-in-Chief, Writer, Social Media Manager, SEO Specialist, Visual Designer) running a 7-phase content cycle from ideation through performance analysis. Every piece is audience-targeted, SEO-optimized, and repurposed across platforms. Skills: `/ideate`, `/write`, `/repurpose`, `/schedule`, `/analyze`. Brand voice enforced at every editorial gate.
 
 ### [Cognitive OS](./cognitive-os/)
 
-A personal cognitive operating system — an externalized decision tree library stored
-as markdown files, searched by an Elixir engine, processed by an AI agent. Four
-specialist agents (Knowledge Guide, Signal Processor, Context Assembler, Health Monitor)
-manage 12 numbered knowledge nodes with tiered loading (L0/L1/L2) and a daily rhythm
-layer (boot, operate, build, break, shutdown). Skills include `/ingest`, `/search`,
-`/assemble`, `/health`, `/reweave`, `/simulate`, and 8 more. This is the most complex
-example — it demonstrates how the Workspace Protocol can model an entire personal
-knowledge management system.
+Personal cognitive operating system — an externalized decision tree library stored as markdown files, searched by an Elixir engine, processed by an AI agent. Four specialist agents (Knowledge Guide, Signal Processor, Context Assembler, Health Monitor) managing 12 numbered knowledge nodes with tiered loading (L0/L1/L2) and a daily rhythm layer (boot, operate, build, break, shutdown). Skills: `/ingest`, `/search`, `/assemble`, `/health`, `/reweave`, `/simulate`, and 8 more. The most complex example — demonstrates how the Workspace Protocol models an entire personal knowledge management system.
 
 ### [Agency Workflows](./agency-workflows/)
 
-A collection of multi-agent workflow examples showing how Operations compose agents
-for real-world tasks: landing page generation, startup MVP planning, book chapter
-writing, and workflows with persistent memory. These demonstrate the breadth of
-agent collaboration patterns — from linear handoffs to parallel fan-out to
-memory-augmented iteration.
+Multi-agent workflow examples showing how Operations compose agents for real-world tasks: landing page generation, startup MVP planning, book chapter writing, and workflows with persistent memory. Demonstrates the breadth of agent collaboration patterns — linear handoffs, parallel fan-out, memory-augmented iteration.
 
 ---
 
 ## The Spec Layer (Optional Power)
 
-Operations that need deterministic behavior beyond agent judgment can add a `spec/`
-directory with three file types:
+Operations that need deterministic behavior beyond agent judgment add a `spec/` directory with three file types:
 
 | File | What It Declares | When You Need It |
 |------|-----------------|-----------------|
@@ -253,8 +204,7 @@ directory with three file types:
 | `WORKFLOW.md` | Finite state machines with triggers, pipelines, and branching | When your process has mandatory ordering and phase gates |
 | `MODULES.md` | DAG topology with composition, event bus, and circuit breakers | When you need fault-tolerant module wiring and backpressure |
 
-The spec layer is optional. Most Operations work fine with just agents, skills, and
-reference files. Add spec files when you need:
+The spec layer is optional. Most Operations work fine with just agents, skills, and reference files. Add spec files when you need:
 - FSM workflows that MUST follow a specific path (sales pipeline, deployment, compliance)
 - Typed procedure bindings with runtime hot-swap (switch email providers without changing workflows)
 - Module composition with circuit breakers (fault tolerance for external integrations)
@@ -282,9 +232,8 @@ cp -r operations/sales-engine my-new-operation
 # /create-operation my-new-operation --agents engineering,sales --workflow sprint
 ```
 
-The only hard requirement is SYSTEM.md. Everything else is discovered from there.
-Start minimal, add layers as your operation grows.
+Only hard requirement: SYSTEM.md. Everything else is discovered from there. Start minimal, add layers as your operation grows.
 
 ---
 
-*Operations v1.0 — The portable AI business unit format for OSA Operations*
+*Operations v1.0 — The portable AI business unit format for Bizforge*

@@ -1,20 +1,20 @@
-# Examples
+# Workflow Examples
 
-This directory contains example outputs demonstrating how the agency's agents can be orchestrated together to tackle real-world tasks.
+Real multi-agent orchestrations. Not theory — actual outputs from deploying multiple agents on a single mission.
 
 ## Why This Exists
 
-The osa-operations repo defines dozens of specialized agents across engineering, design, marketing, product, support, spatial computing, and project management. But agent definitions alone don't show what happens when you **deploy them all at once** on a single mission.
+Bizforge defines 330+ specialized agents across engineering, design, marketing, product, support, spatial computing, and project management. But agent definitions alone don't show what happens when you **deploy them all at once** on a single mission.
 
-These examples answer the question: *"What does it actually look like when the full agency collaborates?"*
+These examples answer one question: *"What does it actually look like when the full team collaborates?"*
 
 ## Contents
 
 ### [nexus-spatial-discovery.md](./nexus-spatial-discovery.md)
 
-**What:** A complete product discovery exercise where 8 agents worked in parallel to evaluate a software opportunity and produce a unified plan.
+**What:** A complete product discovery exercise. 8 agents working in parallel to evaluate a software opportunity and produce a unified plan.
 
-**The scenario:** Web research identified an opportunity at the intersection of AI agent orchestration and spatial computing. The entire agency was then deployed simultaneously to produce:
+**The scenario:** Web research identified an opportunity at the intersection of AI agent orchestration and spatial computing. The entire team deployed simultaneously to produce:
 
 - Market validation and competitive analysis
 - Technical architecture (8-service system design with full SQL schema)
@@ -37,12 +37,12 @@ These examples answer the question: *"What does it actually look like when the f
 | Project Shepherd | Phase plan, sprints, risk register |
 | XR Interface Architect | Spatial UI specification |
 
-**Key takeaway:** All 8 agents ran in parallel and produced coherent, cross-referencing plans without coordination overhead. The output demonstrates the agency's ability to go from "find an opportunity" to "here's the full blueprint" in a single session.
+**Key takeaway:** All 8 agents ran in parallel and produced coherent, cross-referencing plans without coordination overhead. From "find an opportunity" to "here's the full blueprint" in a single session.
 
 ## Adding New Examples
 
-If you run an interesting multi-agent exercise, consider adding it here. Good examples show:
+Run an interesting multi-agent exercise? Add it here. Good examples show:
 
 - Multiple agents collaborating on a shared objective
-- The breadth of the agency's capabilities
+- The breadth of what these agents can actually do
 - Real-world applicability of the agent definitions

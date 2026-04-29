@@ -1,32 +1,36 @@
 # Bizforge Command Center
 
 <p align="center">
+  <img src="../docs/logo.png" alt="BizForge — Where Markdown workspaces become AI-run companies" width="500">
+</p>
+
+<p align="center">
   <img src="static/bizforge-screenshot.png" alt="Bizforge Command Center — Virtual Office" width="100%">
 </p>
 
-Native desktop command center for AI agent teams. Hire agents, watch them work in a virtual office, monitor costs, and manage everything from one app.
+Native desktop app. You run a command center for AI agent teams: hire agents, watch them grind in a virtual office, track spend, run the whole show from one window.
 
-Built with SvelteKit 2 + Tauri 2. Connects to [OSA](https://github.com/Miosa-osa/OSA), Claude Code, Codex, JidoClaw, and other AI adapters. Works offline with mock data — no backend required to start.
+Stack is SvelteKit 2 plus Tauri 2. Plugs into [OSA](https://github.com/Miosa-osa/OSA), Claude Code, Codex, JidoClaw, and the rest of the adapter lineup. Flip on mock data and you’re offline—no backend, no excuses.
 
-## Quick Start
+## One command and you’re in
 
 ```bash
 # One-liner launch
 ./scripts/launch.sh
 ```
 
-That's it. Opens the native desktop app with the Vite dev server.
+That fires the native desktop shell with the Vite dev server. Done.
 
-## Manual Setup
+## Build it yourself
 
-### Prerequisites
+### What you need on disk
 
 - Node.js 20+
 - Rust toolchain (`rustup`, `cargo`, `rustc`)
 - macOS: Xcode Command Line Tools (`xcode-select --install`)
 - Linux: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `libssl-dev`
 
-### Install & Run
+### Install, run, ship
 
 ```bash
 # Install dependencies
@@ -47,7 +51,7 @@ npm run tauri:build
 
 ## Adapters
 
-Bizforge connects to AI backends through **adapters**. The app auto-detects installed adapters and provides setup wizards for each.
+Bizforge talks to AI backends through **adapters**. Installed tools get detected automatically; wizards walk you through the rest.
 
 | Adapter | Type | Install |
 |---------|------|---------|
@@ -60,38 +64,38 @@ Bizforge connects to AI backends through **adapters**. The app auto-detects inst
 | **Bash** | Shell execution | Built-in |
 | **HTTP** | Generic REST adapter | Built-in |
 
-### OSA Setup
+### Wire up OSA
 
-OSA is the primary adapter. The app includes a full setup assistant (Settings > Integrations):
+OSA is the main adapter. Built-in assistant lives under Settings > Integrations:
 
-1. **Auto-detect** — scans `~/.osa/`, common paths, and running ports (9089/9090)
-2. **One-click install** — runs the official install script if OSA isn't found
-3. **Health check** — verifies the connection and shows version/port
-4. **Start/stop** — launches OSA daemon from the app
+1. **Auto-detect** — scans `~/.osa/`, common paths, and live ports (9089/9090)
+2. **One-click install** — runs the official script if OSA’s missing
+3. **Health check** — proves the connection, surfaces version and port
+4. **Start/stop** — boots or kills the OSA daemon from the app
 
-### Backend (Optional)
+### Optional backend
 
-The app works standalone with mock data. To connect to the Bizforge Phoenix backend:
+Mock mode covers you solo. Want the real Bizforge Phoenix API? Spin this up:
 
 ```bash
 cd ../backend
 mix phx.server  # Runs on port 9089
 ```
 
-## Onboarding
+## First launch: don’t skip this
 
-First launch walks through:
+The onboarding flow hits:
 
-1. **Welcome** — get started or import an existing `.bizforge/` workspace
-2. **Provider** — pick your LLM provider (Anthropic, OpenAI, Ollama, etc.) and enter API key
-3. **Adapter** — select which agent backend to use
-4. **Workspace** — name your workspace and set the directory
-5. **Team** — pre-select agents from the library to hire
-6. **Launch** — saves config to Tauri secure store and drops you into the dashboard
+1. **Welcome** — start clean or import an existing `.bizforge/` workspace
+2. **Provider** — lock in your LLM (Anthropic, OpenAI, Ollama, whatever) and drop the API key
+3. **Adapter** — pick the agent backend
+4. **Workspace** — name it, point at the directory
+5. **Team** — draft hires from the 330+ agent library
+6. **Launch** — writes config to Tauri secure store, dumps you on the dashboard
 
-Provider credentials are stored in the OS keychain via Tauri's secure store (not localStorage).
+Provider secrets sit in the OS keychain through Tauri’s secure store. Not in `localStorage`. Ever.
 
-## Project Structure
+## Where everything lives
 
 ```
 src/
@@ -123,19 +127,19 @@ src-tauri/                   # Rust native shell
 └── Cargo.toml               # Rust dependencies
 ```
 
-## Scripts
+## NPM scripts you actually use
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Vite dev server on :5200 |
-| `npm run build` | Static build to `build/` |
-| `npm run check` | TypeScript + Svelte type checking |
-| `npm run tauri:dev` | Native app in dev mode |
-| `npm run tauri:build` | Production .app/.appimage bundle |
-| `npm run test` | Run tests |
-| `npm run lint` | Lint + format check |
+| `npm run dev` | Vite on :5200 — fastest feedback loop |
+| `npm run build` | Drops static assets in `build/` |
+| `npm run check` | TS + Svelte — catch lies before runtime |
+| `npm run tauri:dev` | Native shell, dev mode |
+| `npm run tauri:build` | Ship `.app` / AppImage |
+| `npm run test` | Test suite |
+| `npm run lint` | Lint + format gate |
 
-## Architecture
+## How the pieces fit
 
 - **Frontend**: SvelteKit 2, Svelte 5 (runes), Tailwind CSS v4
 - **Desktop**: Tauri 2 (Rust + WebView), cross-platform (macOS, Linux, Windows)

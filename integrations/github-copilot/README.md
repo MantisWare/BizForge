@@ -1,7 +1,6 @@
 # GitHub Copilot Integration
 
-The Agency works with GitHub Copilot out of the box. No conversion needed —
-agents use the existing `.md` + YAML frontmatter format.
+Bizforge agents work with GitHub Copilot out of the box. No conversion needed — agents use the native `.md` + YAML frontmatter format.
 
 ## Install
 
@@ -28,5 +27,4 @@ Use the Reality Checker agent to verify this feature is production-ready.
 
 ## Agent Directory
 
-Agents are organized into divisions. See the [main README](../../README.md) for
-the full current roster.
+330+ agents organized into 19 categories. See the [main README](../../README.md) for the full roster.

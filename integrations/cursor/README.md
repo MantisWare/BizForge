@@ -1,17 +1,16 @@
 # Cursor Integration
 
-Converts all 61 agents into Cursor `.mdc` rule files. Rules are
-**project-scoped** — install them from your project root.
+Converts 330+ agents into Cursor `.mdc` rule files. Rules are **project-scoped** — install from your project root.
 
 ## Install
 
 ```bash
 # Run from your project root
 cd /your/project
-/path/to/osa-operations/scripts/install.sh --tool cursor
+/path/to/bizforge/scripts/install.sh --tool cursor
 ```
 
-This creates `.cursor/rules/<agent-slug>.mdc` files in your project.
+Creates `.cursor/rules/<agent-slug>.mdc` files in your project.
 
 ## Activate a Rule
 

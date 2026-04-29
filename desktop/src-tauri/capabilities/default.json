@@ -2,11 +2,15 @@
   "identifier": "default",
   "description": "Default capabilities for Bizforge desktop app",
   "windows": [
-    "main"
+    "main",
+    "splash"
   ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
+    "core:window:allow-show",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
     "dialog:default",
     "fs:default",
     "shell:default",
@@ -17,8 +21,7 @@
     "opener:default",
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [
-        {
+      "allow": [{
           "path": "$HOME/.bizforge/**"
         },
         {
@@ -28,8 +31,7 @@
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [
-        {
+      "allow": [{
           "path": "$HOME/.bizforge/**"
         },
         {
@@ -39,8 +41,7 @@
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [
-        {
+      "allow": [{
           "path": "$HOME/.bizforge/**"
         },
         {
@@ -50,8 +51,7 @@
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [
-        {
+      "allow": [{
           "path": "$HOME/.bizforge/**"
         },
         {
@@ -61,13 +61,11 @@
     },
     {
       "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "sh",
-          "cmd": "sh",
-          "args": true
-        }
-      ]
+      "allow": [{
+        "name": "sh",
+        "cmd": "sh",
+        "args": true
+      }]
     }
   ]
 }

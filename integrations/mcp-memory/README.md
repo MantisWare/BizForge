@@ -1,14 +1,14 @@
 # MCP Memory Integration
 
-> Give any agent persistent memory across sessions using the Model Context Protocol (MCP).
+> Give any agent persistent memory across sessions using the Model Context Protocol.
 
 ## What It Does
 
-By default, agents in The Agency start every session from scratch. Context is passed manually via copy-paste between agents and sessions. An MCP memory server changes that:
+By default, Bizforge agents start every session fresh. Context gets passed manually between agents and sessions. An MCP memory server kills that problem:
 
-- **Cross-session memory**: An agent remembers decisions, deliverables, and context from previous sessions
-- **Handoff continuity**: When one agent hands off to another, the receiving agent can recall exactly what was done — no copy-paste required
-- **Rollback on failure**: When a QA check fails or an architecture decision turns out wrong, roll back to a known-good state instead of starting over
+- **Cross-session memory**: Agent remembers decisions, deliverables, and context from previous sessions
+- **Handoff continuity**: When one agent hands off to another, the receiving agent recalls exactly what was done — no copy-paste
+- **Rollback on failure**: QA check fails? Architecture decision backfires? Roll back to a known-good state instead of starting over
 
 ## Setup
 
@@ -25,11 +25,11 @@ You need an MCP server that provides memory tools: `remember`, `recall`, `rollba
 }
 ```
 
-Any MCP server that exposes `remember`, `recall`, `rollback`, and `search` tools will work. Check the [MCP ecosystem](https://modelcontextprotocol.io) for available implementations.
+Any MCP server exposing `remember`, `recall`, `rollback`, and `search` tools will work. Check the [MCP ecosystem](https://modelcontextprotocol.io) for available implementations.
 
 ## How to Add Memory to Any Agent
 
-To enhance an existing agent with persistent memory, add a **Memory Integration** section to the agent's prompt. This section instructs the agent to use MCP memory tools at key moments.
+Add a **Memory Integration** section to the agent's prompt. This tells the agent to use MCP memory tools at the right moments.
 
 ### The Pattern
 
@@ -53,27 +53,27 @@ When something fails and you need to recover:
 - Use rollback to restore to that point rather than rebuilding from scratch
 ```
 
-### What the Agent Does With This
+### What the Agent Actually Does
 
-The LLM will use MCP memory tools automatically when given these instructions:
+The LLM uses MCP memory tools automatically when given these instructions:
 
 - `remember` — store a decision, deliverable, or context snapshot with tags
 - `recall` — search for relevant memories by keyword, tag, or semantic similarity
 - `rollback` — revert to a previous state when something goes wrong
 - `search` — find specific memories across sessions and agents
 
-No code changes to the agent files. No API calls to write. The MCP tools handle everything.
+No code changes to agent files. No API calls to write. The MCP tools handle everything.
 
 ## Example: Enhancing the Backend Architect
 
-See [backend-architect-with-memory.md](backend-architect-with-memory.md) for a complete example — the standard Backend Architect agent with a Memory Integration section added.
+See [backend-architect-with-memory.md](backend-architect-with-memory.md) for the complete example — standard Backend Architect agent with a Memory Integration section bolted on.
 
 ## Example: Memory-Powered Workflow
 
-See [../../examples/workflow-with-memory.md](../../examples/workflow-with-memory.md) for the Startup MVP workflow enhanced with persistent memory, showing how agents pass context through memory instead of copy-paste.
+See [../../examples/workflow-with-memory.md](../../examples/workflow-with-memory.md) for the Startup MVP workflow enhanced with persistent memory. Shows how agents pass context through memory instead of copy-paste.
 
 ## Tips
 
-- **Tag consistently**: Use the agent name and project name as tags on every memory. This makes recall reliable.
-- **Let the LLM decide what's important**: The memory instructions are guidance, not rigid rules. The LLM will figure out when to remember and what to recall.
-- **Rollback is the killer feature**: When a Reality Checker fails a deliverable, the original agent can roll back to its last checkpoint instead of trying to manually undo changes.
+- **Tag consistently**: Use the agent name and project name as tags on every memory. Makes recall reliable.
+- **Let the LLM decide what's important**: The memory instructions are guidance, not rigid rules. The LLM figures out when to remember and what to recall.
+- **Rollback is the killer feature**: When a Reality Checker fails a deliverable, the original agent rolls back to its last checkpoint instead of manually undoing changes.

@@ -95,26 +95,27 @@
     transform: translateX(50%);
     display: flex;
     gap: 2px;
-    background: rgba(10, 10, 20, 0.85);
-    border-radius: 6px;
+    background: var(--glass-bg, rgba(22, 27, 38, 0.82));
+    border-radius: 8px;
     padding: 2px;
     z-index: 20;
-    border: 1px solid #1e1e35;
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    backdrop-filter: blur(12px);
   }
   .vo-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 16px;
-    border-bottom: 1px solid var(--dbd, #2a2a3e);
-    background: var(--dbg, #12121e);
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-secondary);
     flex-shrink: 0;
   }
   .vo-stats {
     display: flex;
     gap: 16px;
     font-size: 12px;
-    color: var(--dt3, #8888a0);
+    color: var(--text-tertiary);
   }
   .vo-stat {
     display: flex;
@@ -125,38 +126,38 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #64748b;
+    background: #6b7a8d;
   }
-  .vo-dot--active { background: rgba(34, 197, 94, 0.7); }
+  .vo-dot--active { background: #6ee7b7; }
   .vo-mode-toggle {
     display: flex;
     gap: 2px;
-    background: var(--dbg2, #1a1a2e);
-    border-radius: 6px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
     padding: 2px;
   }
   .vo-mode-btn {
     padding: 4px 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     background: transparent;
-    color: var(--dt4, #666680);
+    color: var(--text-tertiary);
     cursor: pointer;
     transition: all 120ms ease;
   }
   .vo-mode-btn--active {
-    background: #6366f1;
+    background: var(--accent-primary, #a78bfa);
     color: white;
   }
   .vo-mode-btn:hover:not(.vo-mode-btn--active) {
-    color: var(--dt2, #aaaacc);
+    color: var(--text-secondary);
   }
   .vo-canvas {
     flex: 1;
     min-height: 0;
-    background: #0f0f1a;
+    background: var(--bg-primary, #0f1117);
   }
   .vo-panel-open .vo-canvas,
   .vo-panel-open .vo-pixel-wrap {

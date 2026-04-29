@@ -1,11 +1,15 @@
 # Bizforge
 
-![Bizforge Command Center](desktop/static/bizforge-screenshot.png)
+<p align="center">
+  <img src="docs/logo.png" alt="BizForge — Where Markdown workspaces become AI-run companies" width="600">
+</p>
 
-> Open-source workspace protocol and command center for AI agent systems.
+> Folders of markdown. That's it. That's the entire AI company.
 > Build autonomous AI companies — not chatbots.
 
-Bizforge is a workspace protocol that turns folders of markdown into fully operational AI companies. Define agents, skills, teams, budgets, and governance in plain files — then connect any AI backend (Claude Code, OSA, Codex, Gemini, Cursor, Aider, Windsurf) and watch them work autonomously on heartbeat schedules.
+![Bizforge Command Center](desktop/static/bizforge-screenshot.png)
+
+Bizforge is a workspace protocol that turns plain markdown into fully operational AI companies. Agents, skills, teams, budgets, governance — all defined in files. Connect any AI backend (Claude Code, OSA, Codex, Gemini, Cursor, Aider, Windsurf) and watch them run autonomously on heartbeat schedules.
 
 The desktop command center gives you a native app to hire from 330+ agents, watch them collaborate in a pixel-art virtual office, monitor token costs in real-time, and intervene when needed.
 
@@ -23,7 +27,7 @@ cd bizforge && ./install_mac.sh
 curl -fsSL https://raw.githubusercontent.com/MantisWare/BizForge/main/install.sh | bash
 ```
 
-Installs prerequisites, clones the repo, sets up the database, and opens the app.
+That's it. Installs prerequisites, clones the repo, sets up the database, opens the app.
 
 ```bash
 # Already cloned? Manual setup
@@ -101,7 +105,7 @@ Connected Agents (Claude Code, OSA, Cursor, Codex, Gemini, Aider, Windsurf, Open
 
 ### Workspace Protocol
 
-The Bizforge workspace is a folder of plain markdown files. No proprietary server, no lock-in. The directory structure is the architecture:
+The entire workspace is a folder of plain markdown files. No proprietary server. No lock-in. The directory structure IS the architecture:
 
 ```
 L0  SYSTEM.md + company.yaml          Always loaded (~2K tokens)
@@ -110,7 +114,7 @@ L2  reference/ + workflows/ + spec/   Deep context (full content, via search)
 L3  engine/                           Invisible (0 tokens, powers skills)
 ```
 
-`SYSTEM.md` is the entry point: identity, boot sequence, core loop, skills list, agents list, routing table, and handoff protocol — approximately 120 lines that define the entire operating system.
+`SYSTEM.md` is the entry point. Identity, boot sequence, core loop, skills list, agents list, routing table, handoff protocol — ~120 lines that define the entire operating system.
 
 `company.yaml` carries mission, budget, governance rules, org chart, and goal hierarchy with evidence gates.
 
@@ -124,17 +128,17 @@ Tier 1 (Activation)  Full manifest body loaded on demand. ~2K tokens per entity.
 Tier 2 (Full)        All referenced assets: scripts, linked docs, evidence schemas.
 ```
 
-The catalog is always cheap. Full manifests cost only when actually used. This achieves 96% context reduction versus systems that load everything upfront.
+The catalog is always cheap. Full manifests cost only when actually used. 96% context reduction versus systems that load everything upfront. Not a typo.
 
 ### Agent Hiring
 
-Browse and hire from a library of 330+ pre-built agents across 19 categories — or define your own in a markdown file. Agents are behavioral templates, not binaries.
+330+ pre-built agents across 19 categories. Browse the library, one-click hire, done. Or define your own in a markdown file — agents are behavioral templates, not binaries.
 
-Each agent file defines role, tools, coordination rules, escalation path, and heartbeat behavior. One-click hire from the Command Center or drop the file into `agents/`.
+Each agent file defines role, tools, coordination rules, escalation path, and heartbeat behavior. Hire from the Command Center or just drop the file into `agents/`.
 
 ### Heartbeat Protocol
 
-Agents wake on schedule, check for work, execute, and delegate autonomously. The heartbeat is a 9-step GenServer cycle with atomic checkout, governance gate checks, and session continuity:
+Agents wake on schedule, check for work, execute, and delegate. Autonomously. The heartbeat is a 9-step GenServer cycle with atomic checkout, governance gate checks, and session continuity:
 
 ```
 Agent wakes (schedule, task assignment, or mention)
@@ -152,7 +156,7 @@ Agent wakes (schedule, task assignment, or mention)
 
 ### Session Persistence & Continuity
 
-Agents resume context across heartbeats instead of starting cold:
+Agents resume context across heartbeats. No cold starts.
 
 - **Session chains** — linked sessions with `parent_session_id` and `sequence_number` tracking full execution history
 - **Automatic compaction** — after each heartbeat, the Compactor extracts structured facts (tools used, errors, outputs, decisions) into a summary
@@ -163,7 +167,7 @@ Agents resume context across heartbeats instead of starting cold:
 
 ### Multi-Agent Coordination
 
-Tasks are the communication protocol. No agent-to-agent messaging required.
+Tasks are the communication protocol. No agent-to-agent messaging needed.
 
 - **Delegation** — create a child task assigned to a report, with adapter-aware routing
 - **Status** — modify task fields
@@ -174,7 +178,7 @@ Task hierarchy: Initiatives → Projects → Milestones → Issues → Sub-issue
 
 ### Dynamic Adapter Dispatch
 
-One orchestrator dispatches work to different runtimes based on task content. The dispatch router uses a three-tier priority waterfall:
+One orchestrator dispatches work to different runtimes based on task content. Three-tier priority waterfall:
 
 ```
 1. Task adapter_override   (explicit per-task)
@@ -192,7 +196,7 @@ Content patterns route automatically:
 /delegate "Check production"      → HTTP (webhook)
 ```
 
-The delegation system creates subtasks with automatic adapter selection, finding idle agents that match the inferred adapter type. Preview endpoint available at `POST /dispatch/preview` for dry-run routing.
+The delegation system creates subtasks with automatic adapter selection, finds idle agents that match the inferred adapter type. Preview endpoint at `POST /dispatch/preview` for dry-run routing.
 
 ### Budget Enforcement
 
@@ -208,7 +212,7 @@ Tracks tokens and dollars. Rollup at any level (agent, team, department, divisio
 
 ### Governance Gates
 
-Approval enforcement integrated into the controller pipeline:
+Approval enforcement baked into the controller pipeline:
 
 - **Spawn gate** — agents cannot be created without approval (configurable per workspace)
 - **Delete gate** — agent termination requires authorization
@@ -264,9 +268,9 @@ Workflows support:
 
 ### Agent Commerce _(Planned — requires Stripe MPP integration)_
 
-Agents will be able to buy things. Stripe's Machine Payments Protocol (MPP) lets agents transact autonomously — pay for APIs, buy compute, purchase services from other agent workspaces.
+Agents will buy things. Stripe's Machine Payments Protocol (MPP) lets agents transact autonomously — pay for APIs, buy compute, purchase services from other agent workspaces.
 
-Bizforge's budget enforcement will wrap around MPP:
+Bizforge's budget enforcement wraps around MPP:
 
 - **Under threshold** — agent pays autonomously, logged to budget
 - **Over threshold** — payment queued for human approval
@@ -291,11 +295,11 @@ Bizforge's budget enforcement will wrap around MPP:
 
 ### Virtual Office
 
-Pixel-art 2D grid view and optional 3D scene (Three.js via Threlte) showing agents at desks. Agents glow when active, bob when working, and display current task in a speech bubble. Click to inspect or intervene.
+Pixel-art 2D grid view and optional 3D scene (Three.js via Threlte) showing agents at desks. Agents glow when active, bob when working, display current task in a speech bubble. Click to inspect or intervene.
 
 ### Mock-First Development
 
-57 mock API modules provide complete frontend functionality without a backend connection. Every API endpoint has a corresponding mock handler with realistic data, enabling offline development and demo mode.
+57 mock API modules provide complete frontend functionality without a backend connection. Every API endpoint has a corresponding mock handler with realistic data. Offline development and demo mode — just works.
 
 ---
 
@@ -439,7 +443,7 @@ Bizforge dispatches work to any connected runtime. Eleven adapters — five full
 | **JidoClaw** | Beta | `curl -fsSL https://raw.githubusercontent.com/robertohluna/jido_claw/main/install.sh \| bash` |
 | **Windsurf** | Beta | [codeium.com/windsurf](https://codeium.com/windsurf) |
 
-The Command Center auto-detects installed adapters and provides one-click setup wizards. Provider credentials are stored in the OS keychain via Tauri's secure store.
+The Command Center auto-detects installed adapters and provides one-click setup wizards. Provider credentials stored in the OS keychain via Tauri's secure store.
 
 All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
 
@@ -551,7 +555,7 @@ just test                    # Both
 
 ---
 
-## Theoretical Foundation
+## The Theory Behind the Magic
 
 Bizforge implements the **Optimal System** architecture from *Signal Theory: The Architecture of Optimal Intent Encoding* (MIOSA Research, 2026). The protocol's directory structure, agent format, progressive disclosure, and governance model directly implement the paper's 7-layer system:
 
@@ -599,7 +603,7 @@ Key architecture docs:
 
 ## Documentation
 
-Detailed documentation lives in the `docs/` directory:
+Detailed docs live in `docs/`:
 
 | Document | Description |
 |----------|-------------|
@@ -624,7 +628,7 @@ Detailed documentation lives in the `docs/` directory:
 
 ### Strategy
 
-Strategy and operational planning docs are in `docs/strategy/`:
+Strategy and operational planning docs in `docs/strategy/`:
 
 - [Executive Brief](docs/strategy/executive-brief.md)
 - [Nexus Strategy](docs/strategy/nexus-strategy.md)

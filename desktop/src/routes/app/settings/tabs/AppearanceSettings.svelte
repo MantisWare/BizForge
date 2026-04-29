@@ -4,11 +4,11 @@
   import { themeStore, type ThemeMode } from '$lib/stores/theme.svelte';
 
   const THEMES: { id: ThemeMode; label: string; bg: string; accent: string; surface: string }[] = [
-    { id: 'dark',   label: 'Dark',   bg: '#0a0a0a',              accent: '#3b82f6', surface: '#1a1a1a' },
-    { id: 'glass',  label: 'Glass',  bg: 'rgba(10,10,14,0.6)',   accent: '#8b5cf6', surface: 'rgba(255,255,255,0.06)' },
-    { id: 'color',  label: 'Color',  bg: '#050510',              accent: '#3b82f6', surface: 'rgba(59,130,246,0.08)' },
-    { id: 'light',  label: 'Light',  bg: '#fafafa',              accent: '#3b82f6', surface: '#ffffff' },
-    { id: 'system', label: 'System', bg: 'linear-gradient(135deg,#0a0a0a 50%,#fafafa 50%)', accent: '#3b82f6', surface: '#888' },
+    { id: 'dark',   label: 'Dark',   bg: '#0f1117',              accent: '#a78bfa', surface: '#1e2433' },
+    { id: 'glass',  label: 'Glass',  bg: 'rgba(15,17,23,0.55)',  accent: '#a78bfa', surface: 'rgba(167,139,250,0.08)' },
+    { id: 'color',  label: 'Color',  bg: '#0c0a1a',              accent: '#a78bfa', surface: 'rgba(167,139,250,0.10)' },
+    { id: 'light',  label: 'Light',  bg: '#fefdfb',              accent: '#8b5cf6', surface: '#f8f7f4' },
+    { id: 'system', label: 'System', bg: 'linear-gradient(135deg,#0f1117 50%,#fefdfb 50%)', accent: '#a78bfa', surface: '#8a94a8' },
   ];
 
   function handleThemeSelect(mode: ThemeMode) {
@@ -156,8 +156,8 @@
     font-size: 11px;
     font-weight: 500;
     color: var(--accent-primary);
-    background: rgba(59, 130, 246, 0.12);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: var(--accent-glow);
+    border: 1px solid var(--border-hover);
     border-radius: var(--radius-full);
     padding: 1px 7px;
   }
@@ -180,12 +180,12 @@
     border-radius: 50%;
     background: var(--accent-primary);
     cursor: pointer;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px var(--accent-glow);
     transition: box-shadow var(--transition-fast);
   }
 
   .stg-slider::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.25);
+    box-shadow: 0 0 0 5px var(--accent-glow);
   }
 
   .stg-slider-labels {

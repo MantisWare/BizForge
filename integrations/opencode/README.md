@@ -1,19 +1,16 @@
 # OpenCode Integration
 
-OpenCode agents are `.md` files with YAML frontmatter stored in
-`.opencode/agents/`. The converter maps named colors to hex codes and adds
-`mode: subagent` so agents are invoked on-demand via `@agent-name` rather
-than cluttering the primary agent picker.
+OpenCode agents are `.md` files with YAML frontmatter stored in `.opencode/agents/`. The converter maps named colors to hex codes and adds `mode: subagent` so agents are invoked on-demand via `@agent-name` — not cluttering the primary agent picker.
 
 ## Install
 
 ```bash
 # Run from your project root
 cd /your/project
-/path/to/osa-operations/scripts/install.sh --tool opencode
+/path/to/bizforge/scripts/install.sh --tool opencode
 ```
 
-This creates `.opencode/agents/<slug>.md` files in your project directory.
+Creates `.opencode/agents/<slug>.md` files in your project directory. Done.
 
 ## Activate an Agent
 
@@ -27,7 +24,7 @@ In OpenCode, invoke a subagent with the `@` prefix:
 @reality-checker review this PR.
 ```
 
-You can also select agents from the OpenCode UI's agent picker.
+Or select agents from the OpenCode UI's agent picker.
 
 ## Agent Format
 
@@ -42,13 +39,12 @@ color: "#00FFFF"
 ---
 ```
 
-- **mode: subagent** — agent is available on-demand, not shown in the primary Tab-cycle list
+- **mode: subagent** — available on-demand, not shown in the primary Tab-cycle list
 - **color** — hex code (named colors from source files are converted automatically)
 
 ## Project vs Global
 
-Agents in `.opencode/agents/` are **project-scoped**. To make them available
-globally across all projects, copy them to your OpenCode config directory:
+Agents in `.opencode/agents/` are **project-scoped**. To make them available globally:
 
 ```bash
 mkdir -p ~/.config/opencode/agents
