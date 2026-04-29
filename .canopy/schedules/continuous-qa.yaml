@@ -1,0 +1,8 @@
+agent_id: qa-engineer
+cron: "0 */4 * * *"
+description: Continuous quality checks every 4 hours
+enabled: true
+context: |
+  Run test suites, check for regressions.
+  Verify build passes on all targets.
+  Report any new issues found.

@@ -1,0 +1,8 @@
+agent_id: devops
+cron: "*/30 * * * *"
+description: Infrastructure health monitoring every 30 minutes
+enabled: true
+context: |
+  Check all services are healthy.
+  Monitor resource usage (CPU, memory, disk).
+  Alert on any degradation.

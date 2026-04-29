@@ -1,0 +1,8 @@
+name: Canopy Protocol
+description: .canopy/ workspace protocol spec, JSON schemas, agent templates
+agents:
+  - architect
+tags:
+  - protocol
+  - specification
+  - schemas

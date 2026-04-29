@@ -1,0 +1,8 @@
+agent_id: architect
+cron: "0 9 * * 1-5"
+description: Morning standup - review overnight activity, plan day
+enabled: true
+context: |
+  Review all activity since last standup.
+  Summarize: completed tasks, blockers, priorities for today.
+  Check budget usage and flag any anomalies.

@@ -1,0 +1,11 @@
+name: Canopy Desktop
+description: SvelteKit 2 + Tauri 2 desktop application
+agents:
+  - frontend-dev
+  - architect
+  - qa-engineer
+tags:
+  - svelte
+  - tauri
+  - typescript
+  - ui

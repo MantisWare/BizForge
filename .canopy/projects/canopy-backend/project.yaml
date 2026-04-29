@@ -1,0 +1,11 @@
+name: Canopy Backend
+description: Elixir/OTP API server, adapter runtime, heartbeat scheduler
+agents:
+  - backend-dev
+  - architect
+  - qa-engineer
+tags:
+  - elixir
+  - phoenix
+  - otp
+  - api
