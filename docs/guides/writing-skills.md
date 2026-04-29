@@ -1,6 +1,6 @@
 # How to Write Skills
 
-> The definitive guide to writing Canopy skills. A skill is a reusable command
+> The definitive guide to writing Bizforge skills. A skill is a reusable command
 > that any agent can execute in any workspace. Write it once, use it everywhere.
 
 ---

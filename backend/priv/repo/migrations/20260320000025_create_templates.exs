@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateTemplates do
+defmodule Bizforge.Repo.Migrations.CreateTemplates do
   use Ecto.Migration
 
   def change do

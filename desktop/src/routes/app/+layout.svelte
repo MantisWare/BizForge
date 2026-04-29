@@ -47,13 +47,13 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   let sidebarCollapsed = $state(false);
   $effect(() => {
     if (!browser) return;
-    const stored = localStorage.getItem('canopy-sidebar-collapsed');
+    const stored = localStorage.getItem('bizforge-sidebar-collapsed');
     if (stored !== null) sidebarCollapsed = stored === 'true';
   });
 
   function toggleSidebar() {
     sidebarCollapsed = !sidebarCollapsed;
-    if (browser) localStorage.setItem('canopy-sidebar-collapsed', String(sidebarCollapsed));
+    if (browser) localStorage.setItem('bizforge-sidebar-collapsed', String(sidebarCollapsed));
   }
 
   // Nav routes for ⌘1–⌘3 (Core section)
@@ -79,9 +79,9 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
       if (!isMockEnabled() && getToken()) {
         // Valid authenticated session → treat as fully onboarded.
-        localStorage.setItem('canopy-onboarding-complete', 'true');
+        localStorage.setItem('bizforge-onboarding-complete', 'true');
         localStorage.setItem(
-          'canopy-onboarding',
+          'bizforge-onboarding',
           JSON.stringify({ completed: true }),
         );
         onboardingDone = true;
@@ -92,9 +92,9 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
           if (wsList.length > 0) {
             const agentList = await agents.list(wsList[0].id);
             if (agentList.length > 0) {
-              localStorage.setItem('canopy-onboarding-complete', 'true');
+              localStorage.setItem('bizforge-onboarding-complete', 'true');
               localStorage.setItem(
-                'canopy-onboarding',
+                'bizforge-onboarding',
                 JSON.stringify({ completed: true }),
               );
               onboardingDone = true;
@@ -107,12 +107,12 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
       if (!onboardingDone) {
         // Offline / mock mode — honour localStorage flags.
-        const raw = localStorage.getItem('canopy-onboarding');
+        const raw = localStorage.getItem('bizforge-onboarding');
         const completed = raw
           ? (JSON.parse(raw) as { completed?: boolean }).completed
           : false;
         if (!completed) {
-          const legacy = localStorage.getItem('canopy-onboarding-complete');
+          const legacy = localStorage.getItem('bizforge-onboarding-complete');
           if (legacy !== 'true') {
             goto('/onboarding');
             return;
@@ -198,7 +198,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   let userName = $state<string | null>(null);
   $effect(() => {
     if (!browser) return;
-    const name = localStorage.getItem('canopy-display-name');
+    const name = localStorage.getItem('bizforge-display-name');
     if (name) userName = name;
   });
   const user = $derived(userName ? { name: userName, email: '' } : null);

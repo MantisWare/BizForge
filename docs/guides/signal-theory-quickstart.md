@@ -331,9 +331,9 @@ NOISE checklist:
 
 ## Beyond the Signal: The Full System
 
-The Signal S=(M,G,T,F,W) is Layer 2 of a 7-layer architecture. Canopy implements all 7:
+The Signal S=(M,G,T,F,W) is Layer 2 of a 7-layer architecture. Bizforge implements all 7:
 
-| Layer | What | Where in Canopy |
+| Layer | What | Where in Bizforge |
 |-------|------|----------------|
 | 1. Network | Who connects to whom | `company.yaml`, `reportsTo`, `TEAM.md` |
 | 2. Signal | Encoded intent | `signal:` field, deliverable templates |

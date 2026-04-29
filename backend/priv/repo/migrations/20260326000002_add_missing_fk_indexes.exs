@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddMissingFkIndexes do
+defmodule Bizforge.Repo.Migrations.AddMissingFkIndexes do
   use Ecto.Migration
 
   def change do

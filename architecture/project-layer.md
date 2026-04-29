@@ -1,6 +1,6 @@
 # Project Layer Architecture
 
-> The workspace has two layers: the Canopy Layer (config, instructions, ROM) and
+> The workspace has two layers: the Bizforge Layer (config, instructions, ROM) and
 > the Project Layer (work product, artifacts, RAM-in-motion). This document defines
 > the Project Layer — where agent output lives.
 
@@ -10,24 +10,24 @@
 
 ```
 workspace/
-├── [Canopy Layer]        Config. Instructions. Knowledge. Skills. Agents.
+├── [Bizforge Layer]        Config. Instructions. Knowledge. Skills. Agents.
 │   SYSTEM.md, agents/, skills/, reference/, workflows/, spec/, engine/
 │
 ├── [Project Layer]       Work product. What agents BUILD.
 │   output/, data/, src/, apps/
 │
-└── .canopy/              Runtime state. Ephemeral. Gitignored.
+└── .bizforge/              Runtime state. Ephemeral. Gitignored.
     tasks/, sessions/, observations/
 ```
 
-### Canopy Layer = ROM
+### Bizforge Layer = ROM
 
 Persistent. Transferable. Version-controlled. This is what you distribute on the
-marketplace. When someone downloads a "sales-engine" workspace, they get the Canopy
+marketplace. When someone downloads a "sales-engine" workspace, they get the Bizforge
 Layer — the skills, agents, reference docs, and engine config that make a generic
 agent into a sales specialist.
 
-The Canopy Layer doesn't change during normal operation. An agent reads it, follows it,
+The Bizforge Layer doesn't change during normal operation. An agent reads it, follows it,
 but doesn't modify it (except through explicit learning loop commands like `/remember`
 and `/rethink`, which require human approval before writing).
 
@@ -39,10 +39,10 @@ compositions, signals. This is where the actual value gets produced.
 The user comes back and reviews this. Approves proposals. Reads analyses. Merges code.
 Edits drafts. Sends reports. The Project Layer is the inbox of completed work.
 
-### .canopy/ = Runtime State
+### .bizforge/ = Runtime State
 
 Task queues, session persistence, accumulated observations. Ephemeral. If you delete
-`.canopy/`, the workspace still works — agents just lose in-progress context and start
+`.bizforge/`, the workspace still works — agents just lose in-progress context and start
 fresh. Always gitignored.
 
 ---
@@ -116,7 +116,7 @@ src/
 ```
 
 A dev-shop workspace might have `src/` with a full app. Agents write code here,
-run tests, deploy. The Canopy Layer (skills like `/test`, `/deploy`, `/review`)
+run tests, deploy. The Bizforge Layer (skills like `/test`, `/deploy`, `/review`)
 defines HOW agents work on the code. The code itself lives in `src/`.
 
 ### `apps/` — Managed Applications
@@ -135,16 +135,16 @@ with its own config. Skills reference these by name: `/crm update-deal ACME`.
 
 ---
 
-## Signal Flow: Canopy → Project
+## Signal Flow: Bizforge → Project
 
 The typical flow:
 
 ```
-1. Agent boots              → reads SYSTEM.md (Canopy Layer)
-2. Agent receives task      → reads relevant skill (Canopy Layer)
+1. Agent boots              → reads SYSTEM.md (Bizforge Layer)
+2. Agent receives task      → reads relevant skill (Bizforge Layer)
 3. Agent gathers context    → reads reference/ + data/ (both layers)
 4. Agent produces output    → writes to output/ (Project Layer)
-5. Agent logs state         → writes to .canopy/ (Runtime)
+5. Agent logs state         → writes to .bizforge/ (Runtime)
 6. Human reviews            → reads output/ (Project Layer)
 7. Human approves/edits     → modifies output/ status field
 8. Agent acts on approval   → sends, publishes, deploys, archives
@@ -153,7 +153,7 @@ The typical flow:
 ### Compositions and Frameworks
 
 Users can create reusable output templates — "compositions" — that agents use when
-generating artifacts. These live in the Canopy Layer as reference docs:
+generating artifacts. These live in the Bizforge Layer as reference docs:
 
 ```
 reference/
@@ -180,7 +180,7 @@ grows:
 
 ```
 cognitive-os/
-├── [Canopy Layer]
+├── [Bizforge Layer]
 │   ├── SYSTEM.md                 Identity, routing, classification rules
 │   ├── agents/                   Signal processor, synthesizer, reviewer
 │   ├── skills/                   /ingest, /search, /reflect, /reweave, /remember
@@ -205,7 +205,7 @@ cognitive-os/
 │       ├── 03-projects/
 │       └── ...
 │
-└── .canopy/
+└── .bizforge/
     ├── tasks/                    Processing queue
     └── sessions/                 Agent session state
 ```
@@ -220,23 +220,23 @@ action items, decisions, and cross-references — ready to review.
 
 ## Rules
 
-1. **Agents NEVER modify the Canopy Layer** during normal operation. The only
+1. **Agents NEVER modify the Bizforge Layer** during normal operation. The only
    exceptions are explicit learning commands (`/remember`, `/rethink`) which
    require human approval before writing.
 
 2. **Agents ALWAYS write work product to the Project Layer.** Generated documents
    go to `output/`. Working data goes to `data/`. Code goes to `src/`.
 
-3. **The `.canopy/` directory is always gitignored.** Runtime state is ephemeral.
+3. **The `.bizforge/` directory is always gitignored.** Runtime state is ephemeral.
 
 4. **Output files SHOULD have frontmatter** with genre, status, creator, and date.
    This enables the OSA command center to display, filter, and manage outputs.
 
-5. **Compositions (templates) live in Canopy Layer** (`reference/compositions/`).
+5. **Compositions (templates) live in Bizforge Layer** (`reference/compositions/`).
    Instantiated outputs live in Project Layer (`output/`).
 
 6. **The Project Layer is domain-specific.** Not every workspace has `src/`. Not
-   every workspace has `apps/`. Use what fits. The Canopy Layer structure is
+   every workspace has `apps/`. Use what fits. The Bizforge Layer structure is
    standardized. The Project Layer structure is flexible.
 
 ---

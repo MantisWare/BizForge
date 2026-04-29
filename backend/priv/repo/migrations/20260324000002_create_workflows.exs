@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateWorkflows do
+defmodule Bizforge.Repo.Migrations.CreateWorkflows do
   use Ecto.Migration
 
   def change do

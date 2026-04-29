@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateMemoryEntries do
+defmodule Bizforge.Repo.Migrations.CreateMemoryEntries do
   use Ecto.Migration
 
   def change do

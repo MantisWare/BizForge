@@ -28,7 +28,7 @@ const MOCK_ORG_MEMBERS: OrganizationMembership[] = [
     organization_id: "org-miosa",
     user_id: "user-admin",
     user_name: "Admin User",
-    user_email: "admin@canopy.dev",
+    user_email: "admin@bizforge.dev",
     role: "owner",
     joined_at: "2026-01-01T00:00:00Z",
   },

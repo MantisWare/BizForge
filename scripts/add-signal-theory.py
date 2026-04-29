@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bulk-update Canopy library agents with Signal Theory awareness.
+Bulk-update Bizforge library agents with Signal Theory awareness.
 
 Three schema variants detected:
   standard: # Identity & Memory / # Communication Style (h1, no emoji)
@@ -14,7 +14,7 @@ import sys
 import yaml
 from pathlib import Path
 
-AGENTS_DIR = Path("/Users/rhl/Desktop/MIOSA/code/canopy/library/agents")
+AGENTS_DIR = Path("/Users/rhl/Desktop/MIOSA/code/bizforge/library/agents")
 
 # ── Tool → Transcoding Mapping ──────────────────────────────────────────────
 

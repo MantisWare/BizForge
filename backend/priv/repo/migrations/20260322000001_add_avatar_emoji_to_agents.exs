@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddAvatarEmojiToAgents do
+defmodule Bizforge.Repo.Migrations.AddAvatarEmojiToAgents do
   use Ecto.Migration
 
   def change do

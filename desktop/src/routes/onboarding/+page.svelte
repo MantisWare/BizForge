@@ -14,21 +14,21 @@
   // ─── Registration data (pre-filled from /auth if the user just registered) ──
   //
   // When a user registers, /auth stores:
-  //   canopy-registered-name           → user's full name
-  //   canopy-registered-workspace-id   → backend workspace UUID
-  //   canopy-registered-workspace-name → workspace display name
+  //   bizforge-registered-name           → user's full name
+  //   bizforge-registered-workspace-id   → backend workspace UUID
+  //   bizforge-registered-workspace-name → workspace display name
   //
   // We use these to seed the onboarding form so the user doesn't have to
   // re-enter information they already provided.
 
   const registeredName = typeof localStorage !== 'undefined'
-    ? (localStorage.getItem('canopy-registered-name') ?? '')
+    ? (localStorage.getItem('bizforge-registered-name') ?? '')
     : '';
   const registeredWorkspaceId = typeof localStorage !== 'undefined'
-    ? (localStorage.getItem('canopy-registered-workspace-id') ?? '')
+    ? (localStorage.getItem('bizforge-registered-workspace-id') ?? '')
     : '';
   const registeredWorkspaceName = typeof localStorage !== 'undefined'
-    ? (localStorage.getItem('canopy-registered-workspace-name') ?? '')
+    ? (localStorage.getItem('bizforge-registered-workspace-name') ?? '')
     : '';
 
   // ─── Shared state ─────────────────────────────────────────────────────────
@@ -45,12 +45,12 @@
   let displayName        = $state(
     onboardingStore.data.displayName ||
     registeredName ||
-    (typeof localStorage !== 'undefined' ? (localStorage.getItem('canopy-display-name') ?? '') : '')
+    (typeof localStorage !== 'undefined' ? (localStorage.getItem('bizforge-display-name') ?? '') : '')
   );
   let selectedProviderSlug = $state(onboardingStore.data.provider?.slug ?? '');
   let providerKeys       = $state<Record<string, string>>({});
   let selectedAdapter    = $state<AdapterType>(onboardingStore.data.adapter);
-  let workspacePath      = $state(onboardingStore.data.workspace?.path ?? '~/.canopy');
+  let workspacePath      = $state(onboardingStore.data.workspace?.path ?? '~/.bizforge');
   // Pre-fill workspace name from registration response when available.
   let workspaceName      = $state(
     onboardingStore.data.workspace?.name ||
@@ -192,7 +192,7 @@
         }));
 
         try {
-          await invoke('scaffold_canopy_dir', {
+          await invoke('scaffold_bizforge_dir', {
             path: workspacePath,
             name: workspaceName,
             description: workspaceDesc || null,
@@ -247,22 +247,22 @@
 
       onboardingStore.complete();
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('canopy-onboarding-complete', 'true');
+        localStorage.setItem('bizforge-onboarding-complete', 'true');
         localStorage.setItem(
-          'canopy-onboarding',
+          'bizforge-onboarding',
           JSON.stringify({ completed: true }),
         );
-        localStorage.setItem('canopy-display-name', displayName);
-        localStorage.setItem('canopy-default-adapter', selectedAdapter);
+        localStorage.setItem('bizforge-display-name', displayName);
+        localStorage.setItem('bizforge-default-adapter', selectedAdapter);
         if (selectedProviderSlug) {
-          localStorage.setItem('canopy-provider-slug', selectedProviderSlug);
+          localStorage.setItem('bizforge-provider-slug', selectedProviderSlug);
           const key = providerKeys[selectedProviderSlug];
-          if (key) localStorage.setItem(`canopy-provider-${selectedProviderSlug}`, key);
+          if (key) localStorage.setItem(`bizforge-provider-${selectedProviderSlug}`, key);
         }
         // Clean up registration scratch keys — no longer needed.
-        localStorage.removeItem('canopy-registered-name');
-        localStorage.removeItem('canopy-registered-workspace-id');
-        localStorage.removeItem('canopy-registered-workspace-name');
+        localStorage.removeItem('bizforge-registered-name');
+        localStorage.removeItem('bizforge-registered-workspace-id');
+        localStorage.removeItem('bizforge-registered-workspace-name');
       }
 
       if (isTauri() && selectedProviderSlug) {
@@ -295,22 +295,22 @@
     onboardingStore.complete();
 
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('canopy-onboarding-complete', 'true');
+      localStorage.setItem('bizforge-onboarding-complete', 'true');
       localStorage.setItem(
-        'canopy-onboarding',
+        'bizforge-onboarding',
         JSON.stringify({ completed: true }),
       );
-      if (displayName) localStorage.setItem('canopy-display-name', displayName);
-      localStorage.setItem('canopy-default-adapter', selectedAdapter);
+      if (displayName) localStorage.setItem('bizforge-display-name', displayName);
+      localStorage.setItem('bizforge-default-adapter', selectedAdapter);
       if (selectedProviderSlug) {
-        localStorage.setItem('canopy-provider-slug', selectedProviderSlug);
+        localStorage.setItem('bizforge-provider-slug', selectedProviderSlug);
         const key = providerKeys[selectedProviderSlug];
-        if (key) localStorage.setItem(`canopy-provider-${selectedProviderSlug}`, key);
+        if (key) localStorage.setItem(`bizforge-provider-${selectedProviderSlug}`, key);
       }
       // Clean up registration scratch keys.
-      localStorage.removeItem('canopy-registered-name');
-      localStorage.removeItem('canopy-registered-workspace-id');
-      localStorage.removeItem('canopy-registered-workspace-name');
+      localStorage.removeItem('bizforge-registered-name');
+      localStorage.removeItem('bizforge-registered-workspace-id');
+      localStorage.removeItem('bizforge-registered-workspace-name');
     }
 
     if (isTauri() && selectedProviderSlug) {

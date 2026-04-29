@@ -1,6 +1,6 @@
 # Data Architecture Guide
 
-> How to structure, store, and retrieve data in a Canopy workspace. When to use
+> How to structure, store, and retrieve data in a Bizforge workspace. When to use
 > files vs databases, how tiers work, what goes where, and why.
 >
 > Based on patterns proven in the OptimalOS cognitive workspace (269 contexts,
@@ -10,7 +10,7 @@
 
 ## The Two Storage Paradigms
 
-Every piece of data in a Canopy workspace is either a **file** or a **record**.
+Every piece of data in a Bizforge workspace is either a **file** or a **record**.
 
 ```
 FILES (human-readable, git-versioned)         RECORDS (engine-managed, queryable)
@@ -152,7 +152,7 @@ Human promotes to `review` → `approved` → `sent`.
 ### Bucket 5: Runtime State
 
 **What**: Active tasks, sessions, observations, caches, locks.
-**Files**: `.canopy/tasks/`, `.canopy/sessions/`, `.canopy/observations/`
+**Files**: `.bizforge/tasks/`, `.bizforge/sessions/`, `.bizforge/observations/`
 **Lifespan**: Session to permanent (varies by type)
 **Tier**: L3 (invisible, engine-managed)
 **Storage**: SQLite tables + JSON files. Gitignored.
@@ -173,11 +173,11 @@ But some runtime data graduates:
 
 | Type | Storage | Lifespan | Graduates To |
 |------|---------|----------|-------------|
-| **Tasks** | JSON in `.canopy/tasks/` | Until completed/cancelled | Archived, informs estimation |
+| **Tasks** | JSON in `.bizforge/tasks/` | Until completed/cancelled | Archived, informs estimation |
 | **Sessions** | SQLite or JSON | Until compacted | Episodic memory |
 | **Observations** | SQLite `observations` table | Until synthesized | Procedural memory → skills |
 | **Locks** | Filesystem (`.lock` files) | Until released | Nothing (pure ephemeral) |
-| **Cache** | `.canopy/cache/` or ETS/Redis | Until invalidated | Nothing (rebuilt on demand) |
+| **Cache** | `.bizforge/cache/` or ETS/Redis | Until invalidated | Nothing (rebuilt on demand) |
 
 ---
 
@@ -298,7 +298,7 @@ L3 is invisible. The agent never directly accesses engine infrastructure.
 
 ## Memory Architecture: The 4 Types
 
-Memory in a Canopy workspace follows 4 types, each with different storage and retrieval patterns.
+Memory in a Bizforge workspace follows 4 types, each with different storage and retrieval patterns.
 
 ### Working Memory (RAM)
 
@@ -313,7 +313,7 @@ The agent's current context window. Not stored externally.
 
 What happened in past sessions. Time-indexed, queryable.
 
-- **Storage**: SQLite `episodic_records` table or `.canopy/sessions/*.json`
+- **Storage**: SQLite `episodic_records` table or `.bizforge/sessions/*.json`
 - **Schema**: `{session_id, timestamp, summary, entities[], decisions[], action_items[]}`
 - **Retrieval**: By time range, by entity mention, by keyword search
 - **Compaction**: Full transcripts compress to structured summaries. Originals go to cold storage.
@@ -351,7 +351,7 @@ Entity: Ed Honour
 
 How to do things. Extracted from experience, codified as skills or rules.
 
-- **Storage**: YAML files in `.canopy/procedural/` (version controlled)
+- **Storage**: YAML files in `.bizforge/procedural/` (version controlled)
 - **Schema**: `{trigger, pattern, action, confidence, evidence_count}`
 - **Retrieval**: By trigger matching against current situation
 - **Lifecycle**: Observations → accumulate → reach confidence threshold → synthesize → codify
@@ -524,8 +524,8 @@ The system moves data from left to right automatically:
 | Decisions | `context.md` (Key Decisions) | `semantic_records` | L2 | Signals |
 | Entity profiles | `context.md` | `entities` + `edges` | L2 | Knowledge |
 | Generated proposals | `output/proposals/*.md` | optionally indexed | L2 | Output |
-| Active tasks | `.canopy/tasks/*.json` | `tasks` | L3 | Runtime |
-| Sessions | `.canopy/sessions/*.json` | `sessions` | L3 | Runtime |
+| Active tasks | `.bizforge/tasks/*.json` | `tasks` | L3 | Runtime |
+| Sessions | `.bizforge/sessions/*.json` | `sessions` | L3 | Runtime |
 | Observations | — | `observations` | L3 | Runtime |
 | Foresight | — | `foresight` | L3 | Runtime |
 | Search index | — | `contexts_fts` | L3 | Runtime |

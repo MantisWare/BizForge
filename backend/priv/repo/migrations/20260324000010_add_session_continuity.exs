@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddSessionContinuity do
+defmodule Bizforge.Repo.Migrations.AddSessionContinuity do
   use Ecto.Migration
 
   def change do

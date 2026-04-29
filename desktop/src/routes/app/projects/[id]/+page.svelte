@@ -185,7 +185,7 @@
 </script>
 
 <svelte:head>
-  <title>{project ? `${project.name} — Projects — Canopy` : 'Project — Canopy'}</title>
+  <title>{project ? `${project.name} — Projects — Bizforge` : 'Project — Bizforge'}</title>
 </svelte:head>
 
 <PageShell title={project?.name ?? 'Project'}>

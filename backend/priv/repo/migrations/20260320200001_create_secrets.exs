@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateSecrets do
+defmodule Bizforge.Repo.Migrations.CreateSecrets do
   use Ecto.Migration
 
   def change do

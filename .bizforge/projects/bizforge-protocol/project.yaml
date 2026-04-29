@@ -1,0 +1,8 @@
+name: Bizforge Protocol
+description: .bizforge/ workspace protocol spec, JSON schemas, agent templates
+agents:
+  - architect
+tags:
+  - protocol
+  - specification
+  - schemas

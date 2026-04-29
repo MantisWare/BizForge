@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateBudgetIncidents do
+defmodule Bizforge.Repo.Migrations.CreateBudgetIncidents do
   use Ecto.Migration
 
   def change do

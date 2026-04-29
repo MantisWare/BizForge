@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateSchedules do
+defmodule Bizforge.Repo.Migrations.CreateSchedules do
   use Ecto.Migration
 
   def change do

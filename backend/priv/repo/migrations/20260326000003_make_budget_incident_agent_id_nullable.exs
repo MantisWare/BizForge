@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.MakeBudgetIncidentAgentIdNullable do
+defmodule Bizforge.Repo.Migrations.MakeBudgetIncidentAgentIdNullable do
   use Ecto.Migration
 
   def change do

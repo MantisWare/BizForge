@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "Default capabilities for Canopy desktop app",
+  "description": "Default capabilities for Bizforge desktop app",
   "windows": [
     "main"
   ],
@@ -19,7 +19,7 @@
       "identifier": "fs:allow-read-text-file",
       "allow": [
         {
-          "path": "$HOME/.canopy/**"
+          "path": "$HOME/.bizforge/**"
         },
         {
           "path": "$APPDATA/**"
@@ -30,7 +30,7 @@
       "identifier": "fs:allow-write-text-file",
       "allow": [
         {
-          "path": "$HOME/.canopy/**"
+          "path": "$HOME/.bizforge/**"
         },
         {
           "path": "$APPDATA/**"
@@ -41,7 +41,7 @@
       "identifier": "fs:allow-exists",
       "allow": [
         {
-          "path": "$HOME/.canopy/**"
+          "path": "$HOME/.bizforge/**"
         },
         {
           "path": "$APPDATA/**"
@@ -52,7 +52,7 @@
       "identifier": "fs:allow-mkdir",
       "allow": [
         {
-          "path": "$HOME/.canopy/**"
+          "path": "$HOME/.bizforge/**"
         },
         {
           "path": "$APPDATA/**"

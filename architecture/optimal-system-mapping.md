@@ -1,8 +1,8 @@
 # Optimal System Mapping
 
-> Canopy is the implementation of the Optimal System architecture defined in
+> Bizforge is the implementation of the Optimal System architecture defined in
 > *Signal Theory: The Architecture of Optimal Intent Encoding in Communication Systems*.
-> This document is the canonical reference for how Canopy's protocol, architecture,
+> This document is the canonical reference for how Bizforge's protocol, architecture,
 > and file structure map to the paper's 7-layer model.
 
 ---
@@ -13,24 +13,24 @@ Signal Theory defines the **Optimal System** — a 7-layer cybernetic architectu
 derived from four governing principles (Shannon, Ashby, Beer, Wiener) that any
 viable communication system must satisfy at every level of recursion.
 
-Canopy implements all 7 layers. The paper defined the theory; Canopy is the substrate.
+Bizforge implements all 7 layers. The paper defined the theory; Bizforge is the substrate.
 
-What the paper calls "the Optimal System," Canopy calls "the workspace protocol."
-What the paper calls "the Signal Network," Canopy calls "the org chart." What the
-paper calls "the Viable System Model," Canopy calls "SYSTEM.md + governance + teams."
+What the paper calls "the Optimal System," Bizforge calls "the workspace protocol."
+What the paper calls "the Signal Network," Bizforge calls "the org chart." What the
+paper calls "the Viable System Model," Bizforge calls "SYSTEM.md + governance + teams."
 The names differ. The architecture is identical.
 
 ---
 
 ## The 7-Layer Mapping
 
-| # | OS Layer | What It Does | Canopy Implementation | Key Files |
+| # | OS Layer | What It Does | Bizforge Implementation | Key Files |
 |---|----------|-------------|----------------------|-----------|
 | 1 | **The Network** | Nodes, topology, routing | `company.yaml` (org chart), `reportsTo` (edges), divisions (subnets), departments (superclusters), teams (clusters), escalation chains (routing rules); peer protocol defines inter-node edge types and signaling patterns | `protocol/company-format.md`, `protocol/division-format.md`, `protocol/department-format.md`, `protocol/team-format.md`, `architecture/team-coordination.md`, `architecture/peer-protocol.md` |
 | 2 | **The Signal** | S=(M,G,T,F,W) — encoded intent | `signal:` frontmatter field on every agent, deliverable templates (Structure), S/N quality gates | `protocol/signal-theory.md`, `architecture/signal-integration.md` |
 | 3 | **The Composition** | Micro-structure of each Signal | 8 body sections in agent definitions, SKILL.md process steps, workflow phases, spec-layer bindings; conversations compose multi-agent signals into collective intelligence | `protocol/agent-format.md`, `protocol/spec-layer.md`, `architecture/conversations.md` |
 | 4 | **The Interface** | Progressive disclosure, decoding surface | L0/L1/L2 tiered loading, `context_tier` field, catalog system, the OSA desktop app; speculative execution extends interface into the time dimension — pre-loading likely-next context | `architecture/progressive-disclosure.md`, `architecture/tiered-loading.md`, `architecture/speculative-execution.md` |
-| 5 | **The Data Layer** | Storage, capture, process, archive | `agents/`, `skills/`, `teams/`, `projects/`, `tasks/` directories; `.canopy/` runtime state; engine backends; 4-layer memory system; context mesh (per-team keeper — shared in-flight team data substrate) | `architecture/system-model.md`, `architecture/memory-architecture.md`, `architecture/context-mesh.md` |
+| 5 | **The Data Layer** | Storage, capture, process, archive | `agents/`, `skills/`, `teams/`, `projects/`, `tasks/` directories; `.bizforge/` runtime state; engine backends; 4-layer memory system; context mesh (per-team keeper — shared in-flight team data substrate) | `architecture/system-model.md`, `architecture/memory-architecture.md`, `architecture/context-mesh.md` |
 | 6 | **The Feedback Loop** | Circular causality, self-correction | Heartbeat 9-step cycle, S/N quality gates, 6R processing pipeline, success metrics, evidence gates; decision graph confidence cascade closes the feedback loop on every decision; self-healing verifies recovery closing the error feedback loop | `architecture/heartbeat.md`, `architecture/processing-pipeline.md`, `architecture/decision-graph.md`, `architecture/self-healing.md` |
 | 7 | **The Governance (VSM)** | Beer's 5 recursive subsystems | `SYSTEM.md` (S5 policy), CEO agent (S4 intelligence), orchestrators (S3 control), team coordination (S2), individual agents (S1 operations); self-healing implements S3/S4 at agent scope — autonomous control and intelligence without human intervention | `architecture/governance.md`, `protocol/workspace-protocol.md`, `architecture/self-healing.md` |
 
@@ -54,9 +54,9 @@ This table provides the canonical mapping for reference:
 
 ---
 
-## The 4 Governing Principles in Canopy
+## The 4 Governing Principles in Bizforge
 
-Every design decision in Canopy traces to one of these constraints. When something
+Every design decision in Bizforge traces to one of these constraints. When something
 breaks, the diagnostic question is always: *which principle was violated?*
 
 ### Shannon — Channel Capacity
@@ -215,13 +215,13 @@ and attenuation determines the agent's effective operating scope — its autonom
 ## VSM (Viable System Model) Mapping
 
 Beer's Viable System Model is recursive — every viable system contains the same
-5 subsystems, and every subsystem is itself a viable system. In Canopy, this
+5 subsystems, and every subsystem is itself a viable system. In Bizforge, this
 recursion manifests at every level of the organizational hierarchy: company,
 division, department, team, and agent scope.
 
 ### Company Level
 
-| VSM Subsystem | Role | Canopy Implementation |
+| VSM Subsystem | Role | Bizforge Implementation |
 |--------------|------|----------------------|
 | **S1 — Operations** | Execute work | The 5 divisions executing their strategic mandates |
 | **S2 — Coordination** | Synchronize S1 units | Cross-division coordination patterns, shared escalation protocols |
@@ -271,7 +271,7 @@ The paper defines **algedonic channels** as viability-preserving bypass signals 
 route directly from the point of disturbance to the policy level (S5) when normal
 processing channels are too slow or too noisy.
 
-In Canopy: the **escalation protocol** (`architecture/governance.md`) IS the algedonic
+In Bizforge: the **escalation protocol** (`architecture/governance.md`) IS the algedonic
 channel. When an agent encounters a viability threat (budget exhaustion, security
 incident, unresolvable conflict), escalation bypasses the normal `reportsTo` chain
 and routes directly to the board/human operator.
@@ -285,7 +285,7 @@ to the VSM subsystem scope the agent possesses internally. Autonomy is not a
 permission setting — it is an **architectural requirement**. An agent deployed at
 Level 5 without Systems 2-5 internally encoded is not autonomous; it is unregulated.
 
-| Level | Operator Role | Agent's VSM Scope | Canopy Mechanism |
+| Level | Operator Role | Agent's VSM Scope | Bizforge Mechanism |
 |-------|--------------|-------------------|-----------------|
 | **L1: Operator** | Human provides all direction | S1 only (Operations) | Agent with `context_tier: l0`, no reports, explicit task assignment |
 | **L2: Collaborator** | Human and agent share planning | S1 + S2 (+ Coordination) | Agent with `reportsTo`, team membership, peer awareness |
@@ -304,10 +304,10 @@ for Level 3, where judgment-requiring situations fall within its scope.
 
 The paper describes the Optimal System as an abstract architecture. It defines
 WHAT each layer does but not HOW organizational intent gets physically stored and
-retrieved. Canopy IS that physical substrate — the missing implementation layer:
+retrieved. Bizforge IS that physical substrate — the missing implementation layer:
 
 ```
-THE SUBSTRATE — What Canopy Adds to Signal Theory
+THE SUBSTRATE — What Bizforge Adds to Signal Theory
 
 AGENT DEFINITIONS ──── Encoded organizational roles
   Identity (who they are in the network)
@@ -366,7 +366,7 @@ across the network.
 
 The paper defines the DIKW hierarchy as a Signal lifecycle:
 
-| Level | Signal Theory Definition | Canopy Implementation |
+| Level | Signal Theory Definition | Bizforge Implementation |
 |-------|------------------------|----------------------|
 | **Data** | Raw, unprocessed facts | Raw file contents, task inputs, tool outputs |
 | **Information** | Data + context + meaning (the decoded Signal) | Loaded context after tiered disclosure — agent has situational awareness |

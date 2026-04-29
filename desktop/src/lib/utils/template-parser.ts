@@ -1,7 +1,7 @@
 // src/lib/utils/template-parser.ts
 // Utilities for parsing agent markdown files with YAML frontmatter.
 
-import type { CanopyAgent, AdapterType } from "$api/types";
+import type { BizforgeAgent, AdapterType } from "$api/types";
 
 /** Raw result of parsing a YAML frontmatter block */
 export interface ParsedFrontmatter {
@@ -12,7 +12,7 @@ export interface ParsedFrontmatter {
 
 /**
  * Parse YAML frontmatter from a markdown agent file content string.
- * Supports the subset of YAML used in Canopy agent files:
+ * Supports the subset of YAML used in Bizforge agent files:
  *   - Quoted strings: "value"
  *   - Arrays: [a, b, c]
  *   - Numbers: 500
@@ -98,14 +98,14 @@ function normaliseAdapter(raw: unknown): AdapterType {
 }
 
 /**
- * Convert parsed frontmatter and markdown body into a CanopyAgent object.
+ * Convert parsed frontmatter and markdown body into a BizforgeAgent object.
  * The `id` field in the returned agent is prefixed with "tpl-" so it does not
  * collide with backend-assigned IDs.
  */
 export function frontmatterToAgent(
   frontmatter: Record<string, unknown>,
   body: string,
-): CanopyAgent {
+): BizforgeAgent {
   const now = new Date().toISOString();
   const rawId = (frontmatter["id"] as string | undefined) ?? "unknown";
 
@@ -154,9 +154,9 @@ export function frontmatterToAgent(
 }
 
 /**
- * Parse a raw markdown string (with YAML frontmatter) into a CanopyAgent.
+ * Parse a raw markdown string (with YAML frontmatter) into a BizforgeAgent.
  */
-export function parseAgentFile(content: string): CanopyAgent {
+export function parseAgentFile(content: string): BizforgeAgent {
   const { frontmatter, body } = parseAgentFrontmatter(content);
   return frontmatterToAgent(frontmatter, body);
 }

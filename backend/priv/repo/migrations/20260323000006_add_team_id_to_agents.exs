@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddTeamIdToAgents do
+defmodule Bizforge.Repo.Migrations.AddTeamIdToAgents do
   use Ecto.Migration
 
   def change do

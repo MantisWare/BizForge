@@ -378,7 +378,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "canopy"
+name = "bizforge"
 version = "0.1.0"
 dependencies = [
  "glob",

@@ -1,4 +1,4 @@
-import type { CanopyAgent } from "../types";
+import type { BizforgeAgent } from "../types";
 
 const now = new Date().toISOString();
 const mins = (n: number) => new Date(Date.now() - n * 60_000).toISOString();
@@ -13,7 +13,7 @@ export const AGENT_IDS = {
   apiMonitor: "agt-mon-006",
 } as const;
 
-const AGENTS: CanopyAgent[] = [
+const AGENTS: BizforgeAgent[] = [
   // ── Orchestrator ────────────────────────────────────────────────────────────
   {
     id: AGENT_IDS.orchestrator,
@@ -25,7 +25,7 @@ const AGENTS: CanopyAgent[] = [
     adapter: "osa",
     model: "claude-opus-4-6",
     system_prompt:
-      "You are the Orchestrator, the top-level coordinator for the Canopy development team. " +
+      "You are the Orchestrator, the top-level coordinator for the Bizforge development team. " +
       "You decompose goals into subtasks, assign work to specialist agents, track progress, " +
       "resolve blockers, and synthesize results back to the user. You maintain the team's " +
       "shared context and ensure every agent is working toward the current objective.",
@@ -38,7 +38,7 @@ const AGENTS: CanopyAgent[] = [
     team_id: null,
     schedule_id: null,
     budget_policy_id: "bp-elite",
-    current_task: "Coordinating agent team for Canopy development",
+    current_task: "Coordinating agent team for Bizforge development",
     last_active_at: mins(2),
     token_usage_today: {
       input: 145000,
@@ -99,7 +99,7 @@ const AGENTS: CanopyAgent[] = [
     model: "claude-sonnet-4-6",
     system_prompt:
       "You are the Developer Agent, responsible for writing, editing, and debugging code across the " +
-      "Canopy stack (SvelteKit frontend, Phoenix backend, Elixir OSA core). You follow TDD, write " +
+      "Bizforge stack (SvelteKit frontend, Phoenix backend, Elixir OSA core). You follow TDD, write " +
       "typed Svelte 5 runes components, use Foundation UI primitives, and produce clean PRs with " +
       "descriptive commit messages. You do not merge without a passing Reviewer sign-off.",
     config: {
@@ -135,7 +135,7 @@ const AGENTS: CanopyAgent[] = [
     adapter: "claude_code",
     model: "claude-sonnet-4-6",
     system_prompt:
-      "You are the Code Reviewer, the quality gate for all code changes in the Canopy project. " +
+      "You are the Code Reviewer, the quality gate for all code changes in the Bizforge project. " +
       "You review PRs for correctness, security, performance, test coverage, and adherence to " +
       "project code standards. You approve, request changes, or block merges. You provide " +
       "actionable, specific feedback — never vague objections. Security and auth flows receive " +
@@ -174,7 +174,7 @@ const AGENTS: CanopyAgent[] = [
     model: "bash",
     system_prompt:
       "You are the DevOps Agent, responsible for infrastructure, CI/CD pipelines, deployments, " +
-      "and operational health of the Canopy platform. You run shell commands, manage Docker containers, " +
+      "and operational health of the Bizforge platform. You run shell commands, manage Docker containers, " +
       "configure GitHub Actions workflows, and trigger deployments. You operate non-interactively and " +
       "emit structured logs for every action.",
     config: {
@@ -210,7 +210,7 @@ const AGENTS: CanopyAgent[] = [
     adapter: "http",
     model: "http",
     system_prompt:
-      "You are the API Monitor, continuously polling Canopy backend health endpoints and external " +
+      "You are the API Monitor, continuously polling Bizforge backend health endpoints and external " +
       "service dependencies. You emit structured alerts when latency exceeds thresholds, error rates " +
       "spike, or services become unreachable. You do not take remediation actions — you escalate " +
       "to the Orchestrator with a structured incident report.",
@@ -245,20 +245,20 @@ const AGENTS: CanopyAgent[] = [
 // Deployed templates persist here so agents survive app restarts & HMR reloads.
 // Uses localStorage as backing store, in-memory Map as read cache.
 
-const STORAGE_KEY = "canopy-workspace-agents";
+const STORAGE_KEY = "bizforge-workspace-agents";
 
-function loadFromStorage(): Map<string, CanopyAgent[]> {
+function loadFromStorage(): Map<string, BizforgeAgent[]> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return new Map();
-    const entries = JSON.parse(raw) as Array<[string, CanopyAgent[]]>;
+    const entries = JSON.parse(raw) as Array<[string, BizforgeAgent[]]>;
     return new Map(entries);
   } catch {
     return new Map();
   }
 }
 
-function saveToStorage(map: Map<string, CanopyAgent[]>): void {
+function saveToStorage(map: Map<string, BizforgeAgent[]>): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...map.entries()]));
   } catch {
@@ -267,11 +267,11 @@ function saveToStorage(map: Map<string, CanopyAgent[]>): void {
 }
 
 // Hydrate from localStorage on module load
-const workspaceAgents: Map<string, CanopyAgent[]> = loadFromStorage();
+const workspaceAgents: Map<string, BizforgeAgent[]> = loadFromStorage();
 
 export function setMockWorkspaceAgents(
   workspaceId: string,
-  agents: CanopyAgent[],
+  agents: BizforgeAgent[],
 ): void {
   workspaceAgents.set(workspaceId, agents);
   saveToStorage(workspaceAgents);
@@ -279,7 +279,7 @@ export function setMockWorkspaceAgents(
 
 export function getMockWorkspaceAgents(
   workspaceId: string,
-): CanopyAgent[] | undefined {
+): BizforgeAgent[] | undefined {
   return workspaceAgents.get(workspaceId);
 }
 
@@ -298,7 +298,7 @@ export function clearAllMockWorkspaceAgents(): void {
   saveToStorage(workspaceAgents);
 }
 
-export function mockAgents(workspaceId?: string): CanopyAgent[] {
+export function mockAgents(workspaceId?: string): BizforgeAgent[] {
   // When a workspace is specified, return only its agents (empty if none deployed)
   if (workspaceId) {
     return workspaceAgents.get(workspaceId) ?? [];
@@ -310,7 +310,7 @@ export function mockAgents(workspaceId?: string): CanopyAgent[] {
 export function mockAgentById(
   id: string,
   workspaceId?: string,
-): CanopyAgent | undefined {
+): BizforgeAgent | undefined {
   const pool = mockAgents(workspaceId);
   return pool.find((a) => a.id === id);
 }

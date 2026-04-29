@@ -1,11 +1,11 @@
 // src/lib/api/mock/library/templates/micro.ts
 // Bundled Micro Agent template — single-purpose focused agent.
-import type { CanopyAgent } from "$api/types";
+import type { BizforgeAgent } from "$api/types";
 
 const now = new Date().toISOString();
 const zero = { input: 0, output: 0, cache_read: 0, cache_write: 0 } as const;
 
-export const agents: CanopyAgent[] = [
+export const agents: BizforgeAgent[] = [
   {
     id: "tpl-micro-agent",
     name: "micro-agent",

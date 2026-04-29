@@ -1,8 +1,8 @@
 // src/lib/api/client.ts
-// HTTP API client for the Canopy backend with mock fallback
+// HTTP API client for the Bizforge backend with mock fallback
 
 import type {
-  CanopyAgent,
+  BizforgeAgent,
   AgentStatus,
   AgentCreateRequest,
   DashboardData,
@@ -328,7 +328,7 @@ async function _doInitializeAuth(): Promise<void> {
   // 3. Fall back to localStorage token if Tauri store had nothing
   if (!_token) {
     try {
-      const stored = localStorage.getItem("canopy-auth-token");
+      const stored = localStorage.getItem("bizforge-auth-token");
       if (stored) _token = stored;
     } catch {
       // localStorage unavailable (SSR / blocked)
@@ -354,7 +354,7 @@ async function _doInitializeAuth(): Promise<void> {
       _token = token;
       await saveTokenToStore(token);
       try {
-        localStorage.setItem("canopy-auth-token", token);
+        localStorage.setItem("bizforge-auth-token", token);
       } catch {
         // Non-fatal
       }
@@ -453,7 +453,7 @@ export function clearCache(): void {
 
 // ── Offline Queue ───────────────────────────────────────────────────────────
 
-const OFFLINE_QUEUE_KEY = "canopy-offline-queue";
+const OFFLINE_QUEUE_KEY = "bizforge-offline-queue";
 const OFFLINE_QUEUE_MAX = 100;
 const OFFLINE_QUEUE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -755,7 +755,7 @@ export async function persistToken(token: string): Promise<void> {
   _token = token;
   await saveTokenToStore(token);
   try {
-    localStorage.setItem("canopy-auth-token", token);
+    localStorage.setItem("bizforge-auth-token", token);
   } catch {
     // Non-fatal
   }
@@ -778,7 +778,7 @@ export async function clearToken(): Promise<void> {
     // Not in Tauri or store unavailable
   }
   try {
-    localStorage.removeItem("canopy-auth-token");
+    localStorage.removeItem("bizforge-auth-token");
   } catch {
     // Non-fatal
   }
@@ -833,52 +833,52 @@ function mapAgentStatus(status: string): AgentStatus {
   }
 }
 
-function mapAgentStatuses(agent: CanopyAgent): CanopyAgent {
+function mapAgentStatuses(agent: BizforgeAgent): BizforgeAgent {
   return { ...agent, status: mapAgentStatus(agent.status) };
 }
 
 export const agents = {
-  list: async (workspaceId?: string): Promise<CanopyAgent[]> => {
+  list: async (workspaceId?: string): Promise<BizforgeAgent[]> => {
     const qs = workspaceId ? `?workspace_id=${workspaceId}` : "";
-    const data = await request<{ agents: CanopyAgent[]; count: number }>(
+    const data = await request<{ agents: BizforgeAgent[]; count: number }>(
       `/agents${qs}`,
     );
     return (data.agents ?? []).map(mapAgentStatuses);
   },
-  get: async (id: string): Promise<CanopyAgent> => {
-    const agent = await request<CanopyAgent>(`/agents/${id}`);
+  get: async (id: string): Promise<BizforgeAgent> => {
+    const agent = await request<BizforgeAgent>(`/agents/${id}`);
     return mapAgentStatuses(agent);
   },
-  create: async (body: AgentCreateRequest): Promise<CanopyAgent> => {
-    const data = await request<{ agent: CanopyAgent }>("/agents", {
+  create: async (body: AgentCreateRequest): Promise<BizforgeAgent> => {
+    const data = await request<{ agent: BizforgeAgent }>("/agents", {
       method: "POST",
       body: JSON.stringify(body),
     });
     // Backend wraps response in {agent: ...}; mock returns bare agent
-    return mapAgentStatuses(data.agent ?? (data as unknown as CanopyAgent));
+    return mapAgentStatuses(data.agent ?? (data as unknown as BizforgeAgent));
   },
   update: async (
     id: string,
     body: Partial<AgentCreateRequest>,
-  ): Promise<CanopyAgent> => {
-    const data = await request<{ agent: CanopyAgent }>(`/agents/${id}`, {
+  ): Promise<BizforgeAgent> => {
+    const data = await request<{ agent: BizforgeAgent }>(`/agents/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     });
-    return mapAgentStatuses(data.agent ?? (data as unknown as CanopyAgent));
+    return mapAgentStatuses(data.agent ?? (data as unknown as BizforgeAgent));
   },
-  action: async (id: string, action: string): Promise<CanopyAgent> => {
-    const data = await request<{ agent: CanopyAgent }>(
+  action: async (id: string, action: string): Promise<BizforgeAgent> => {
+    const data = await request<{ agent: BizforgeAgent }>(
       `/agents/${id}/${action}`,
       { method: "POST" },
     );
-    return mapAgentStatuses(data.agent ?? (data as unknown as CanopyAgent));
+    return mapAgentStatuses(data.agent ?? (data as unknown as BizforgeAgent));
   },
-  resume: async (id: string): Promise<CanopyAgent> => {
-    const data = await request<{ agent: CanopyAgent }>(`/agents/${id}/resume`, {
+  resume: async (id: string): Promise<BizforgeAgent> => {
+    const data = await request<{ agent: BizforgeAgent }>(`/agents/${id}/resume`, {
       method: "POST",
     });
-    return mapAgentStatuses(data.agent ?? (data as unknown as CanopyAgent));
+    return mapAgentStatuses(data.agent ?? (data as unknown as BizforgeAgent));
   },
   terminate: (id: string) =>
     request<void>(`/agents/${id}`, { method: "DELETE" }),
@@ -1468,7 +1468,7 @@ export const workspaces = {
   delete: (id: string) =>
     request<void>(`/workspaces/${id}`, { method: "DELETE" }),
   agents: (id: string) =>
-    request<{ agents: CanopyAgent[] }>(`/workspaces/${id}/agents`),
+    request<{ agents: BizforgeAgent[] }>(`/workspaces/${id}/agents`),
   skills: (id: string) =>
     request<{ skills: Skill[] }>(`/workspaces/${id}/skills`),
   config: (id: string) => request<unknown>(`/workspaces/${id}/config`),
@@ -1767,8 +1767,8 @@ export const teams = {
       body: JSON.stringify(body),
     }),
   delete: (id: string) => request<void>(`/teams/${id}`, { method: "DELETE" }),
-  agents: async (teamId: string): Promise<CanopyAgent[]> => {
-    const data = await request<{ agents: CanopyAgent[] }>(
+  agents: async (teamId: string): Promise<BizforgeAgent[]> => {
+    const data = await request<{ agents: BizforgeAgent[] }>(
       `/teams/${teamId}/agents`,
     );
     return data.agents ?? [];
@@ -2302,7 +2302,7 @@ export async function clearMockData(): Promise<void> {
   } catch {
     // Mock module not available — clear the well-known key directly
     try {
-      localStorage.removeItem("canopy-workspace-agents");
+      localStorage.removeItem("bizforge-workspace-agents");
     } catch {
       // localStorage unavailable
     }

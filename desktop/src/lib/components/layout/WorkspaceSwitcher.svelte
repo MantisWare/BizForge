@@ -33,7 +33,7 @@
     isOpen = false;
   }
 
-  /** Open Workspace — pick a folder with .canopy/ in it */
+  /** Open Workspace — pick a folder with .bizforge/ in it */
   async function openWorkspace() {
     isOpen = false;
     if (!isTauri()) return;
@@ -44,7 +44,7 @@
 
       const scanned = await workspaceStore.scanWorkspace(selected);
       if (!scanned) {
-        toastStore.error('Not a workspace', 'No .canopy/ directory found.');
+        toastStore.error('Not a workspace', 'No .bizforge/ directory found.');
         return;
       }
       const wsEntry = {
@@ -62,7 +62,7 @@
     }
   }
 
-  /** Create Workspace — pick a folder, scaffold .canopy/ */
+  /** Create Workspace — pick a folder, scaffold .bizforge/ */
   async function createWorkspace() {
     isOpen = false;
     if (!isTauri()) return;
@@ -73,7 +73,7 @@
 
       const wsName = selected.split('/').pop() || 'New Workspace';
       const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('scaffold_canopy_dir', {
+      await invoke('scaffold_bizforge_dir', {
         path: selected,
         name: wsName,
         description: null,

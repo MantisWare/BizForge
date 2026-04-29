@@ -23,7 +23,7 @@
 </script>
 
 <svelte:head>
-  <title>{status} — Canopy</title>
+  <title>{status} — Bizforge</title>
 </svelte:head>
 
 <div class="app-error">

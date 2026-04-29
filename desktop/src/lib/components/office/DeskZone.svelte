@@ -1,7 +1,7 @@
 <!-- src/lib/components/office/DeskZone.svelte -->
 <!-- A named zone within the 2D floor plan, containing agent avatars and furniture -->
 <script lang="ts">
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import AgentAvatar from './AgentAvatar.svelte';
 
   type ZoneType = 'desk' | 'meeting' | 'lounge' | 'hotdesk';
@@ -14,9 +14,9 @@
     width: number;
     height: number;
     fill: string;
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     selectedAgentId?: string | null;
-    onAgentClick?: (agent: CanopyAgent) => void;
+    onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
   let {

@@ -6,7 +6,7 @@
   import { organizationsStore } from '$lib/stores/organizations.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { teams as teamsApi } from '$api/client';
-  import type { Team, CanopyAgent } from '$api/types';
+  import type { Team, BizforgeAgent } from '$api/types';
 
   $effect(() => {
     const orgId = organizationsStore.current?.id;
@@ -49,7 +49,7 @@
 
   // Team members panel
   let expandedTeamId = $state<string | null>(null);
-  let teamMembers = $state<Map<string, CanopyAgent[]>>(new Map());
+  let teamMembers = $state<Map<string, BizforgeAgent[]>>(new Map());
   let loadingMembers = $state<string | null>(null);
 
   async function toggleTeamMembers(teamId: string): Promise<void> {
@@ -73,7 +73,7 @@
     }
   }
 
-  function agentInitials(agent: CanopyAgent): string {
+  function agentInitials(agent: BizforgeAgent): string {
     const name = agent.display_name || agent.name;
     return name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
   }

@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddPerformanceIndexes do
+defmodule Bizforge.Repo.Migrations.AddPerformanceIndexes do
   use Ecto.Migration
 
   def change do

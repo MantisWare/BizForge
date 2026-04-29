@@ -1,4 +1,4 @@
-# Canopy Command Center — Sidebar Restructure Plan
+# Bizforge Command Center — Sidebar Restructure Plan
 
 ## Status: PRE-IMPLEMENTATION
 

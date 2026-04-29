@@ -11,11 +11,11 @@
     await clearToken();
     clearCache();
     try {
-      localStorage.removeItem('canopy-workspaces');
-      localStorage.removeItem('canopy-active-workspace');
-      localStorage.removeItem('canopy-onboarding');
-      localStorage.removeItem('canopy-onboarding-complete');
-      localStorage.removeItem('canopy-offline-queue');
+      localStorage.removeItem('bizforge-workspaces');
+      localStorage.removeItem('bizforge-active-workspace');
+      localStorage.removeItem('bizforge-onboarding');
+      localStorage.removeItem('bizforge-onboarding-complete');
+      localStorage.removeItem('bizforge-offline-queue');
     } catch { /* non-fatal */ }
     goto('/');
   }

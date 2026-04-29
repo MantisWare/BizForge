@@ -1,6 +1,6 @@
 // src/lib/api/mock/library/templates/enterprise.ts
 // Bundled Enterprise template — 15 agents across multi-team org with governance.
-import type { CanopyAgent } from "$api/types";
+import type { BizforgeAgent } from "$api/types";
 
 const now = new Date().toISOString();
 const zero = { input: 0, output: 0, cache_read: 0, cache_write: 0 } as const;
@@ -15,7 +15,7 @@ function agent(
   reportsTo: string | null,
   color: string,
   systemPrompt: string,
-): CanopyAgent {
+): BizforgeAgent {
   return {
     id: `tpl-${id}`,
     name: id,
@@ -46,7 +46,7 @@ function agent(
   };
 }
 
-export const agents: CanopyAgent[] = [
+export const agents: BizforgeAgent[] = [
   // ── C-Suite ──
   agent(
     "ceo",

@@ -62,7 +62,7 @@ export async function setupOsa(osaPath?: string): Promise<OsaSetupStep[]> {
       {
         step: "check",
         success: false,
-        message: "OSA setup requires the Canopy desktop app",
+        message: "OSA setup requires the Bizforge desktop app",
       },
     ];
   }
@@ -78,7 +78,7 @@ export async function installOsa(): Promise<{
   output: string;
 }> {
   if (!isTauri()) {
-    return { success: false, output: "Requires Canopy desktop app" };
+    return { success: false, output: "Requires Bizforge desktop app" };
   }
   const { invoke } = await import("@tauri-apps/api/core");
   try {

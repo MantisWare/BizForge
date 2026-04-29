@@ -1,13 +1,13 @@
 <!-- src/lib/components/office/Office2D.svelte -->
 <!-- SVG isometric-style floor plan with four zones and agent avatars -->
 <script lang="ts">
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import DeskZone from './DeskZone.svelte';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     selectedAgentId?: string | null;
-    onAgentClick?: (agent: CanopyAgent) => void;
+    onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
   let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
@@ -40,7 +40,7 @@
   // Zone assignment: sub-agents (role contains 'sub' or name contains 'sub') → hotdesk
   // running agents → desk zone for visibility
   // rest distributed by hash
-  function assignZone(agent: CanopyAgent): 'desk' | 'meeting' | 'lounge' | 'hotdesk' {
+  function assignZone(agent: BizforgeAgent): 'desk' | 'meeting' | 'lounge' | 'hotdesk' {
     const roleLower = agent.role.toLowerCase();
     const nameLower = agent.name.toLowerCase();
     if (roleLower.includes('sub') || nameLower.includes('sub') || roleLower.includes('worker')) {
@@ -61,7 +61,7 @@
   // Collaboration lines between running agents that share zones
   const collabPairs = $derived.by(() => {
     const running = agents.filter(a => a.status === 'running');
-    const pairs: Array<{ a: CanopyAgent; b: CanopyAgent }> = [];
+    const pairs: Array<{ a: BizforgeAgent; b: BizforgeAgent }> = [];
     for (let i = 0; i < running.length; i++) {
       for (let j = i + 1; j < running.length; j++) {
         if (assignZone(running[i]) === assignZone(running[j])) {
@@ -73,7 +73,7 @@
   });
 
   // Get approximate SVG center of an agent for collab lines
-  function agentCenter(agent: CanopyAgent): { x: number; y: number } {
+  function agentCenter(agent: BizforgeAgent): { x: number; y: number } {
     const zone = assignZone(agent);
     const COLS = 4;
     const allInZone =

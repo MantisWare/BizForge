@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateDatasets do
+defmodule Bizforge.Repo.Migrations.CreateDatasets do
   use Ecto.Migration
 
   def change do

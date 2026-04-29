@@ -10,9 +10,9 @@ let mockDocumentData: Document[] = [
     last_edited_by: "Scribe",
     created_at: "2026-03-01T00:00:00Z",
     updated_at: new Date(Date.now() - 86_400_000).toISOString(),
-    content: `# Canopy Command Center
+    content: `# Bizforge Command Center
 
-Canopy is the desktop interface for the OSA Agent system. It provides a unified view of all your AI agents, their schedules, budgets, and outputs.
+Bizforge is the desktop interface for the OSA Agent system. It provides a unified view of all your AI agents, their schedules, budgets, and outputs.
 
 ## Quick Start
 
@@ -26,7 +26,7 @@ The app runs on \`http://localhost:5173\` in development mode.
 
 ## Architecture
 
-Canopy is built with:
+Bizforge is built with:
 - **SvelteKit 2** — routing, SSR, form actions
 - **Svelte 5 Runes** — reactive state management
 - **Foundation** — MIOSA design system (124 components)
@@ -71,7 +71,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## System Layers
 
-### 1. Presentation Layer (Canopy Desktop)
+### 1. Presentation Layer (Bizforge Desktop)
 SvelteKit 2 application compiled with Tauri 2 for native desktop distribution. Communicates with the backend exclusively via HTTP REST + SSE streaming.
 
 ### 2. API Gateway (Phoenix)
@@ -96,12 +96,12 @@ User Action
       → OSA Agent GenServer
         → LLM Provider (Anthropic)
           → Tool calls (filesystem, bash, knowledge, etc.)
-            → SSE stream back to Canopy
+            → SSE stream back to Bizforge
 \`\`\`
 
 ## State Management
 
-Canopy uses **Svelte 5 class-based stores** with runes. Each domain has a dedicated store class:
+Bizforge uses **Svelte 5 class-based stores** with runes. Each domain has a dedicated store class:
 - \`AgentStore\` — agent roster, lifecycle state
 - \`SessionStore\` — active sessions, message history
 - \`InboxStore\` — inbox items, unread counts
@@ -158,7 +158,7 @@ Output a structured report with severity levels.
 - Warning threshold: 80%
 
 ## Output Format
-Scout produces structured JSON reports written to \`/workspace/.canopy/reports/security/\`. Reports are indexed in the knowledge graph and surface as Inbox items when issues are found.
+Scout produces structured JSON reports written to \`/workspace/.bizforge/reports/security/\`. Reports are indexed in the knowledge graph and surface as Inbox items when issues are found.
 
 ## Configuration
 \`\`\`yaml
@@ -237,7 +237,7 @@ tools:
     last_edited_by: "Architect",
     created_at: "2026-03-08T00:00:00Z",
     updated_at: new Date(Date.now() - 604_800_000).toISOString(),
-    content: `# Canopy Heartbeat Schedule Template
+    content: `# Bizforge Heartbeat Schedule Template
 # Copy and adapt this file to define a new agent heartbeat.
 
 agent_id: agent-REPLACE_ME

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Canopy Full Stack Launcher ───────────────────────────────────────────────
+# ── Bizforge Full Stack Launcher ───────────────────────────────────────────────
 # Starts the Phoenix backend + SvelteKit desktop app.
 #
 # Usage:
@@ -122,7 +122,7 @@ else
 fi
 
 echo ""
-echo -e "${GREEN}${BOLD}Canopy is running.${NC}"
+echo -e "${GREEN}${BOLD}Bizforge is running.${NC}"
 echo -e "${DIM}Backend:  http://127.0.0.1:9089${NC}"
 echo -e "${DIM}Desktop:  http://127.0.0.1:5200/app${NC}"
 echo -e "${DIM}Press Ctrl+C to stop everything.${NC}"

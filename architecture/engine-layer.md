@@ -121,7 +121,7 @@ Different memory types need different storage strategies:
 | **Working** | LLM context window | It IS the context window. Not stored externally. | N/A |
 | **Episodic** | SQLite + compressed JSON | Time-indexed, queryable, compressed. Full transcripts go to cold storage (filesystem or S3). | `episodic_records` table |
 | **Semantic** | SQLite + FTS5 | Fact statements need full-text search. Entity graph in separate edges table. | `semantic_records` + `semantic_fts` + `entity_edges` tables |
-| **Procedural** | YAML files (version controlled) | Procedures are like skills — they should be auditable, diffable, human-editable. Indexed in SQLite for trigger matching. | `.canopy/procedural/*.yaml` + SQLite index |
+| **Procedural** | YAML files (version controlled) | Procedures are like skills — they should be auditable, diffable, human-editable. Indexed in SQLite for trigger matching. | `.bizforge/procedural/*.yaml` + SQLite index |
 | **Foresight** | SQLite | Forward-looking predictions with time bounds. Surfaced during daily boot to catch upcoming deadlines and dependencies. | `foresight` table: `{prediction, confidence, start_time, end_time, source}` |
 
 **Alternative memory backends:**
@@ -132,7 +132,7 @@ Different memory types need different storage strategies:
 | **Zep** | Long-term conversation memory | Designed for chat memory. Auto-summarization. Good for episodic. |
 | **Redis** | High-speed session state | Sub-ms reads. Good for working memory spillover. Volatile. |
 | **PostgreSQL** | Multi-user, shared memory | Full SQL, great for team workspaces. Requires server. |
-| **Filesystem only** | Simplest option | JSON/YAML files in `.canopy/`. No DB needed. Slow at scale. |
+| **Filesystem only** | Simplest option | JSON/YAML files in `.bizforge/`. No DB needed. Slow at scale. |
 
 **Recommendation**: **SQLite** for everything persistent. It's embedded, reliable, and
 handles all 4 memory types in one file. Use **filesystem YAML** for procedural memory
@@ -441,7 +441,7 @@ Elasticsearch. The agent doesn't know or care.
 
 ## Reference Implementation: OptimalOS Engine
 
-The OptimalOS cognitive workspace (the first Canopy workspace ever built) uses
+The OptimalOS cognitive workspace (the first Bizforge workspace ever built) uses
 this engine stack:
 
 | Function | Backend | Why |

@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateGoals do
+defmodule Bizforge.Repo.Migrations.CreateGoals do
   use Ecto.Migration
 
   def change do

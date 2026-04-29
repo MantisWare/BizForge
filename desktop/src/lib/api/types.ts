@@ -1,5 +1,5 @@
 // src/lib/api/types.ts
-// All TypeScript types for the Canopy Command Center API
+// All TypeScript types for the Bizforge Command Center API
 
 // ── Health ────────────────────────────────────────────────────────────────────
 
@@ -232,7 +232,7 @@ export type AgentLifecycleAction =
   | "resume"
   | "terminate";
 
-export interface CanopyAgent {
+export interface BizforgeAgent {
   id: string;
   name: string;
   display_name: string;
@@ -1238,7 +1238,7 @@ export interface TeamMembership {
 // ── Hierarchy Tree ────────────────────────────────────────────────────────────
 
 export interface HierarchyTeamNode extends Team {
-  agents: CanopyAgent[];
+  agents: BizforgeAgent[];
 }
 
 export interface HierarchyDepartmentNode extends Department {

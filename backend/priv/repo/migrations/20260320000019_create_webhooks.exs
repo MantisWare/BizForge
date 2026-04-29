@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateWebhooks do
+defmodule Bizforge.Repo.Migrations.CreateWebhooks do
   use Ecto.Migration
 
   def change do

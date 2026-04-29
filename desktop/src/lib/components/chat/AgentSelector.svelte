@@ -2,7 +2,7 @@
 <!-- Compact agent picker for routing a chat message to a specific agent -->
 <script lang="ts">
   import { agents as agentsApi } from '$lib/api/client';
-  import type { CanopyAgent } from '$lib/api/types';
+  import type { BizforgeAgent } from '$lib/api/types';
 
   interface Props {
     selected?: string;
@@ -11,7 +11,7 @@
 
   let { selected, onSelect }: Props = $props();
 
-  let agentList = $state<CanopyAgent[]>([]);
+  let agentList = $state<BizforgeAgent[]>([]);
   let isOpen = $state(false);
   let isLoading = $state(false);
   let containerEl = $state<HTMLDivElement | null>(null);

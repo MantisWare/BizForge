@@ -2,13 +2,13 @@
 <!-- 3D Virtual Office with Threlte (Three.js for Svelte) -->
 <script lang="ts">
   import { Canvas } from '@threlte/core';
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import Scene3D from './Scene3D.svelte';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     selectedAgentId?: string | null;
-    onAgentClick?: (agent: CanopyAgent) => void;
+    onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
   let { agents, selectedAgentId = null, onAgentClick }: Props = $props();

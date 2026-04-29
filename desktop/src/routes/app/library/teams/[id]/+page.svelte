@@ -57,7 +57,7 @@
 </script>
 
 <svelte:head>
-  <title>{team ? `${team.name} — Library — Canopy` : 'Team — Library — Canopy'}</title>
+  <title>{team ? `${team.name} — Library — Bizforge` : 'Team — Library — Bizforge'}</title>
 </svelte:head>
 
 <PageShell title={team?.name ?? 'Team'} subtitle={team ? team.size : undefined}>

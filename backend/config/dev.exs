@@ -3,11 +3,11 @@ import Config
 # Configure your database
 # NOTE: The username must match your local PostgreSQL role.
 # Override via PGUSER env var or edit directly for your machine.
-config :canopy, Canopy.Repo,
+config :bizforge, Bizforge.Repo,
   username: "mantis",
   password: "",
   hostname: "localhost",
-  database: "canopy_dev",
+  database: "bizforge_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -18,7 +18,7 @@ config :canopy, Canopy.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :canopy, CanopyWeb.Endpoint,
+config :bizforge, BizforgeWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 9089],
@@ -52,7 +52,7 @@ config :canopy, CanopyWeb.Endpoint,
 # different ports.
 
 # Enable dev routes for dashboard and mailbox
-config :canopy, dev_routes: true
+config :bizforge, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

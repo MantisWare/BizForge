@@ -10,7 +10,7 @@
     HierarchyTeamNode,
     HierarchyDepartmentNode,
     HierarchyDivisionNode,
-    CanopyAgent,
+    BizforgeAgent,
   } from '$api/types';
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@
 
   // ── Team members ─────────────────────────────────────────────────────────────
 
-  let teamMembers = $state<Map<string, CanopyAgent[]>>(new Map());
+  let teamMembers = $state<Map<string, BizforgeAgent[]>>(new Map());
   let loadingMembers = $state<string | null>(null);
 
   async function loadTeamMembers(teamId: string): Promise<void> {
@@ -228,7 +228,7 @@
     return k >= 1000 ? `$${(k / 1000).toFixed(0)}k/mo` : `$${k}/mo`;
   }
 
-  function agentInitials(agent: CanopyAgent): string {
+  function agentInitials(agent: BizforgeAgent): string {
     const name = agent.display_name || agent.name;
     return name.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
   }

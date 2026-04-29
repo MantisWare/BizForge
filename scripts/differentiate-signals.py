@@ -12,7 +12,7 @@ import sys
 import yaml
 from pathlib import Path
 
-AGENTS_DIR = Path("/Users/rhl/Desktop/MIOSA/code/canopy/library/agents")
+AGENTS_DIR = Path("/Users/rhl/Desktop/MIOSA/code/bizforge/library/agents")
 GENERIC_SIGNAL = 'S=(linguistic, spec, inform, markdown, structured)'
 
 # ── Signal Mappings by Agent ID/Name ────────────────────────────────────────

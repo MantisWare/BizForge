@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 generate-hierarchy.py
-Generates divisions, departments, and teams for the Canopy organizational hierarchy,
+Generates divisions, departments, and teams for the Bizforge organizational hierarchy,
 and normalizes frontmatter across all 168 agent files.
 
 Usage:
@@ -2011,7 +2011,7 @@ def normalize_agent(agent_path, agent_id, team_id, dept_id, div_id, manager, dry
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Canopy organizational hierarchy files")
+    parser = argparse.ArgumentParser(description="Generate Bizforge organizational hierarchy files")
     parser.add_argument("--dry-run", action="store_true", help="Print what would be created without writing")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()

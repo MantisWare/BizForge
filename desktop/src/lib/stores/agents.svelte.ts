@@ -1,6 +1,6 @@
 // src/lib/stores/agents.svelte.ts
 import type {
-  CanopyAgent,
+  BizforgeAgent,
   AgentStatus,
   AgentLifecycleAction,
   AgentCreateRequest,
@@ -12,9 +12,9 @@ import { agents as agentsApi } from "$api/client";
 import { toastStore } from "./toasts.svelte";
 
 class AgentsStore {
-  agents = $state<CanopyAgent[]>([]);
+  agents = $state<BizforgeAgent[]>([]);
   hierarchy = $state<HierarchyNode[]>([]);
-  selected = $state<CanopyAgent | null>(null);
+  selected = $state<BizforgeAgent | null>(null);
   loading = $state(false);
   error = $state<string | null>(null);
 
@@ -119,7 +119,7 @@ class AgentsStore {
     }
   }
 
-  async createAgent(data: AgentCreateRequest): Promise<CanopyAgent | null> {
+  async createAgent(data: AgentCreateRequest): Promise<BizforgeAgent | null> {
     this.loading = true;
     try {
       const created = await agentsApi.create(data);
@@ -197,11 +197,11 @@ class AgentsStore {
     }
   }
 
-  selectAgent(agent: CanopyAgent | null): void {
+  selectAgent(agent: BizforgeAgent | null): void {
     this.selected = agent;
   }
 
-  getById(id: string): CanopyAgent | null {
+  getById(id: string): BizforgeAgent | null {
     return this.agents.find((a) => a.id === id) ?? null;
   }
 
@@ -213,7 +213,7 @@ class AgentsStore {
     this.searchQuery = q;
   }
 
-  async fetchAgent(id: string): Promise<CanopyAgent | null> {
+  async fetchAgent(id: string): Promise<BizforgeAgent | null> {
     try {
       return await agentsApi.get(id);
     } catch (e) {

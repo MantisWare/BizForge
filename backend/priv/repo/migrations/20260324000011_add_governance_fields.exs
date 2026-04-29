@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddGovernanceFields do
+defmodule Bizforge.Repo.Migrations.AddGovernanceFields do
   use Ecto.Migration
 
   def change do

@@ -9,8 +9,8 @@ export interface ProviderCredentials {
 export async function getProviderCredentials(): Promise<ProviderCredentials | null> {
   if (!isTauri()) {
     // Browser fallback — read from localStorage
-    const slug = localStorage.getItem("canopy-provider-slug");
-    const key = slug ? localStorage.getItem(`canopy-provider-${slug}`) : null;
+    const slug = localStorage.getItem("bizforge-provider-slug");
+    const key = slug ? localStorage.getItem(`bizforge-provider-${slug}`) : null;
     if (slug && key) return { slug, apiKey: key };
     return null;
   }
@@ -28,8 +28,8 @@ export async function setProviderCredentials(
   creds: ProviderCredentials,
 ): Promise<void> {
   if (!isTauri()) {
-    localStorage.setItem("canopy-provider-slug", creds.slug);
-    localStorage.setItem(`canopy-provider-${creds.slug}`, creds.apiKey);
+    localStorage.setItem("bizforge-provider-slug", creds.slug);
+    localStorage.setItem(`bizforge-provider-${creds.slug}`, creds.apiKey);
     return;
   }
 
@@ -40,7 +40,7 @@ export async function setProviderCredentials(
     await store.save();
   } catch {
     // Fallback to localStorage
-    localStorage.setItem("canopy-provider-slug", creds.slug);
-    localStorage.setItem(`canopy-provider-${creds.slug}`, creds.apiKey);
+    localStorage.setItem("bizforge-provider-slug", creds.slug);
+    localStorage.setItem(`bizforge-provider-${creds.slug}`, creds.apiKey);
   }
 }

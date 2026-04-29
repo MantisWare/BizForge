@@ -1,4 +1,4 @@
-# Canopy Agent Hierarchy
+# Bizforge Agent Hierarchy
 ## 168 Agents · 5 Divisions · 16 Departments · 42 Teams
 ### Date: 2026-03-21
 ### Model: Beer VSM — each level is a viable system containing the next

@@ -1,4 +1,4 @@
-# The Canopy System Model
+# The Bizforge System Model
 
 > The workspace is not a stack of layers. It is a coordinate system.
 > Every piece of the system sits at a position across 4 dimensions:
@@ -12,7 +12,7 @@
 ## Why Not Layers
 
 Layers imply a stack — one thing on top of another, data flowing up and down.
-That model breaks for Canopy because:
+That model breaks for Bizforge because:
 
 - Memory is not "above" or "below" context loading — it feeds INTO loading
 - The three-space model (Self/Knowledge/Ops) cross-cuts everything
@@ -112,7 +112,7 @@ agent IS       agent CAN DO    agent KNOWS    agent is        agent
 | Value | Contains | Lifecycle | Old Model Mapping |
 |-------|---------|-----------|-------------------|
 | **Identity** | SYSTEM.md, company.yaml, agent self-definition, methodology, preferences | Permanent, slow change | Three-Space "Self" |
-| **Capability** | Agent definitions, skill definitions, workflows, engine config | Permanent, version-controlled | Canopy Layer |
+| **Capability** | Agent definitions, skill definitions, workflows, engine config | Permanent, version-controlled | Bizforge Layer |
 | **Knowledge** | Reference docs, semantic memory, entity graph, knowledge notes, data/ | Permanent, steady growth | Three-Space "Knowledge" + Memory "Semantic" |
 | **Operations** | Task queue, sessions, observations, inbox, health checks, logs | Temporal, flowing | Three-Space "Ops" + Memory "Working" + Memory "Episodic" |
 | **Product** | output/, src/, apps/, generated artifacts | Permanent, created by agents | Project Layer |
@@ -313,7 +313,7 @@ Agent reads Capability (skill) + Knowledge (reference)
     ↓
 Agent produces → Product (output/, src/, data/)
     ↓
-Agent logs → Operations (.canopy/tasks/, sessions/)
+Agent logs → Operations (.bizforge/tasks/, sessions/)
     ↓
 Human reviews → Product status: draft → approved
 ```
@@ -552,7 +552,7 @@ workspace/
 ├── data/                  Knowledge × Permanent × Searched × Agent
 ├── apps/                  Product × Permanent × Searched × Agent+Human
 │
-└── .canopy/               Operations × Session × Various × Agent/Derived
+└── .bizforge/               Operations × Session × Various × Agent/Derived
     ├── tasks/             Operations × Session × Always × Agent
     ├── sessions/          Operations × Session × On-Demand × Agent
     ├── observations/      Operations × Session→Perm × Searched × Agent
@@ -568,7 +568,7 @@ Each space can be independently deleted. The purge test validates separation:
 
 | Delete | Agent loses | Agent keeps | Can rebuild? |
 |--------|-----------|------------|-------------|
-| `.canopy/` | Task state, sessions, memory | Identity, capability, knowledge, product | Yes — boots fresh, rebuilds from files |
+| `.bizforge/` | Task state, sessions, memory | Identity, capability, knowledge, product | Yes — boots fresh, rebuilds from files |
 | `output/` + `src/` | All work product | Identity, capability, knowledge, operations | Yes — produces new output from same config |
 | `reference/` + `data/` | Domain knowledge | Identity, capability, operations, product | Partially — agent still works but has no reference material |
 | `agents/` + `skills/` | All capabilities | Identity, knowledge, operations, product | No — agent has identity but can't do anything |
@@ -608,14 +608,14 @@ Ask: what are its 4 coordinates?
 - Attention: **Searched** (checked during learning loop)
 - Authorship: **Agent** (captured during operation)
 - Space: **Operations** (ephemeral friction data)
-- **Answer**: `.canopy/observations/spelling.jsonl`
+- **Answer**: `.bizforge/observations/spelling.jsonl`
 
 **Example**: "Where does the agent's learned preference for using tables over bullet points go?"
 - Persistence: **Permanent** (survived enough observations)
 - Attention: **On-Demand** (loaded when generating output)
 - Authorship: **Derived** (synthesized by /rethink)
 - Space: **Capability** (it's procedural — "when X, do Y")
-- **Answer**: `.canopy/procedural/output-formatting.yaml` (or promoted to `self/preferences.md` after /rethink)
+- **Answer**: `.bizforge/procedural/output-formatting.yaml` (or promoted to `self/preferences.md` after /rethink)
 
 ---
 
@@ -628,7 +628,7 @@ This document supersedes the separate models. Each previous doc described one di
 | `tiered-loading.md` | L0/L1/L2 context management | **Attention** dimension | Still valid as implementation detail |
 | `memory-architecture.md` | Working/Episodic/Semantic/Procedural | **Persistence** + cross-dimension flow | Still valid as implementation detail |
 | `three-space-model.md` | Self/Knowledge/Ops + 6 failure modes | **Space** dimension (3 of 5 categories) | Subsumed — 5 spaces now, not 3 |
-| `project-layer.md` | Canopy Layer / Project Layer / .canopy | **Authorship** dimension | Subsumed — authorship is one of 4 dimensions |
+| `project-layer.md` | Bizforge Layer / Project Layer / .bizforge | **Authorship** dimension | Subsumed — authorship is one of 4 dimensions |
 
 The previous docs remain as **implementation guides** for their specific dimension.
 This document is the **system map** that shows how they all fit together.
@@ -637,7 +637,7 @@ This document is the **system map** that shows how they all fit together.
 
 ## The One-Sentence Version
 
-Every component in a Canopy workspace answers 4 questions:
+Every component in a Bizforge workspace answers 4 questions:
 **How long does it live? When does the agent see it? Who writes it? What kind of thing is it?**
 
 The filesystem encodes the answers. The engine reads the coordinates.

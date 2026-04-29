@@ -1,2 +1,2 @@
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Canopy.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(Bizforge.Repo, :manual)

@@ -1,6 +1,6 @@
-# Canopy Backend
+# Bizforge Backend
 
-> Elixir/Phoenix API server powering the Canopy workspace protocol.
+> Elixir/Phoenix API server powering the Bizforge workspace protocol.
 
 ## Quick Start
 
@@ -25,18 +25,18 @@ Database credentials are in `config/dev.exs`. The default username is `symac` â€
 
 | Module | Purpose |
 |--------|---------|
-| `Canopy.Heartbeat` | 9-step agent execution cycle |
-| `Canopy.BudgetEnforcer` | ETS-based budget enforcement |
-| `Canopy.Governance.Gate` | Approval gate plug |
-| `Canopy.Dispatch.Router` | Content-based adapter routing |
-| `Canopy.Sessions.Compactor` | Session summarization & handoff |
-| `Canopy.Workflows.Engine` | DAG workflow execution |
+| `Bizforge.Heartbeat` | 9-step agent execution cycle |
+| `Bizforge.BudgetEnforcer` | ETS-based budget enforcement |
+| `Bizforge.Governance.Gate` | Approval gate plug |
+| `Bizforge.Dispatch.Router` | Content-based adapter routing |
+| `Bizforge.Sessions.Compactor` | Session summarization & handoff |
+| `Bizforge.Workflows.Engine` | DAG workflow execution |
 
 ## Tests
 
 ```bash
 mix test                           # Run all tests
-mix test test/canopy/my_test.exs   # Run a specific test file
+mix test test/bizforge/my_test.exs   # Run a specific test file
 mix test --failed                  # Re-run failed tests
 ```
 

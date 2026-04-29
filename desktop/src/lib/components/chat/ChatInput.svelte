@@ -13,7 +13,7 @@
     disabled = false,
     onSend,
     onCancel,
-    placeholder = 'Message Canopy…',
+    placeholder = 'Message Bizforge…',
     isStreaming = false,
   }: Props = $props();
 

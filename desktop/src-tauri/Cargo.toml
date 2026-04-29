@@ -1,12 +1,12 @@
 [package]
-name = "canopy"
+name = "bizforge"
 version = "0.1.0"
-description = "Canopy Command Center"
+description = "Bizforge Command Center"
 authors = ["MIOSA"]
 edition = "2021"
 
 [lib]
-name = "canopy_lib"
+name = "bizforge_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

@@ -34,7 +34,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'canopy-settings.json';
+    a.download = 'bizforge-settings.json';
     a.click();
     URL.revokeObjectURL(url);
     toastStore.success('Settings exported');

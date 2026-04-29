@@ -7,19 +7,19 @@
 # General application configuration
 import Config
 
-config :canopy,
-  ecto_repos: [Canopy.Repo],
+config :bizforge,
+  ecto_repos: [Bizforge.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
-config :canopy, CanopyWeb.Endpoint,
+config :bizforge, BizforgeWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [json: CanopyWeb.ErrorJSON],
+    formats: [json: BizforgeWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Canopy.PubSub,
+  pubsub_server: Bizforge.PubSub,
   live_view: [signing_salt: "vRCERO/F"]
 
 # Configure Elixir's Logger
@@ -36,12 +36,12 @@ config :mime, :types, %{
 config :phoenix, :json_library, Jason
 
 # Guardian JWT config
-config :canopy, Canopy.Guardian,
-  issuer: "canopy",
+config :bizforge, Bizforge.Guardian,
+  issuer: "bizforge",
   secret_key: "dev-secret-key-change-in-production"
 
 # Quantum scheduler — jobs loaded from DB at runtime
-config :canopy, Canopy.Scheduler, jobs: []
+config :bizforge, Bizforge.Scheduler, jobs: []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

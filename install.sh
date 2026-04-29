@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Canopy Installer ─────────────────────────────────────────────────────────
+# ── Bizforge Installer ─────────────────────────────────────────────────────────
 #
-# One command to install and launch Canopy:
+# One command to install and launch Bizforge:
 #
-#   curl -fsSL https://raw.githubusercontent.com/Miosa-osa/canopy/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/MantisWare/BizForge/main/install.sh | bash
 #
 # Or if you already cloned:
 #
@@ -27,8 +27,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-REPO="Miosa-osa/canopy"
-INSTALL_DIR="${CANOPY_HOME:-$HOME/.canopy-app}"
+REPO="MantisWare/BizForge"
+INSTALL_DIR="${BIZFORGE_HOME:-$HOME/.bizforge-app}"
 
 # ── Platform Detection ───────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ install_pkg() {
 echo ""
 echo -e "${BLUE}${BOLD}"
 echo "   ╔══════════════════════════════════════╗"
-echo "   ║         Canopy Command Center        ║"
+echo "   ║         Bizforge Command Center        ║"
 echo "   ║     Your AI team, one command away   ║"
 echo "   ╚══════════════════════════════════════╝"
 echo -e "${NC}"
@@ -145,37 +145,37 @@ fi
 
 step "2/5  Getting the code..."
 
-# Check if we're already in a canopy repo
-if [ -f "mix.exs" ] && grep -q "canopy" "mix.exs" 2>/dev/null; then
-  CANOPY_DIR="$(pwd)"
-  ok "Already in Canopy directory"
+# Check if we're already in a bizforge repo
+if [ -f "mix.exs" ] && grep -q "bizforge" "mix.exs" 2>/dev/null; then
+  BIZFORGE_DIR="$(pwd)"
+  ok "Already in Bizforge directory"
 elif [ -f "backend/mix.exs" ] && [ -d "desktop" ]; then
-  CANOPY_DIR="$(pwd)"
-  ok "Already in Canopy directory"
+  BIZFORGE_DIR="$(pwd)"
+  ok "Already in Bizforge directory"
 elif [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/backend/mix.exs" ]; then
-  CANOPY_DIR="$INSTALL_DIR"
-  ok "Found existing install at $CANOPY_DIR"
+  BIZFORGE_DIR="$INSTALL_DIR"
+  ok "Found existing install at $BIZFORGE_DIR"
 else
   echo -e "  ${DIM}Cloning to $INSTALL_DIR...${NC}"
   git clone --depth 1 "https://github.com/$REPO.git" "$INSTALL_DIR"
-  CANOPY_DIR="$INSTALL_DIR"
-  ok "Cloned to $CANOPY_DIR"
+  BIZFORGE_DIR="$INSTALL_DIR"
+  ok "Cloned to $BIZFORGE_DIR"
 fi
 
-cd "$CANOPY_DIR"
+cd "$BIZFORGE_DIR"
 
 # ── Step 3: Database Setup ───────────────────────────────────────────────────
 
 step "3/5  Setting up database..."
 
-# Check if canopy_dev database exists
-if psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw canopy_dev; then
-  ok "Database canopy_dev already exists"
+# Check if bizforge_dev database exists
+if psql -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw bizforge_dev; then
+  ok "Database bizforge_dev already exists"
 else
   echo -e "  ${DIM}Creating database...${NC}"
   (cd backend && mix ecto.create 2>/dev/null) || {
     # If mix ecto.create fails, try createdb directly
-    createdb canopy_dev 2>/dev/null || warn "Could not create database — you may need to configure PostgreSQL"
+    createdb bizforge_dev 2>/dev/null || warn "Could not create database — you may need to configure PostgreSQL"
   }
   ok "Database created"
 fi
@@ -210,13 +210,13 @@ ok "Desktop dependencies ready"
 
 # ── Step 5: Launch ───────────────────────────────────────────────────────────
 
-step "5/5  Launching Canopy..."
+step "5/5  Launching Bizforge..."
 
 echo ""
 echo -e "${GREEN}${BOLD}  Setup complete!${NC}"
 echo ""
-echo -e "  ${BOLD}To start Canopy:${NC}"
-echo -e "    cd $CANOPY_DIR"
+echo -e "  ${BOLD}To start Bizforge:${NC}"
+echo -e "    cd $BIZFORGE_DIR"
 echo -e "    make dev          ${DIM}# browser mode${NC}"
 echo -e "    make app          ${DIM}# native desktop app${NC}"
 echo ""

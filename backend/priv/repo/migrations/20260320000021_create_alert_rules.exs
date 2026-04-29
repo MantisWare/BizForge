@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateAlertRules do
+defmodule Bizforge.Repo.Migrations.CreateAlertRules do
   use Ecto.Migration
 
   def change do

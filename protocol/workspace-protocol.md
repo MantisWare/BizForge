@@ -25,7 +25,7 @@ Any workspace that follows this protocol can be operated by any agent:
 ```
 workspace/
 │
-│  ── CANOPY LAYER (workspace config) ──────────────────────────
+│  ── BIZFORGE LAYER (workspace config) ──────────────────────────
 │  The agent's brain. Identity, capabilities, knowledge, rules.
 │  This is ROM — persistent, transferable, version-controlled.
 │
@@ -62,7 +62,7 @@ workspace/
 │   └── ...
 ├── apps/                  ← Applications the workspace builds/manages
 │   └── {app-name}/
-└── .canopy/               ← Runtime state (task queue, sessions, observations)
+└── .bizforge/               ← Runtime state (task queue, sessions, observations)
     ├── tasks/
     ├── sessions/
     └── observations/
@@ -72,7 +72,7 @@ workspace/
 
 Every workspace has two distinct layers:
 
-**Canopy Layer** — The workspace configuration. SYSTEM.md, agents, skills, reference,
+**Bizforge Layer** — The workspace configuration. SYSTEM.md, agents, skills, reference,
 workflows, specs, engine. This is what makes a generic agent into a specialist. It's
 the ROM — persistent knowledge that doesn't change during execution. You version control
 this. You distribute this. This IS the product.
@@ -82,15 +82,15 @@ This is what the agents actually BUILD when they operate. A dev-shop workspace h
 `src/` directory with the app it's building. A content-factory has an `output/` directory
 with published articles. A sales-engine has `data/` with pipeline exports.
 
-The `.canopy/` directory holds runtime state — task queues, active sessions, accumulated
+The `.bizforge/` directory holds runtime state — task queues, active sessions, accumulated
 observations. It's ephemeral. You can delete it and the workspace still works (agents
 just lose their in-progress state).
 
 **Why the separation matters:**
-- You can ship the Canopy Layer without the Project Layer (that's what the marketplace does)
-- You can swap the Canopy Layer on an existing project (re-specialize without losing work)
+- You can ship the Bizforge Layer without the Project Layer (that's what the marketplace does)
+- You can swap the Bizforge Layer on an existing project (re-specialize without losing work)
 - Agents know which files are "instructions" vs "work product" — no conflation
-- Git ignores `.canopy/` by default (runtime state shouldn't be committed)
+- Git ignores `.bizforge/` by default (runtime state shouldn't be committed)
 
 ### SYSTEM.md — The Brain Transplant
 
@@ -471,7 +471,7 @@ The directory layout — `agents/`, `skills/`, `teams/`, `reference/` — IS the
 SYSTEM.md IS Beer's System 5 (Policy). It carries the identity and boot rules that constrain everything downstream — the first signal a runtime decodes when entering a workspace. Nothing in the workspace overrides it.
 
 **Most relevant governing principles:**
-- **Beer (viable structure at every scale)** — The two-layer separation (Canopy / Project) ensures structural coherence: instructions and work product never conflate, and the workspace remains viable at every size from micro to enterprise.
+- **Beer (viable structure at every scale)** — The two-layer separation (Bizforge / Project) ensures structural coherence: instructions and work product never conflate, and the workspace remains viable at every size from micro to enterprise.
 - **Shannon (progressive loading prevents context overflow)** — Reference files, agents, and skills are loaded on-demand from the data layer, not injected wholesale at boot. This respects channel capacity limits.
 
 See `architecture/optimal-system-mapping.md` for the canonical layer mapping.

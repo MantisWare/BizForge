@@ -1,21 +1,21 @@
 <!-- src/lib/components/office/VirtualOffice.svelte -->
 <!-- Container: switches Pixel / 3D mode, renders detail panel -->
 <script lang="ts">
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import PixelOffice from './pixel/PixelOffice.svelte';
   import Office3D from './Office3D.svelte';
   import OfficeDetailPanel from './OfficeDetailPanel.svelte';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     viewMode?: '2d' | '3d';
     onViewModeChange?: (mode: '2d' | '3d') => void;
   }
 
   let { agents, viewMode = '2d', onViewModeChange }: Props = $props();
-  let selectedAgent = $state<CanopyAgent | null>(null);
+  let selectedAgent = $state<BizforgeAgent | null>(null);
 
-  function handleAgentClick(agent: CanopyAgent) {
+  function handleAgentClick(agent: BizforgeAgent) {
     selectedAgent = selectedAgent?.id === agent.id ? null : agent;
   }
 

@@ -84,7 +84,7 @@ governance:
 
 ## Budget Ledger
 
-All payments are logged to `.canopy/budget-ledger.jsonl` (append-only):
+All payments are logged to `.bizforge/budget-ledger.jsonl` (append-only):
 
 ```jsonl
 {"ts":"2026-03-20T14:32:00Z","agent":"prospector","amount":0.50,"to":"browserbase","task":"task-042"}

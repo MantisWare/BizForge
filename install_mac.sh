@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Canopy macOS Installer ──────────────────────────────────────────────────
+# ── Bizforge macOS Installer ──────────────────────────────────────────────────
 #
 # macOS-specific installer that handles:
 #   - Homebrew keg-only formulas (postgresql@15/16 PATH issues)
@@ -105,7 +105,7 @@ find_postgres() {
 printf "\n"
 printf "${BLUE}${BOLD}"
 printf "   ╔══════════════════════════════════════╗\n"
-printf "   ║      Canopy Command Center (macOS)   ║\n"
+printf "   ║      Bizforge Command Center (macOS)   ║\n"
 printf "   ║     Your AI team, one command away   ║\n"
 printf "   ╚══════════════════════════════════════╝\n"
 printf "${NC}\n"
@@ -269,25 +269,25 @@ fi
 step "2/6  Locating project..."
 
 if [[ -f "backend/mix.exs" ]] && [[ -d "desktop" ]]; then
-  CANOPY_DIR="$(pwd)"
-  ok "Already in Canopy directory: ${CANOPY_DIR}"
-elif [[ -f "mix.exs" ]] && grep -q "canopy" "mix.exs" 2>/dev/null; then
-  CANOPY_DIR="$(pwd)"
-  ok "Already in Canopy directory: ${CANOPY_DIR}"
+  BIZFORGE_DIR="$(pwd)"
+  ok "Already in Bizforge directory: ${BIZFORGE_DIR}"
+elif [[ -f "mix.exs" ]] && grep -q "bizforge" "mix.exs" 2>/dev/null; then
+  BIZFORGE_DIR="$(pwd)"
+  ok "Already in Bizforge directory: ${BIZFORGE_DIR}"
 else
-  INSTALL_DIR="${CANOPY_HOME:-$HOME/.canopy-app}"
+  INSTALL_DIR="${BIZFORGE_HOME:-$HOME/.bizforge-app}"
   if [[ -d "$INSTALL_DIR" ]] && [[ -f "$INSTALL_DIR/backend/mix.exs" ]]; then
-    CANOPY_DIR="$INSTALL_DIR"
-    ok "Found existing install at ${CANOPY_DIR}"
+    BIZFORGE_DIR="$INSTALL_DIR"
+    ok "Found existing install at ${BIZFORGE_DIR}"
   else
     dim "Cloning to ${INSTALL_DIR}..."
-    git clone --depth 1 "https://github.com/Miosa-osa/canopy.git" "$INSTALL_DIR"
-    CANOPY_DIR="$INSTALL_DIR"
-    ok "Cloned to ${CANOPY_DIR}"
+    git clone --depth 1 "https://github.com/MantisWare/BizForge.git" "$INSTALL_DIR"
+    BIZFORGE_DIR="$INSTALL_DIR"
+    ok "Cloned to ${BIZFORGE_DIR}"
   fi
 fi
 
-cd "$CANOPY_DIR"
+cd "$BIZFORGE_DIR"
 
 # ── Step 3: Configure PostgreSQL User ───────────────────────────────────────
 
@@ -329,12 +329,12 @@ fi
 
 step "4/6  Setting up database..."
 
-if "${PG_BIN}/psql" -U "$CURRENT_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw canopy_dev; then
-  ok "Database canopy_dev already exists"
+if "${PG_BIN}/psql" -U "$CURRENT_USER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw bizforge_dev; then
+  ok "Database bizforge_dev already exists"
 else
-  dim "Creating database canopy_dev..."
+  dim "Creating database bizforge_dev..."
   (cd backend && mix ecto.create 2>&1) && ok "Database created" || {
-    "${PG_BIN}/createdb" -U "$CURRENT_USER" canopy_dev 2>/dev/null && ok "Database created via createdb" || {
+    "${PG_BIN}/createdb" -U "$CURRENT_USER" bizforge_dev 2>/dev/null && ok "Database created via createdb" || {
       fail "Could not create database — check PostgreSQL configuration"
       exit 1
     }
@@ -370,7 +370,7 @@ ok "Desktop dependencies ready"
 step "6/6  Ready!"
 
 printf "\n"
-printf "${GREEN}${BOLD}  Canopy setup complete!${NC}\n"
+printf "${GREEN}${BOLD}  Bizforge setup complete!${NC}\n"
 printf "\n"
 printf "  ${DIM}──────────────────────────────────────────${NC}\n"
 printf "  ${BOLD}System:${NC}     macOS %s (%s)\n" "$(sw_vers -productVersion)" "$(uname -m)"
@@ -379,7 +379,7 @@ printf "  ${BOLD}Elixir:${NC}     %s\n" "$(elixir --version 2>/dev/null | grep -
 printf "  ${BOLD}PostgreSQL:${NC} @%s (%s)\n" "${PG_VERSION}" "$("${PG_BIN}/pg_isready" 2>/dev/null | tail -1)"
 printf "  ${BOLD}Rust:${NC}       %s\n" "$(rustc --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo 'not installed')"
 printf "  ${BOLD}DB User:${NC}    %s\n" "${CURRENT_USER}"
-printf "  ${BOLD}Project:${NC}    %s\n" "${CANOPY_DIR}"
+printf "  ${BOLD}Project:${NC}    %s\n" "${BIZFORGE_DIR}"
 printf "  ${DIM}──────────────────────────────────────────${NC}\n"
 printf "\n"
 printf "  ${BOLD}Commands:${NC}\n"
@@ -399,7 +399,7 @@ if $NO_LAUNCH; then
   exit 0
 fi
 
-printf "  ${BOLD}Launching Canopy...${NC}\n"
+printf "  ${BOLD}Launching Bizforge...${NC}\n"
 printf "\n"
 
 if has just; then

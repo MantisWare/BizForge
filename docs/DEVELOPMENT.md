@@ -1,6 +1,6 @@
-# Canopy — Development Guide (macOS)
+# Bizforge — Development Guide (macOS)
 
-> Complete setup, architecture reference, and day-to-day workflow for developing Canopy on macOS.
+> Complete setup, architecture reference, and day-to-day workflow for developing Bizforge on macOS.
 
 ---
 
@@ -80,7 +80,7 @@ This macOS-specific script:
 From anywhere on your machine (also works via curl for first-time setup):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Miosa-osa/canopy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MantisWare/BizForge/main/install.sh | bash
 ```
 
 > **Note:** The cross-platform `install.sh` may not correctly detect keg-only Homebrew formulas
@@ -90,8 +90,8 @@ curl -fsSL https://raw.githubusercontent.com/Miosa-osa/canopy/main/install.sh | 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Miosa-osa/canopy.git
-cd canopy
+git clone https://github.com/MantisWare/BizForge.git
+cd bizforge
 
 # 2. Install just (command runner)
 brew install just
@@ -119,7 +119,7 @@ export PGUSER=your_username
 2. Or edit `backend/config/dev.exs` directly:
 
 ```elixir
-config :canopy, Canopy.Repo,
+config :bizforge, Bizforge.Repo,
   username: "your_username",
   ...
 ```
@@ -133,7 +133,7 @@ The backend reads environment variables from a `.env` file at the **project root
 ### Required (production / runtime)
 
 ```bash
-DATABASE_URL=postgres://localhost/canopy_dev
+DATABASE_URL=postgres://localhost/bizforge_dev
 SECRET_KEY_BASE=...         # Generate with: mix phx.gen.secret
 GUARDIAN_SECRET_KEY=...     # Generate with: mix guardian.gen.secret
 ```
@@ -209,15 +209,15 @@ just restart-desktop   # Restart desktop without touching backend
 ## Project Layout
 
 ```
-canopy/
+bizforge/
 │
 │  ── Core Application ──────────────────────────────────────────────
 │
 ├── backend/                    Elixir/Phoenix API server
 │   ├── config/                 Environment configs (dev, test, prod, runtime)
 │   ├── lib/
-│   │   ├── canopy/             Business logic, schemas, contexts
-│   │   └── canopy_web/         Controllers, plugs, router, channels
+│   │   ├── bizforge/             Business logic, schemas, contexts
+│   │   └── bizforge_web/         Controllers, plugs, router, channels
 │   ├── priv/
 │   │   └── repo/
 │   │       ├── migrations/     67 Ecto migrations
@@ -256,7 +256,7 @@ canopy/
 │  ── Workspace Protocol ────────────────────────────────────────────
 │
 ├── SYSTEM.md                   Meta-system entry point (factory identity)
-├── .canopy/                    Runtime workspace state
+├── .bizforge/                    Runtime workspace state
 │   ├── workspace.yaml          Workspace configuration
 │   ├── agents/                 Active agent definitions
 │   ├── projects/               Active project configs
@@ -362,7 +362,7 @@ canopy/
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                        Canopy Architecture                           │
+│                        Bizforge Architecture                           │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │   ┌─────────────────────────────────────────────────────────┐       │
@@ -405,7 +405,7 @@ canopy/
 │                                │                                     │
 │   ┌────────────────────────────┴────────────────────────────┐       │
 │   │  PostgreSQL                                              │       │
-│   │  67 migrations  ──  56 schemas  ──  canopy_dev database │       │
+│   │  67 migrations  ──  56 schemas  ──  bizforge_dev database │       │
 │   └─────────────────────────────────────────────────────────┘       │
 │                                                                      │
 │   ┌─────────────────────────────────────────────────────────┐       │
@@ -488,25 +488,25 @@ The app uses SvelteKit's file-based routing. The root layout disables SSR (`ssr 
 
 | Module | Responsibility |
 |--------|---------------|
-| `Canopy.Heartbeat` | 9-step agent execution cycle with Quantum scheduling |
-| `Canopy.BudgetEnforcer` | ETS atomic counters, 5-level cascade, hard stop at 100% |
-| `Canopy.Governance.Gate` | Plug-based approval enforcement (spawn, delete, budget, strategy) |
-| `Canopy.Governance.Executor` | Replays approved actions automatically |
-| `Canopy.Dispatch.Router` | Content-based adapter routing (label + regex matching) |
-| `Canopy.Dispatch.Delegation` | Subtask creation with adapter-aware agent selection |
-| `Canopy.Sessions.Compactor` | Session summarization, handoff generation, context injection |
-| `Canopy.Sessions.Chain` | Linked session chains with cumulative token tracking |
-| `Canopy.Workflows.Engine` | DAG workflow execution with topological sort and retry |
-| `Canopy.Workflows.Scheduler` | Cron-based workflow triggering |
-| `Canopy.Notifications.Dispatcher` | Multi-channel notification broadcasting |
-| `Canopy.EventBus` | Phoenix PubSub topic management |
-| `Canopy.IssueDispatcher` | Task assignment with priority queue and team routing |
+| `Bizforge.Heartbeat` | 9-step agent execution cycle with Quantum scheduling |
+| `Bizforge.BudgetEnforcer` | ETS atomic counters, 5-level cascade, hard stop at 100% |
+| `Bizforge.Governance.Gate` | Plug-based approval enforcement (spawn, delete, budget, strategy) |
+| `Bizforge.Governance.Executor` | Replays approved actions automatically |
+| `Bizforge.Dispatch.Router` | Content-based adapter routing (label + regex matching) |
+| `Bizforge.Dispatch.Delegation` | Subtask creation with adapter-aware agent selection |
+| `Bizforge.Sessions.Compactor` | Session summarization, handoff generation, context injection |
+| `Bizforge.Sessions.Chain` | Linked session chains with cumulative token tracking |
+| `Bizforge.Workflows.Engine` | DAG workflow execution with topological sort and retry |
+| `Bizforge.Workflows.Scheduler` | Cron-based workflow triggering |
+| `Bizforge.Notifications.Dispatcher` | Multi-channel notification broadcasting |
+| `Bizforge.EventBus` | Phoenix PubSub topic management |
+| `Bizforge.IssueDispatcher` | Task assignment with priority queue and team routing |
 
 ### Database
 
 - **67 migrations** defining the schema evolution
 - **56 Ecto schemas** modeling agents, sessions, tasks, budgets, workflows, organizations, and more
-- Default dev database: `canopy_dev`
+- Default dev database: `bizforge_dev`
 
 ### Config Files
 
@@ -576,10 +576,10 @@ just clean              # Stop services + remove all build artifacts
 ### Adding a new backend feature
 
 1. Generate a migration: `just db-gen add_my_table`
-2. Define the schema in `lib/canopy/`
+2. Define the schema in `lib/bizforge/`
 3. Create the context module
-4. Add the controller in `lib/canopy_web/controllers/`
-5. Add the route in `lib/canopy_web/router.ex`
+4. Add the controller in `lib/bizforge_web/controllers/`
+5. Add the route in `lib/bizforge_web/router.ex`
 6. Run the migration: `just db-migrate`
 7. Write tests in `backend/test/`
 
@@ -599,7 +599,7 @@ just clean              # Stop services + remove all build artifacts
 just test-backend
 
 # Specific backend test file
-just test-backend test/canopy/my_test.exs
+just test-backend test/bizforge/my_test.exs
 
 # Desktop only
 just test-desktop

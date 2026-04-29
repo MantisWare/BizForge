@@ -60,7 +60,7 @@
 </script>
 
 <svelte:head>
-  <title>{company ? `${company.name} — Library — Canopy` : 'Company — Library — Canopy'}</title>
+  <title>{company ? `${company.name} — Library — Bizforge` : 'Company — Library — Bizforge'}</title>
 </svelte:head>
 
 <PageShell title={company?.name ?? 'Company'} subtitle={company ? company.category : undefined}>

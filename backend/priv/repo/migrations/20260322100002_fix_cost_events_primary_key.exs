@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.FixCostEventsPrimaryKey do
+defmodule Bizforge.Repo.Migrations.FixCostEventsPrimaryKey do
   use Ecto.Migration
 
   def up do

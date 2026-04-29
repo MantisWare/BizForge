@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateAttachments do
+defmodule Bizforge.Repo.Migrations.CreateAttachments do
   use Ecto.Migration
 
   def change do

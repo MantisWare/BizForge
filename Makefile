@@ -1,4 +1,4 @@
-# Canopy — Makefile (passthrough to just)
+# Bizforge — Makefile (passthrough to just)
 #
 # This project uses 'just' as its command runner.
 # Install: brew install just

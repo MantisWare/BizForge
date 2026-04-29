@@ -1,7 +1,7 @@
-# Canopy Command Center
+# Bizforge Command Center
 
 <p align="center">
-  <img src="static/canopy-screenshot.png" alt="Canopy Command Center — Virtual Office" width="100%">
+  <img src="static/bizforge-screenshot.png" alt="Bizforge Command Center — Virtual Office" width="100%">
 </p>
 
 Native desktop command center for AI agent teams. Hire agents, watch them work in a virtual office, monitor costs, and manage everything from one app.
@@ -41,13 +41,13 @@ npm run tauri:dev
 
 # Option 3: Production build
 npm run tauri:build
-# macOS: src-tauri/target/release/bundle/macos/Canopy.app
+# macOS: src-tauri/target/release/bundle/macos/Bizforge.app
 # Linux: src-tauri/target/release/bundle/appimage/
 ```
 
 ## Adapters
 
-Canopy connects to AI backends through **adapters**. The app auto-detects installed adapters and provides setup wizards for each.
+Bizforge connects to AI backends through **adapters**. The app auto-detects installed adapters and provides setup wizards for each.
 
 | Adapter | Type | Install |
 |---------|------|---------|
@@ -71,7 +71,7 @@ OSA is the primary adapter. The app includes a full setup assistant (Settings > 
 
 ### Backend (Optional)
 
-The app works standalone with mock data. To connect to the Canopy Phoenix backend:
+The app works standalone with mock data. To connect to the Bizforge Phoenix backend:
 
 ```bash
 cd ../backend
@@ -82,7 +82,7 @@ mix phx.server  # Runs on port 9089
 
 First launch walks through:
 
-1. **Welcome** — get started or import an existing `.canopy/` workspace
+1. **Welcome** — get started or import an existing `.bizforge/` workspace
 2. **Provider** — pick your LLM provider (Anthropic, OpenAI, Ollama, etc.) and enter API key
 3. **Adapter** — select which agent backend to use
 4. **Workspace** — name your workspace and set the directory
@@ -143,4 +143,4 @@ src-tauri/                   # Rust native shell
 - **Adapters**: Pluggable AI backends via Tauri IPC (binary detection + TCP health checks)
 - **Security**: Provider keys in OS keychain (Tauri secure store), no plaintext storage
 - **Design**: Glassmorphic dark theme with [Foundation](https://github.com/Miosa-osa/foundation) design system tokens
-- **Workspace**: `.canopy/` directory protocol for portable agent/team/schedule definitions
+- **Workspace**: `.bizforge/` directory protocol for portable agent/team/schedule definitions

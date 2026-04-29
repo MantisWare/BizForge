@@ -233,7 +233,7 @@
           <!-- Fallback: group by config.division when no tree data -->
           {:else}
             {@const grouped = (() => {
-              const groups = new Map<string, import('$api/types').CanopyAgent[]>();
+              const groups = new Map<string, import('$api/types').BizforgeAgent[]>();
               for (const agent of agentsStore.agents) {
                 const div = (agent.config?.division as string) || 'general';
                 const list = groups.get(div) ?? [];

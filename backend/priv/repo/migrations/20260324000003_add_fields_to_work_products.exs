@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddFieldsToWorkProducts do
+defmodule Bizforge.Repo.Migrations.AddFieldsToWorkProducts do
   use Ecto.Migration
 
   def change do

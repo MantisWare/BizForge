@@ -1,4 +1,4 @@
-# Known Issues — Canopy Platform
+# Known Issues — Bizforge Platform
 
 > All issues discovered and documented during PR #3 and PR #4 by Saeed.
 > Last updated: 2026-03-22
@@ -145,7 +145,7 @@ Across two pull requests (71 files changed, +2558/-815 lines), the following cat
 
 #### F-05: Workspace scan failure is silent
 - **File**: `stores/workspace.svelte.ts:147-190`
-- **Problem**: If `.canopy/` directory doesn't exist at the workspace path, scan returns null and agents appear to load but don't. No error message shown.
+- **Problem**: If `.bizforge/` directory doesn't exist at the workspace path, scan returns null and agents appear to load but don't. No error message shown.
 
 #### F-06: Offline queue is not persisted
 - **File**: `stores/connection.svelte.ts`, `api/client.ts`
@@ -163,7 +163,7 @@ Across two pull requests (71 files changed, +2558/-815 lines), the following cat
 
 #### T-01: Filesystem watcher threads leak on workspace switch
 - **File**: `src-tauri/src/filesystem.rs:152-177`
-- **Problem**: Each call to `watch_canopy_dir()` spawns a new thread with a new `RecommendedWatcher`. No mechanism to stop previous watchers. Multiple watchers accumulate over workspace switches.
+- **Problem**: Each call to `watch_bizforge_dir()` spawns a new thread with a new `RecommendedWatcher`. No mechanism to stop previous watchers. Multiple watchers accumulate over workspace switches.
 - **Fix needed**: Store watcher handle in app state, cancel previous watcher before creating new one.
 
 #### T-02: Provider API keys stored unencrypted

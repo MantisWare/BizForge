@@ -3,13 +3,13 @@
 <script lang="ts">
   import { T } from '@threlte/core';
   import { OrbitControls, Text, Float } from '@threlte/extras';
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import AgentDesk3D from './AgentDesk3D.svelte';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     selectedAgentId?: string | null;
-    onAgentClick?: (agent: CanopyAgent) => void;
+    onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
   let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
@@ -24,7 +24,7 @@
   }
 
   // Map agent to 3D position on a 4x3 grid
-  function agentPosition(agent: CanopyAgent): [number, number, number] {
+  function agentPosition(agent: BizforgeAgent): [number, number, number] {
     const hash = djb2(agent.id);
     const col = (hash % 4);
     const row = Math.floor((hash % 12) / 4);

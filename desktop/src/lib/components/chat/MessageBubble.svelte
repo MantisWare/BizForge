@@ -78,7 +78,7 @@
   class:mb-wrap--user={isUser}
   class:mb-wrap--assistant={isAssistant}
   role="article"
-  aria-label="{isUser ? 'Your' : 'Canopy'} message"
+  aria-label="{isUser ? 'Your' : 'Bizforge'} message"
 >
   {#if isAssistant}
     <!-- Avatar -->
@@ -91,7 +91,7 @@
 
   <div class="mb-content">
     {#if isAssistant}
-      <p class="mb-author">Canopy</p>
+      <p class="mb-author">Bizforge</p>
     {/if}
 
     <!-- Thinking block (live during streaming, or from message) -->

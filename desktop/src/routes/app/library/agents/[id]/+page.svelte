@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-  <title>{agent ? `${agent.name} — Library — Canopy` : 'Agent — Library — Canopy'}</title>
+  <title>{agent ? `${agent.name} — Library — Bizforge` : 'Agent — Library — Bizforge'}</title>
 </svelte:head>
 
 <PageShell title={agent?.name ?? 'Agent'} subtitle={agent ? agent.category : undefined}>

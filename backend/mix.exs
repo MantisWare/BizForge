@@ -1,9 +1,9 @@
-defmodule Canopy.MixProject do
+defmodule Bizforge.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :canopy,
+      app: :bizforge,
       version: "0.1.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -19,7 +19,7 @@ defmodule Canopy.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {Canopy.Application, []},
+      mod: {Bizforge.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end

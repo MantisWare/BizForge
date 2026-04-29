@@ -1,6 +1,6 @@
 # Engine Reference Architecture
 
-> How to build the engine underneath a Canopy workspace. This is the reference
+> How to build the engine underneath a Bizforge workspace. This is the reference
 > implementation based on OptimalOS — 35+ modules, 23 CLI commands, 269 contexts,
 > 416 entities, 1045 edges. Built in Elixir/OTP, but the patterns apply to any
 > language.

@@ -1,14 +1,14 @@
 <!-- src/lib/components/office/AgentAvatar.svelte -->
 <!-- SVG avatar component for a single agent in the 2D office view -->
 <script lang="ts">
-  import type { CanopyAgent, AgentStatus } from '$api/types';
+  import type { BizforgeAgent, AgentStatus } from '$api/types';
 
   interface Props {
-    agent: CanopyAgent;
+    agent: BizforgeAgent;
     x: number;
     y: number;
     selected?: boolean;
-    onclick?: (agent: CanopyAgent) => void;
+    onclick?: (agent: BizforgeAgent) => void;
   }
 
   let { agent, x, y, selected = false, onclick }: Props = $props();

@@ -14,7 +14,7 @@
   );
 
   const agentName = $derived(
-    chatStore.currentSession?.agent_name ?? 'Canopy'
+    chatStore.currentSession?.agent_name ?? 'Bizforge'
   );
 
   async function newSession(): Promise<void> {

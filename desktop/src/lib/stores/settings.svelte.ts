@@ -11,7 +11,7 @@ class SettingsStore {
     auto_approve_budget_under_cents: 500,
     default_adapter:
       (typeof localStorage !== "undefined"
-        ? (localStorage.getItem("canopy-default-adapter") as AdapterType)
+        ? (localStorage.getItem("bizforge-default-adapter") as AdapterType)
         : null) ?? ("osa" as AdapterType),
     default_model: "claude-sonnet-4-6",
     working_directory: "",

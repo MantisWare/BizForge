@@ -23,9 +23,9 @@
     lastAutoPath = p;
     const parts = p.split('/');
     const last = parts[parts.length - 1];
-    if (last && last !== '~' && last !== '.canopy') {
+    if (last && last !== '~' && last !== '.bizforge') {
       workspaceName = last.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    } else if (p.includes('.canopy') || p === '~/.canopy') {
+    } else if (p.includes('.bizforge') || p === '~/.bizforge') {
       workspaceName = 'My Workspace';
     }
   });
@@ -65,7 +65,7 @@
         id="ob-path"
         class="ob-input ob-input--path"
         type="text"
-        placeholder="~/.canopy"
+        placeholder="~/.bizforge"
         bind:value={workspacePath}
       />
       <button class="ob-btn ob-btn--secondary ob-btn--sm" onclick={choosePath}>
@@ -99,8 +99,8 @@
 
   <div class="ob-tree-wrap">
     <p class="ob-label">WILL CREATE</p>
-    <pre class="ob-tree">{dirBaseName(workspacePath) || '.canopy'}/
-├── .canopy/
+    <pre class="ob-tree">{dirBaseName(workspacePath) || '.bizforge'}/
+├── .bizforge/
 │   ├── workspace.json
 │   ├── agents/
 │   │   └── (agent configs)

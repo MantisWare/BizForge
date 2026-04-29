@@ -1,5 +1,5 @@
 // src/lib/stores/chat.svelte.ts
-// Canopy chat store — manages sessions, messages, and SSE streaming
+// Bizforge chat store — manages sessions, messages, and SSE streaming
 
 import type { Message, Session, StreamEvent, ToolCallRef } from "$api/types";
 import { sessions as sessionsApi, messages as messagesApi } from "$api/client";

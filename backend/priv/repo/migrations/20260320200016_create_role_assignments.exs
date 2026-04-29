@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateRoleAssignments do
+defmodule Bizforge.Repo.Migrations.CreateRoleAssignments do
   use Ecto.Migration
 
   def change do

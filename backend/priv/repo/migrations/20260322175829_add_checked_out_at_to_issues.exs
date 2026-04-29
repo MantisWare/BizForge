@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddCheckedOutAtToIssues do
+defmodule Bizforge.Repo.Migrations.AddCheckedOutAtToIssues do
   use Ecto.Migration
 
   def change do

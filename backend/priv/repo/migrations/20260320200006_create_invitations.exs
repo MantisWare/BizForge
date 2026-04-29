@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateInvitations do
+defmodule Bizforge.Repo.Migrations.CreateInvitations do
   use Ecto.Migration
 
   def change do

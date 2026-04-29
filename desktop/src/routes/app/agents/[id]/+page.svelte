@@ -11,11 +11,11 @@
   import { environmentStore } from '$lib/stores/environment.svelte';
   import { gatewaysStore } from '$lib/stores/gateways.svelte';
   import { agents as agentsApi } from '$api/client';
-  import type { CanopyAgent, AgentStatus, AgentLifecycleAction, Session, InboxItem, AdapterType } from '$api/types';
+  import type { BizforgeAgent, AgentStatus, AgentLifecycleAction, Session, InboxItem, AdapterType } from '$api/types';
 
   const agentId = $derived($page.params.id ?? '');
 
-  let agent = $state<CanopyAgent | null>(null);
+  let agent = $state<BizforgeAgent | null>(null);
   let isLoading = $state(true);
   let activeTab = $state<'overview' | 'config' | 'schedules' | 'skills' | 'runs' | 'budget' | 'inbox' | 'access'>('overview');
 
@@ -272,7 +272,7 @@
 </script>
 
 <svelte:head>
-  <title>{agent ? `${agent.display_name} — Canopy` : 'Agent — Canopy'}</title>
+  <title>{agent ? `${agent.display_name} — Bizforge` : 'Agent — Bizforge'}</title>
 </svelte:head>
 
 <div class="ad-shell">

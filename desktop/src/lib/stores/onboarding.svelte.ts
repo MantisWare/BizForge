@@ -45,7 +45,7 @@ export interface OnboardingData {
   miosaCloud: boolean;
 }
 
-const STORAGE_KEY = "canopy-onboarding";
+const STORAGE_KEY = "bizforge-onboarding";
 const TOTAL_STEPS = 7;
 
 const DEFAULT_DATA: OnboardingData = {

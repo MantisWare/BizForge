@@ -133,7 +133,7 @@
       {#if isLive}
         <div class="st-live-indicator" aria-label="Waiting for response">
           <span class="st-live-agent-dot" aria-hidden="true"></span>
-          <span class="st-live-text">Canopy is responding</span>
+          <span class="st-live-text">Bizforge is responding</span>
           <StreamingCursor />
         </div>
       {/if}
@@ -160,7 +160,7 @@
       {#if isLive}
         <div class="st-live-indicator" aria-label="Waiting for response">
           <span class="st-live-agent-dot" aria-hidden="true"></span>
-          <span class="st-live-text">Canopy is responding</span>
+          <span class="st-live-text">Bizforge is responding</span>
           <StreamingCursor />
         </div>
       {/if}

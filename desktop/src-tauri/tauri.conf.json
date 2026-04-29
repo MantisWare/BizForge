@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/nickelpack/tauri/refs/heads/v2/crates/tauri-cli/schema.json",
-  "productName": "Canopy",
+  "productName": "Bizforge",
   "version": "0.1.0",
-  "identifier": "com.miosa.canopy",
+  "identifier": "com.miosa.bizforge",
   "build": {
     "frontendDist": "../build",
     "devUrl": "http://127.0.0.1:5200",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Canopy",
+        "title": "Bizforge",
         "width": 1440,
         "height": 900,
         "minWidth": 960,

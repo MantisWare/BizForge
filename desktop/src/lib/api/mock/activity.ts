@@ -34,7 +34,7 @@ export function mockActivity(): ActivityEvent[] {
       agent_id: "agt-orchestrator",
       agent_name: "Orchestrator",
       title:
-        "Orchestrator completed session: architecture planning for Canopy adapter system.",
+        "Orchestrator completed session: architecture planning for Bizforge adapter system.",
       detail: null,
       level: "info",
       metadata: { duration_ms: 42300, tokens_used: 18400 },

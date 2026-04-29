@@ -13,12 +13,12 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            filesystem::scan_canopy_dir,
-            filesystem::list_canopy_agents,
-            filesystem::list_canopy_projects,
-            filesystem::list_canopy_schedules,
-            filesystem::watch_canopy_dir,
-            filesystem::scaffold_canopy_dir,
+            filesystem::scan_bizforge_dir,
+            filesystem::list_bizforge_agents,
+            filesystem::list_bizforge_projects,
+            filesystem::list_bizforge_schedules,
+            filesystem::watch_bizforge_dir,
+            filesystem::scaffold_bizforge_dir,
             filesystem::detect_adapters,
             filesystem::install_adapter,
             filesystem::setup_osa,

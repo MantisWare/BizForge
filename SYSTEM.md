@@ -13,7 +13,7 @@ in this repository.
 
 This workspace implements the **Optimal System** architecture defined in *Signal Theory:
 The Architecture of Optimal Intent Encoding*. Every protocol, architecture spec, and
-file structure in Canopy maps to one of 7 layers:
+file structure in Bizforge maps to one of 7 layers:
 
 | Layer | Name | What It Is Here |
 |-------|------|----------------|

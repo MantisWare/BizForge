@@ -107,7 +107,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
   {
     id: "mem-003",
     namespace: "knowledge_graph",
-    key: "canopy.foundation.component_list",
+    key: "bizforge.foundation.component_list",
     value: JSON.stringify(
       [
         "Button",
@@ -137,7 +137,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.99,
     source: "session-foundation-audit",
     related_entries: ["mem-004", "mem-005"],
-    tags: ["foundation", "components", "ui", "canopy"],
+    tags: ["foundation", "components", "ui", "bizforge"],
     metadata: {
       agent: "OSA Frontend Design",
       agent_id: "agent-12",
@@ -150,7 +150,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
   {
     id: "mem-004",
     namespace: "knowledge_graph",
-    key: "canopy.design_tokens",
+    key: "bizforge.design_tokens",
     value: JSON.stringify(
       {
         text: ["--dt", "--dt2", "--dt3", "--dt4"],
@@ -173,7 +173,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 1.0,
     source: "session-design-system-audit",
     related_entries: ["mem-003", "mem-005"],
-    tags: ["design-tokens", "css", "foundation", "canopy"],
+    tags: ["design-tokens", "css", "foundation", "bizforge"],
     metadata: {
       agent: "Svelte Specialist",
       agent_id: "agent-8",
@@ -186,7 +186,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
   {
     id: "mem-005",
     namespace: "knowledge_graph",
-    key: "canopy.routes.implemented",
+    key: "bizforge.routes.implemented",
     value: JSON.stringify(
       [
         "/app/dashboard",
@@ -209,7 +209,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.97,
     source: "session-phase5-build",
     related_entries: ["mem-003", "mem-009"],
-    tags: ["routing", "sveltekit", "canopy", "implemented"],
+    tags: ["routing", "sveltekit", "bizforge", "implemented"],
     metadata: {
       agent: "Svelte Specialist",
       agent_id: "agent-8",
@@ -247,7 +247,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
   {
     id: "mem-007",
     namespace: "knowledge_graph",
-    key: "canopy.css.prefix_system",
+    key: "bizforge.css.prefix_system",
     value:
       "Each Svelte component uses a unique 2-3 char CSS prefix to prevent collisions. Check registry.json before picking. Example: mb- (memory browser), act- (activity), ps- (page shell). Never use global selectors in scoped component styles.",
     value_type: "string",
@@ -257,7 +257,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.98,
     source: "session-css-conventions",
     related_entries: ["mem-006", "mem-003"],
-    tags: ["css", "prefix", "conventions", "canopy"],
+    tags: ["css", "prefix", "conventions", "bizforge"],
     metadata: {
       agent: "OSA Frontend Design",
       agent_id: "agent-12",
@@ -414,7 +414,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     key: "session-c3d4.debate_outcome",
     value: JSON.stringify(
       {
-        topic: "Mock data architecture for Canopy",
+        topic: "Mock data architecture for Bizforge",
         winner: "class-based store with $derived",
         votes: { for: 3, against: 1 },
         rationale:
@@ -430,7 +430,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.92,
     source: "session-c3d4",
     related_entries: ["mem-006", "mem-014"],
-    tags: ["architecture", "debate", "stores", "canopy"],
+    tags: ["architecture", "debate", "stores", "bizforge"],
     metadata: {
       agent: "Debate Moderator",
       agent_id: "agent-7",
@@ -443,15 +443,15 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
   {
     id: "mem-014",
     namespace: "knowledge_graph",
-    key: "canopy.location.separate_from_osa",
+    key: "bizforge.location.separate_from_osa",
     value: JSON.stringify(
       {
-        decision: "Canopy is a standalone app, not inside OSA repo",
-        canopy_desktop: "/Users/rhl/Desktop/MIOSA/code/canopy/app/desktop/",
+        decision: "Bizforge is a standalone app, not inside OSA repo",
+        bizforge_desktop: "/Users/rhl/Desktop/MIOSA/code/bizforge/app/desktop/",
         osa_desktop:
           "/Users/rhl/Desktop/MIOSA/code/OptimalSystemAgent/desktop/ (old terminal)",
         rationale:
-          "Different product concerns — Canopy = command center, OSA = framework",
+          "Different product concerns — Bizforge = command center, OSA = framework",
       },
       null,
       2,
@@ -461,9 +461,9 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     agent_name: "Master Orchestrator",
     category: "decision",
     confidence: 1.0,
-    source: "session-canopy-location-2026-03",
+    source: "session-bizforge-location-2026-03",
     related_entries: ["mem-013", "mem-005"],
-    tags: ["canopy", "architecture", "location", "separation"],
+    tags: ["bizforge", "architecture", "location", "separation"],
     metadata: {
       agent: "Master Orchestrator",
       agent_id: "agent-1",
@@ -480,7 +480,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     namespace: "agent_context",
     key: "orchestrator.current_goal",
     value:
-      "Build Canopy Command Center frontend Phase 5 — Observability (activity, logs, memory, signals, audit)",
+      "Build Bizforge Command Center frontend Phase 5 — Observability (activity, logs, memory, signals, audit)",
     value_type: "string",
     agent_id: "agent-1",
     agent_name: "Master Orchestrator",
@@ -488,7 +488,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.99,
     source: "session-a1b2",
     related_entries: ["mem-016", "mem-005"],
-    tags: ["current-goal", "phase5", "observability", "canopy"],
+    tags: ["current-goal", "phase5", "observability", "bizforge"],
     metadata: {
       agent: "Master Orchestrator",
       agent_id: "agent-1",
@@ -525,7 +525,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     namespace: "session_memory",
     key: "session-c3d4.context_snapshot",
     value:
-      "Working on Canopy Command Center desktop app. Stack: SvelteKit 2 + Tauri 2 + Foundation UI. Phase 5 = Observability (activity, logs, memory, signals, audit). CSS prefix system active — check registry.json before choosing prefix.",
+      "Working on Bizforge Command Center desktop app. Stack: SvelteKit 2 + Tauri 2 + Foundation UI. Phase 5 = Observability (activity, logs, memory, signals, audit). CSS prefix system active — check registry.json before choosing prefix.",
     value_type: "string",
     agent_id: "agent-1",
     agent_name: "Master Orchestrator",
@@ -533,7 +533,7 @@ const MOCK_ENTRIES: MockMemoryEntry[] = [
     confidence: 0.98,
     source: "session-c3d4",
     related_entries: ["mem-016", "mem-004"],
-    tags: ["context", "snapshot", "session", "canopy", "stack"],
+    tags: ["context", "snapshot", "session", "bizforge", "stack"],
     metadata: {
       agent: "Master Orchestrator",
       agent_id: "agent-1",

@@ -4,7 +4,7 @@
 export type ThemeMode = "dark" | "glass" | "color" | "light" | "system";
 export type ResolvedTheme = "dark" | "glass" | "color" | "light";
 
-const STORAGE_KEY = "canopy-theme";
+const STORAGE_KEY = "bizforge-theme";
 
 class ThemeStore {
   mode = $state<ThemeMode>("dark");

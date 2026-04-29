@@ -1,4 +1,4 @@
-# Canopy Module Specifications
+# Bizforge Module Specifications
 
 > Complete module-by-module breakdown of every sidebar feature.
 > Generated 2026-03-22. Covers frontend (SvelteKit 2 + Svelte 5), backend (Phoenix 1.8 + Ecto), and integration state.
@@ -54,7 +54,7 @@ These problems affect multiple modules and should be fixed first:
 | **18 Svelte 5 reactivity bugs** | GoalForm, IssueForm, AgentDesk3D, others | Fix `$props()` capture in closures |
 | **No real-time push on most pages** | 25 of 29 modules | Subscribe to EventBus via SSE/Channel |
 | **`inspect()` leaks in API** | Spawn, Documents | Replace with `format_errors()` |
-| **Duplicate files** | Build | Delete `lib/canopy 2.ex`, `lib/canopy_web 2.ex` |
+| **Duplicate files** | Build | Delete `lib/bizforge 2.ex`, `lib/bizforge_web 2.ex` |
 
 ---
 
@@ -95,9 +95,9 @@ Frontend polls every 30s. Re-fetches on workspace change via `$effect`. Single J
 - Feeds into: Nothing (read-only aggregation)
 
 ### Priority Fixes
-1. Add `daily_limit_cents` to `BudgetPolicy` schema — `backend/lib/canopy/schemas/budget_policy.ex`
-2. Add CPU sampling via `:cpu_sup` — `backend/lib/canopy_web/controllers/dashboard_controller.ex`
-3. Track cache token savings on `CostEvent` — `backend/lib/canopy_web/controllers/dashboard_controller.ex`
+1. Add `daily_limit_cents` to `BudgetPolicy` schema — `backend/lib/bizforge/schemas/budget_policy.ex`
+2. Add CPU sampling via `:cpu_sup` — `backend/lib/bizforge_web/controllers/dashboard_controller.ex`
+3. Track cache token savings on `CostEvent` — `backend/lib/bizforge_web/controllers/dashboard_controller.ex`
 
 ---
 
@@ -133,10 +133,10 @@ Fetch all on mount. Client-side filtering. No real-time push — new notificatio
 - Feeds into: Nothing
 
 ### Priority Fixes
-1. Add `POST /inbox/:id/dismiss` route or collapse into action endpoint — `backend/lib/canopy_web/router.ex`
+1. Add `POST /inbox/:id/dismiss` route or collapse into action endpoint — `backend/lib/bizforge_web/router.ex`
 2. Make `markRead`/`markAllRead` call backend — `desktop/src/lib/stores/inbox.svelte.ts`
 3. Subscribe to EventBus for live notifications
-4. Fix `total` workspace scoping — `backend/lib/canopy_web/controllers/inbox_controller.ex`
+4. Fix `total` workspace scoping — `backend/lib/bizforge_web/controllers/inbox_controller.ex`
 
 ---
 
@@ -252,7 +252,7 @@ Dispatch pipeline: `POST /dispatch` → `IssueDispatcher.dispatch/1` → validat
 - Feeds into: GoalDecomposer, IssueDispatcher, Dashboard
 
 ### Priority Fixes
-1. Join Agent in `index/2` for `assignee_name` — `backend/lib/canopy_web/controllers/issue_controller.ex`
+1. Join Agent in `index/2` for `assignee_name` — `backend/lib/bizforge_web/controllers/issue_controller.ex`
 2. Populate labels and comments_count in serializer
 3. Add EventBus subscription for live status updates
 4. Add timeout to `IssueDispatcher.dispatch/2` GenServer.call
@@ -293,7 +293,7 @@ Goals scoped to project via `projectsStore.selected`. Decompose is synchronous H
 - Feeds into: Issues, IssueDispatcher
 
 ### Priority Fixes
-1. Add `progress`/`issue_count` as computed fields to `GoalController.index` — `backend/lib/canopy_web/controllers/goal_controller.ex`
+1. Add `progress`/`issue_count` as computed fields to `GoalController.index` — `backend/lib/bizforge_web/controllers/goal_controller.ex`
 2. Remove dead `filterPriority` — `desktop/src/lib/stores/goals.svelte.ts`
 3. Move decompose to background job with polling/streaming
 4. Guard `ClaudeBinary.find()` with descriptive error
@@ -303,7 +303,7 @@ Goals scoped to project via `projectsStore.selected`. Decompose is synchronous H
 ## 7. DOCUMENTS
 
 ### What
-File browser for the workspace's `.canopy/reference/` directory with filesystem read/write and revision history.
+File browser for the workspace's `.bizforge/reference/` directory with filesystem read/write and revision history.
 
 ### Frontend
 - **Route:** `/app/documents`
@@ -319,7 +319,7 @@ File browser for the workspace's `.canopy/reference/` directory with filesystem 
 - **Endpoints:** `GET /documents`, `GET /documents/*path`, `POST /documents`, `PUT /documents/*path`, `DELETE /documents/*path`, `GET /document-revisions`
 
 ### Data Flow
-Backend reads/writes `.canopy/reference/` filesystem. No real-time, no workspace-change re-fetch.
+Backend reads/writes `.bizforge/reference/` filesystem. No real-time, no workspace-change re-fetch.
 
 ### Current State
 - ✅ Backend filesystem read/write pipeline
@@ -337,7 +337,7 @@ Backend reads/writes `.canopy/reference/` filesystem. No real-time, no workspace
 1. Add workspace-change `$effect` — `desktop/src/routes/app/documents/+page.svelte`
 2. Add CRUD methods to store — `desktop/src/lib/stores/documents.svelte.ts`
 3. Surface fetch errors to user
-4. Write DocumentRevision on every update — `backend/lib/canopy_web/controllers/document_controller.ex`
+4. Write DocumentRevision on every update — `backend/lib/bizforge_web/controllers/document_controller.ex`
 
 ---
 
@@ -432,7 +432,7 @@ After lifecycle actions, status badges render incorrectly until next full fetch.
 - Feeds into: Activity, Sessions, Costs, Logs, all other modules
 
 ### Priority Fixes
-1. **Fix N+1** — batch queries in `serialize_with_skills/1` — `backend/lib/canopy_web/controllers/agent_controller.ex`
+1. **Fix N+1** — batch queries in `serialize_with_skills/1` — `backend/lib/bizforge_web/controllers/agent_controller.ex`
 2. **Fix status mismatch** — align backend status strings with frontend `AgentStatus` union
 3. **Fix resume routing** — `desktop/src/routes/app/agents/[id]/+page.svelte`
 4. **Wire Runs tab** — call `agentsApi.runs(agentId)`
@@ -476,7 +476,7 @@ HTTP initial fetch + persistent SSE subscription. Backend emits events, frontend
 
 ### Priority Fixes
 1. **Fix SSE payload shape** — `desktop/src/lib/stores/activity.svelte.ts` — handle raw backend shape
-2. Fix `total` workspace scoping — `backend/lib/canopy_web/controllers/activity_controller.ex`
+2. Fix `total` workspace scoping — `backend/lib/bizforge_web/controllers/activity_controller.ex`
 
 ---
 
@@ -512,7 +512,7 @@ List fetch + detail fetch + SSE for live sessions. Transcript re-fetched from RE
 - Feeds into: Costs, Activity
 
 ### Priority Fixes
-1. **Fix transcript serialization** — map `SessionEvent` to `Message` shape — `backend/lib/canopy_web/controllers/session_controller.ex`
+1. **Fix transcript serialization** — map `SessionEvent` to `Message` shape — `backend/lib/bizforge_web/controllers/session_controller.ex`
 2. Add 30s keepalive to session SSE loop
 3. Fix `message_count` with subquery
 
@@ -548,7 +548,7 @@ Initial load borrows `/activity` endpoint. SSE for live streaming.
 - Feeds into: Nothing
 
 ### Priority Fixes
-1. Add `LogController.index/2` — `backend/lib/canopy_web/controllers/log_controller.ex`
+1. Add `LogController.index/2` — `backend/lib/bizforge_web/controllers/log_controller.ex`
 2. Gate `isPaused` in SSE handler — `desktop/src/lib/stores/logs.svelte.ts`
 3. Pass filter params to SSE URL
 
@@ -588,9 +588,9 @@ Frontend fetches all sections in parallel. Budget enforcement is entirely backen
 - Feeds into: Agents (hard stop), Activity
 
 ### Priority Fixes
-1. Fix `policies`/`budgets` key mismatch — `backend/lib/canopy_web/controllers/budget_controller.ex`
+1. Fix `policies`/`budgets` key mismatch — `backend/lib/bizforge_web/controllers/budget_controller.ex`
 2. Wire `fetchTrends()` to `GET /costs/daily` — `desktop/src/lib/stores/costs.svelte.ts`
-3. Pre-load workspace-scope ETS on init — `backend/lib/canopy/budget_enforcer.ex`
+3. Pre-load workspace-scope ETS on init — `backend/lib/bizforge/budget_enforcer.ex`
 
 ---
 
@@ -625,7 +625,7 @@ Fetch on mount. Search replaces entries with results. CRUD is optimistic.
 - Feeds into: Agent runtime (knowledge tool)
 
 ### Priority Fixes
-1. Add `GET /memory/namespaces` route — `backend/lib/canopy_web/router.ex`
+1. Add `GET /memory/namespaces` route — `backend/lib/bizforge_web/router.ex`
 2. Reconcile `content` vs `value` field name across all files
 3. Add GIN index for search
 
@@ -662,7 +662,7 @@ Fetch on mount. Client-side filtering. No real-time.
 - Feeds into: Nothing
 
 ### Priority Fixes
-1. Align `feed` serialization with frontend `Signal` type — `backend/lib/canopy_web/controllers/signal_controller.ex`
+1. Align `feed` serialization with frontend `Signal` type — `backend/lib/bizforge_web/controllers/signal_controller.ex`
 2. Create `signals` table for structured metadata
 3. Wire `patterns`/`stats` to frontend
 
@@ -696,7 +696,7 @@ Named capabilities that can be enabled/disabled per workspace and injected into 
 - ❌ `version` field renders `vundefined` — not in backend serializer
 
 ### Priority Fixes
-1. Add `version` to serializer — `backend/lib/canopy_web/controllers/skill_controller.ex`
+1. Add `version` to serializer — `backend/lib/bizforge_web/controllers/skill_controller.ex`
 2. Wire category/search filters
 3. Add create/delete to store and UI
 
@@ -902,7 +902,7 @@ Paginated, append-only record of every system action.
 ### Backend
 - **Controller:** `AuditController` — `index`
 - **Schema:** `AuditEvent`
-- **Business logic:** Entries auto-written by `Canopy.Plugs.Audit`
+- **Business logic:** Entries auto-written by `Bizforge.Plugs.Audit`
 - **Endpoints:** 1
 
 ### Current State
@@ -999,7 +999,7 @@ Pre-configured agent workspace blueprints.
 - ❌ No update/delete endpoints
 
 ### Priority Fixes
-1. Add missing fields to serializer — `backend/lib/canopy_web/controllers/template_controller.ex`
+1. Add missing fields to serializer — `backend/lib/bizforge_web/controllers/template_controller.ex`
 2. Implement "Apply" action
 3. Add PATCH/DELETE endpoints
 
@@ -1008,18 +1008,18 @@ Pre-configured agent workspace blueprints.
 ## 27. WORKSPACES
 
 ### What
-Root organizational unit — a named directory with `.canopy/` protocol folder. Bridges Tauri IPC, localStorage, and backend.
+Root organizational unit — a named directory with `.bizforge/` protocol folder. Bridges Tauri IPC, localStorage, and backend.
 
 ### Frontend
 - **Route:** `/app/workspaces`
 - **Store:** `workspaceStore` (`workspace.svelte.ts`)
 - **State:** `workspaces[]`, `activeWorkspaceId`, `lastScan`
-- **API calls:** localStorage reads, `POST /workspaces/:id/activate`, `GET /workspaces`, Tauri IPC (`scan_canopy_dir`, `watch_canopy_dir`)
+- **API calls:** localStorage reads, `POST /workspaces/:id/activate`, `GET /workspaces`, Tauri IPC (`scan_bizforge_dir`, `watch_bizforge_dir`)
 
 ### Backend
 - **Controller:** `WorkspaceController` — CRUD + `activate`, `agents`, `skills`, `config`
 - **Schema:** `Workspace` — name, path, status, owner_id
-- **Business logic:** `create` scaffolds `.canopy/` directory; `activate` archives all others
+- **Business logic:** `create` scaffolds `.bizforge/` directory; `activate` archives all others
 - **Endpoints:** 9 total
 
 ### Data Flow
@@ -1032,7 +1032,7 @@ Three-layer state: localStorage (truth for frontend), Tauri IPC (filesystem scan
 - ❌ Backend N+1 aggregate counts in index
 
 ### Priority Fixes
-1. Fix `activate` status — use `inactive` instead of `archived` — `backend/lib/canopy_web/controllers/workspace_controller.ex`
+1. Fix `activate` status — use `inactive` instead of `archived` — `backend/lib/bizforge_web/controllers/workspace_controller.ex`
 2. Replace N+1 counts with window functions
 3. Populate stats for inactive workspaces
 

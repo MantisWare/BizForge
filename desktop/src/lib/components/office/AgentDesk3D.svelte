@@ -3,10 +3,10 @@
 <script lang="ts">
   import { T, useTask } from '@threlte/core';
   import { Text, Float } from '@threlte/extras';
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
 
   interface Props {
-    agent: CanopyAgent;
+    agent: BizforgeAgent;
     position: [number, number, number];
     selected: boolean;
     emissive: string;

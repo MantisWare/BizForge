@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateEnvironmentTables do
+defmodule Bizforge.Repo.Migrations.CreateEnvironmentTables do
   use Ecto.Migration
 
   def change do

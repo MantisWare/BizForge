@@ -137,7 +137,7 @@ import {
   getMockNotificationBadges,
 } from "./notifications";
 import type {
-  CanopyAgent,
+  BizforgeAgent,
   Schedule,
   HeartbeatRun,
   Issue,
@@ -210,7 +210,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
             typeof options.body === "string"
               ? options.body
               : JSON.stringify(options.body),
-          ) as Partial<CanopyAgent>;
+          ) as Partial<BizforgeAgent>;
           return { ...base, ...body, updated_at: new Date().toISOString() };
         } catch {
           return base;
@@ -234,9 +234,9 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
             typeof options.body === "string"
               ? options.body
               : JSON.stringify(options.body ?? {}),
-          ) as Partial<CanopyAgent> & { slug?: string };
+          ) as Partial<BizforgeAgent> & { slug?: string };
           const now = new Date().toISOString();
-          const newAgent: CanopyAgent = {
+          const newAgent: BizforgeAgent = {
             id: body.id ?? `agent-new-${Date.now()}`,
             name: body.name ?? "new-agent",
             display_name: body.display_name ?? body.name ?? "New Agent",
@@ -273,7 +273,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           }
           return newAgent;
         } catch {
-          return {} as CanopyAgent;
+          return {} as BizforgeAgent;
         }
       }
       const agents = mockAgents(wsId);
@@ -856,7 +856,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           description: (body.description as string | null) ?? null,
           status: "active",
           workspace_path:
-            (body.workspace_path as string) ?? "~/.canopy/projects",
+            (body.workspace_path as string) ?? "~/.bizforge/projects",
           goal_count: 0,
           issue_count: 0,
           agent_count: 0,
@@ -1477,7 +1477,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           id: "ws-osa-dev",
           name: "OSA Development",
           description: "Main development workspace",
-          directory: "~/.canopy/default",
+          directory: "~/.bizforge/default",
           agent_count: 6,
           project_count: 2,
           skill_count: 4,
@@ -1503,7 +1503,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           description: "",
           directory:
             (body.directory as string) ??
-            `~/.canopy/${name.toLowerCase().replace(/\s+/g, "-")}`,
+            `~/.bizforge/${name.toLowerCase().replace(/\s+/g, "-")}`,
           agent_count: 0,
           project_count: 0,
           skill_count: 0,
@@ -1526,7 +1526,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           id,
           name: "Workspace",
           description: "",
-          directory: `~/.canopy/${id}`,
+          directory: `~/.bizforge/${id}`,
           agent_count: 0,
           project_count: 0,
           skill_count: 0,
@@ -2924,8 +2924,8 @@ export function notifyMockDisabled(): void {
 // All localStorage keys written exclusively by the mock layer. This list must
 // stay in sync with any new keys added to mock sub-modules.
 const MOCK_STORAGE_KEYS = [
-  "canopy-workspace-agents", // mock/agents.ts — deployed template agents
-  "canopy-active-workspace", // mock/index.ts — fresh-workspace detection
+  "bizforge-workspace-agents", // mock/agents.ts — deployed template agents
+  "bizforge-active-workspace", // mock/index.ts — fresh-workspace detection
 ] as const;
 
 /**
@@ -2954,7 +2954,7 @@ export function clearAllMockData(): void {
 /** Returns the active workspace ID from localStorage, or null if none. */
 function getActiveWorkspaceId(): string | null {
   try {
-    return localStorage.getItem("canopy-active-workspace");
+    return localStorage.getItem("bizforge-active-workspace");
   } catch {
     return null;
   }

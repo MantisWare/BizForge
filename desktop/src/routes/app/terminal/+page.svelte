@@ -6,7 +6,7 @@
 <PageShell title="Terminal" subtitle="Embedded shell" noPadding={false}>
   <div class="trm-placeholder" role="status">
     <div class="trm-preview" aria-hidden="true">
-      <span class="trm-prompt">canopy@osa</span><span class="trm-path">:~$</span>
+      <span class="trm-prompt">bizforge@osa</span><span class="trm-path">:~$</span>
       <span class="trm-cursor"></span>
     </div>
     <h2 class="trm-title">Terminal</h2>
@@ -16,7 +16,7 @@
     </p>
     <div class="trm-notice">
       <span class="trm-notice-label">Backend required</span>
-      Connect the Canopy backend to enable the terminal.
+      Connect the Bizforge backend to enable the terminal.
     </div>
     <ul class="trm-features" aria-label="Planned features">
       <li>WebSocket-backed interactive shell</li>

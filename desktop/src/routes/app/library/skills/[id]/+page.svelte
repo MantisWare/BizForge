@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-  <title>{skill ? `${skill.name} — Library — Canopy` : 'Skill — Library — Canopy'}</title>
+  <title>{skill ? `${skill.name} — Library — Bizforge` : 'Skill — Library — Bizforge'}</title>
 </svelte:head>
 
 <PageShell title={skill?.name ?? 'Skill'} subtitle={skill ? skill.category : undefined}>

@@ -5,22 +5,22 @@ use walkdir::WalkDir;
 // ── Types ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanopyWorkspace {
+pub struct BizforgeWorkspace {
     pub path: String,
     pub name: String,
-    pub agents: Vec<CanopyAgentDef>,
-    pub projects: Vec<CanopyProjectDef>,
-    pub schedules: Vec<CanopyScheduleDef>,
-    pub skills: Vec<CanopySkillDef>,
-    /// Raw contents of .canopy/SYSTEM.md (if present)
+    pub agents: Vec<BizforgeAgentDef>,
+    pub projects: Vec<BizforgeProjectDef>,
+    pub schedules: Vec<BizforgeScheduleDef>,
+    pub skills: Vec<BizforgeSkillDef>,
+    /// Raw contents of .bizforge/SYSTEM.md (if present)
     pub system_md: Option<String>,
-    /// Raw contents of .canopy/COMPANY.md (if present)
+    /// Raw contents of .bizforge/COMPANY.md (if present)
     pub company_md: Option<String>,
     pub scanned_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanopyAgentDef {
+pub struct BizforgeAgentDef {
     pub id: String,
     pub name: String,
     pub emoji: Option<String>,
@@ -34,7 +34,7 @@ pub struct CanopyAgentDef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanopyProjectDef {
+pub struct BizforgeProjectDef {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
@@ -44,7 +44,7 @@ pub struct CanopyProjectDef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanopyScheduleDef {
+pub struct BizforgeScheduleDef {
     pub id: String,
     pub agent_id: String,
     pub cron: String,
@@ -55,7 +55,7 @@ pub struct CanopyScheduleDef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CanopySkillDef {
+pub struct BizforgeSkillDef {
     pub id: String,
     pub name: String,
     pub description: String,
@@ -66,23 +66,23 @@ pub struct CanopySkillDef {
 
 // ── IPC Commands ─────────────────────────────────────────────────────────────
 
-/// Scan a .canopy/ directory and return the full workspace definition
+/// Scan a .bizforge/ directory and return the full workspace definition
 #[tauri::command]
-pub async fn scan_canopy_dir(path: String) -> Result<CanopyWorkspace, String> {
-    let canopy_path = PathBuf::from(&path);
-    if !canopy_path.exists() {
-        return Err(format!(".canopy directory not found: {}", path));
+pub async fn scan_bizforge_dir(path: String) -> Result<BizforgeWorkspace, String> {
+    let bizforge_path = PathBuf::from(&path);
+    if !bizforge_path.exists() {
+        return Err(format!(".bizforge directory not found: {}", path));
     }
 
-    let name = canopy_path
+    let name = bizforge_path
         .parent()
         .and_then(|p| p.file_name())
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
     // Read optional top-level markdown files
-    let system_md = std::fs::read_to_string(canopy_path.join("SYSTEM.md")).ok();
-    let company_md = std::fs::read_to_string(canopy_path.join("COMPANY.md")).ok();
+    let system_md = std::fs::read_to_string(bizforge_path.join("SYSTEM.md")).ok();
+    let company_md = std::fs::read_to_string(bizforge_path.join("COMPANY.md")).ok();
 
     // Prefer the name from SYSTEM.md frontmatter over the directory name
     let name = system_md
@@ -90,12 +90,12 @@ pub async fn scan_canopy_dir(path: String) -> Result<CanopyWorkspace, String> {
         .and_then(|s| parse_frontmatter_name(s))
         .unwrap_or(name);
 
-    let agents = list_agents_internal(&canopy_path)?;
-    let projects = list_projects_internal(&canopy_path)?;
-    let schedules = list_schedules_internal(&canopy_path)?;
-    let skills = list_skills_internal(&canopy_path)?;
+    let agents = list_agents_internal(&bizforge_path)?;
+    let projects = list_projects_internal(&bizforge_path)?;
+    let schedules = list_schedules_internal(&bizforge_path)?;
+    let skills = list_skills_internal(&bizforge_path)?;
 
-    Ok(CanopyWorkspace {
+    Ok(BizforgeWorkspace {
         path,
         name,
         agents,
@@ -108,30 +108,30 @@ pub async fn scan_canopy_dir(path: String) -> Result<CanopyWorkspace, String> {
     })
 }
 
-/// List all agent definitions from .canopy/agents/*.md
+/// List all agent definitions from .bizforge/agents/*.md
 #[tauri::command]
-pub async fn list_canopy_agents(path: String) -> Result<Vec<CanopyAgentDef>, String> {
-    let canopy_path = PathBuf::from(&path);
-    list_agents_internal(&canopy_path)
+pub async fn list_bizforge_agents(path: String) -> Result<Vec<BizforgeAgentDef>, String> {
+    let bizforge_path = PathBuf::from(&path);
+    list_agents_internal(&bizforge_path)
 }
 
-/// List all projects from .canopy/projects/*/
+/// List all projects from .bizforge/projects/*/
 #[tauri::command]
-pub async fn list_canopy_projects(path: String) -> Result<Vec<CanopyProjectDef>, String> {
-    let canopy_path = PathBuf::from(&path);
-    list_projects_internal(&canopy_path)
+pub async fn list_bizforge_projects(path: String) -> Result<Vec<BizforgeProjectDef>, String> {
+    let bizforge_path = PathBuf::from(&path);
+    list_projects_internal(&bizforge_path)
 }
 
-/// List all schedules from .canopy/schedules/*.yaml
+/// List all schedules from .bizforge/schedules/*.yaml
 #[tauri::command]
-pub async fn list_canopy_schedules(path: String) -> Result<Vec<CanopyScheduleDef>, String> {
-    let canopy_path = PathBuf::from(&path);
-    list_schedules_internal(&canopy_path)
+pub async fn list_bizforge_schedules(path: String) -> Result<Vec<BizforgeScheduleDef>, String> {
+    let bizforge_path = PathBuf::from(&path);
+    list_schedules_internal(&bizforge_path)
 }
 
-/// Watch a .canopy/ directory for changes (returns immediately, sends events via Tauri events)
+/// Watch a .bizforge/ directory for changes (returns immediately, sends events via Tauri events)
 #[tauri::command]
-pub async fn watch_canopy_dir(
+pub async fn watch_bizforge_dir(
     app: tauri::AppHandle,
     path: String,
 ) -> Result<(), String> {
@@ -165,7 +165,7 @@ pub async fn watch_canopy_dir(
                     _ => continue,
                 };
                 let _ = app.emit(
-                    "canopy-fs-event",
+                    "bizforge-fs-event",
                     serde_json::json!({
                         "kind": kind,
                         "paths": paths,
@@ -192,36 +192,36 @@ pub struct AgentTemplate {
     pub system_prompt: Option<String>,
 }
 
-/// Create a new .canopy/ workspace directory with full structure
+/// Create a new .bizforge/ workspace directory with full structure
 #[tauri::command]
-pub async fn scaffold_canopy_dir(
+pub async fn scaffold_bizforge_dir(
     path: String,
     name: String,
     description: Option<String>,
     agents: Vec<AgentTemplate>,
-) -> Result<CanopyWorkspace, String> {
+) -> Result<BizforgeWorkspace, String> {
     let base = PathBuf::from(&path);
-    let canopy_dir = base.join(".canopy");
+    let bizforge_dir = base.join(".bizforge");
 
     // Create directory structure
     let dirs = ["agents", "skills", "projects", "schedules", "reference"];
     for dir in &dirs {
-        std::fs::create_dir_all(canopy_dir.join(dir))
+        std::fs::create_dir_all(bizforge_dir.join(dir))
             .map_err(|e| format!("Failed to create {}: {}", dir, e))?;
     }
 
     // Write SYSTEM.md
-    let desc_line = description.as_deref().unwrap_or("A Canopy workspace");
+    let desc_line = description.as_deref().unwrap_or("A Bizforge workspace");
     let system_md = format!(
         "---\nname: {}\ndescription: {}\ncreated_at: {}\n---\n\n# {}\n\n{}\n",
         name, desc_line, chrono_now(), name, desc_line
     );
-    std::fs::write(canopy_dir.join("SYSTEM.md"), &system_md)
+    std::fs::write(bizforge_dir.join("SYSTEM.md"), &system_md)
         .map_err(|e| format!("Failed to write SYSTEM.md: {}", e))?;
 
     // Write COMPANY.md
     let company_md = "---\nname: My Organization\n---\n\n# Organization\n\nConfigure your organization details here.\n";
-    std::fs::write(canopy_dir.join("COMPANY.md"), company_md)
+    std::fs::write(bizforge_dir.join("COMPANY.md"), company_md)
         .map_err(|e| format!("Failed to write COMPANY.md: {}", e))?;
 
     // Write agent files
@@ -248,19 +248,19 @@ pub async fn scaffold_canopy_dir(
             agent.system_prompt.as_deref().unwrap_or("Agent configuration.")
         );
 
-        let agent_path = canopy_dir.join("agents").join(format!("{}.md", agent.id));
+        let agent_path = bizforge_dir.join("agents").join(format!("{}.md", agent.id));
         std::fs::write(&agent_path, &agent_md)
             .map_err(|e| format!("Failed to write agent {}: {}", agent.id, e))?;
     }
 
     // Scan and return the workspace
-    scan_canopy_dir(canopy_dir.to_string_lossy().to_string()).await
+    scan_bizforge_dir(bizforge_dir.to_string_lossy().to_string()).await
 }
 
 // ── Internal Helpers ─────────────────────────────────────────────────────────
 
-fn list_agents_internal(canopy_path: &Path) -> Result<Vec<CanopyAgentDef>, String> {
-    let agents_dir = canopy_path.join("agents");
+fn list_agents_internal(bizforge_path: &Path) -> Result<Vec<BizforgeAgentDef>, String> {
+    let agents_dir = bizforge_path.join("agents");
     if !agents_dir.exists() {
         return Ok(vec![]);
     }
@@ -279,8 +279,8 @@ fn list_agents_internal(canopy_path: &Path) -> Result<Vec<CanopyAgentDef>, Strin
     Ok(agents)
 }
 
-fn list_projects_internal(canopy_path: &Path) -> Result<Vec<CanopyProjectDef>, String> {
-    let projects_dir = canopy_path.join("projects");
+fn list_projects_internal(bizforge_path: &Path) -> Result<Vec<BizforgeProjectDef>, String> {
+    let projects_dir = bizforge_path.join("projects");
     if !projects_dir.exists() {
         return Ok(vec![]);
     }
@@ -307,7 +307,7 @@ fn list_projects_internal(canopy_path: &Path) -> Result<Vec<CanopyProjectDef>, S
                 (id.clone(), None, vec![], vec![])
             };
 
-            projects.push(CanopyProjectDef {
+            projects.push(BizforgeProjectDef {
                 id: id.clone(),
                 name,
                 description,
@@ -320,8 +320,8 @@ fn list_projects_internal(canopy_path: &Path) -> Result<Vec<CanopyProjectDef>, S
     Ok(projects)
 }
 
-fn list_schedules_internal(canopy_path: &Path) -> Result<Vec<CanopyScheduleDef>, String> {
-    let schedules_dir = canopy_path.join("schedules");
+fn list_schedules_internal(bizforge_path: &Path) -> Result<Vec<BizforgeScheduleDef>, String> {
+    let schedules_dir = bizforge_path.join("schedules");
     if !schedules_dir.exists() {
         return Ok(vec![]);
     }
@@ -340,8 +340,8 @@ fn list_schedules_internal(canopy_path: &Path) -> Result<Vec<CanopyScheduleDef>,
     Ok(schedules)
 }
 
-fn list_skills_internal(canopy_path: &Path) -> Result<Vec<CanopySkillDef>, String> {
-    let skills_dir = canopy_path.join("skills");
+fn list_skills_internal(bizforge_path: &Path) -> Result<Vec<BizforgeSkillDef>, String> {
+    let skills_dir = bizforge_path.join("skills");
     if !skills_dir.exists() {
         return Ok(vec![]);
     }
@@ -375,7 +375,7 @@ fn parse_frontmatter_name(content: &str) -> Option<String> {
 }
 
 /// Parse YAML frontmatter from a markdown agent definition file
-fn parse_agent_frontmatter(content: &str, path: &Path) -> Option<CanopyAgentDef> {
+fn parse_agent_frontmatter(content: &str, path: &Path) -> Option<BizforgeAgentDef> {
     // Extract YAML between --- markers
     let trimmed = content.trim();
     if !trimmed.starts_with("---") {
@@ -393,7 +393,7 @@ fn parse_agent_frontmatter(content: &str, path: &Path) -> Option<CanopyAgentDef>
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    Some(CanopyAgentDef {
+    Some(BizforgeAgentDef {
         id,
         name: get_str(map, "name").unwrap_or_else(|| "Unknown".to_string()),
         emoji: get_str(map, "emoji"),
@@ -407,7 +407,7 @@ fn parse_agent_frontmatter(content: &str, path: &Path) -> Option<CanopyAgentDef>
     })
 }
 
-fn parse_skill_frontmatter(content: &str, path: &Path) -> Option<CanopySkillDef> {
+fn parse_skill_frontmatter(content: &str, path: &Path) -> Option<BizforgeSkillDef> {
     let trimmed = content.trim();
     if !trimmed.starts_with("---") {
         return None;
@@ -424,7 +424,7 @@ fn parse_skill_frontmatter(content: &str, path: &Path) -> Option<CanopySkillDef>
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    Some(CanopySkillDef {
+    Some(BizforgeSkillDef {
         id,
         name: get_str(map, "name").unwrap_or_else(|| "Unknown".to_string()),
         description: get_str(map, "description").unwrap_or_default(),
@@ -450,7 +450,7 @@ fn parse_project_yaml(
     (fallback_name.to_string(), None, vec![], vec![])
 }
 
-fn parse_schedule_yaml(content: &str, path: &Path) -> Option<CanopyScheduleDef> {
+fn parse_schedule_yaml(content: &str, path: &Path) -> Option<BizforgeScheduleDef> {
     let yaml: serde_yaml::Value = serde_yaml::from_str(content).ok()?;
     let map = yaml.as_mapping()?;
 
@@ -459,7 +459,7 @@ fn parse_schedule_yaml(content: &str, path: &Path) -> Option<CanopyScheduleDef> 
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    Some(CanopyScheduleDef {
+    Some(BizforgeScheduleDef {
         id,
         agent_id: get_str(map, "agent_id").unwrap_or_default(),
         cron: get_str(map, "cron").unwrap_or_default(),

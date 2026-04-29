@@ -1,9 +1,9 @@
 // src/lib/services/template-deploy.ts
-// Template deployment pipeline: scaffolds .canopy/ workspace via Tauri IPC,
+// Template deployment pipeline: scaffolds .bizforge/ workspace via Tauri IPC,
 // loads agents from filesystem or bundled data, and registers them with
 // full organizational hierarchy (Division → Department → Team → Agent).
 
-import type { CanopyAgent, AdapterType } from "$api/types";
+import type { BizforgeAgent, AdapterType } from "$api/types";
 import { workspaceStore } from "$lib/stores/workspace.svelte";
 import { agentsStore } from "$lib/stores/agents.svelte";
 import { toastStore } from "$lib/stores/toasts.svelte";
@@ -26,7 +26,7 @@ export interface DeployResult {
  *   1. Load agent definitions from bundled TS module
  *   2. Create workspace entry (localStorage)
  *   3. Register agents with hierarchy (3-pass)
- *   4. Call scaffold_canopy_dir IPC → creates .canopy/agents/*.md on disk
+ *   4. Call scaffold_bizforge_dir IPC → creates .bizforge/agents/*.md on disk
  *   5. Set active workspace
  *
  * Web fallback:
@@ -57,11 +57,11 @@ export async function deployTemplate(
       warnings.push(...result.warnings);
     }
 
-    // Step 4: Scaffold .canopy/ directory on disk via Tauri IPC
+    // Step 4: Scaffold .bizforge/ directory on disk via Tauri IPC
     if (isTauri() && agents.length > 0) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("scaffold_canopy_dir", {
+        await invoke("scaffold_bizforge_dir", {
           path: ws.path,
           name: templateName,
           description: `${templateName} workspace deployed from template.`,
@@ -115,11 +115,11 @@ export async function deployTemplate(
  *   src/lib/api/mock/library/templates/{templateId}.ts
  * that exports its agents as both `default` and named `agents`.
  */
-async function loadBundledTemplate(templateId: string): Promise<CanopyAgent[]> {
+async function loadBundledTemplate(templateId: string): Promise<BizforgeAgent[]> {
   try {
     const modules = import.meta.glob<{
-      default: CanopyAgent[];
-      agents?: CanopyAgent[];
+      default: BizforgeAgent[];
+      agents?: BizforgeAgent[];
     }>("../api/mock/library/templates/*.ts");
 
     // Vite key format varies by version — match by suffix to be safe
@@ -171,7 +171,7 @@ interface RegisterResult {
  * hierarchy is built consistently in both modes.
  */
 async function registerAgents(
-  agents: CanopyAgent[],
+  agents: BizforgeAgent[],
   workspaceId: string,
 ): Promise<RegisterResult> {
   const {
@@ -187,7 +187,7 @@ async function registerAgents(
 
   // ── Pass 1: Create all agents, collect name→ID map ──────────────────────
   const nameToId = new Map<string, string>();
-  const createdAgents: CanopyAgent[] = [];
+  const createdAgents: BizforgeAgent[] = [];
 
   for (const agent of agents) {
     try {

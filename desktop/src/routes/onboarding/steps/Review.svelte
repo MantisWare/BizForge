@@ -152,14 +152,14 @@
     class="ob-btn ob-btn--launch"
     onclick={onLaunch}
     disabled={isLaunching}
-    aria-label="Launch Canopy"
+    aria-label="Launch Bizforge"
   >
     {#if isLaunching}
       <svg class="ob-spinner" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><circle cx="10" cy="10" r="7" stroke-dasharray="22 22" stroke-dashoffset="0"/></svg>
       Launching...
     {:else}
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M10 3l7 4v6l-7 4-7-4V7l7-4z"/><path d="M10 7v6M7 9l3-2 3 2"/></svg>
-      Launch Canopy
+      Launch Bizforge
     {/if}
   </button>
 

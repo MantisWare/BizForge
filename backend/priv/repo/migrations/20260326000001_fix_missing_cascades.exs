@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.FixMissingCascades do
+defmodule Bizforge.Repo.Migrations.FixMissingCascades do
   use Ecto.Migration
 
   def change do

@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddAdapterOverrideToIssues do
+defmodule Bizforge.Repo.Migrations.AddAdapterOverrideToIssues do
   use Ecto.Migration
 
   def change do

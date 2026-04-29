@@ -138,7 +138,7 @@ const _agentApps: MockAgentApp[] = [
     template_source: "content-management-stack",
     status: "running",
     port: 3001,
-    directory: "~/.canopy/agent-apps/contentos",
+    directory: "~/.bizforge/agent-apps/contentos",
     created_at: "2026-03-20T09:15:00Z",
   },
   {
@@ -149,7 +149,7 @@ const _agentApps: MockAgentApp[] = [
     template_source: null,
     status: "stopped",
     port: null,
-    directory: "~/.canopy/agent-apps/data-pipeline",
+    directory: "~/.bizforge/agent-apps/data-pipeline",
     created_at: "2026-03-18T14:30:00Z",
   },
   {
@@ -160,7 +160,7 @@ const _agentApps: MockAgentApp[] = [
     template_source: "analytics-dashboard",
     status: "building",
     port: null,
-    directory: "~/.canopy/agent-apps/custom-dashboard",
+    directory: "~/.bizforge/agent-apps/custom-dashboard",
     created_at: "2026-03-24T08:00:00Z",
   },
 ];
@@ -186,7 +186,7 @@ const _capabilities: MockCapability[] = [
     name: "File System",
     available: true,
     details:
-      "Read/write access to ~/.canopy and configured workspace directories",
+      "Read/write access to ~/.bizforge and configured workspace directories",
   },
   {
     id: "cap-shell",

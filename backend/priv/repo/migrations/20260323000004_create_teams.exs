@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateTeams do
+defmodule Bizforge.Repo.Migrations.CreateTeams do
   use Ecto.Migration
 
   def change do

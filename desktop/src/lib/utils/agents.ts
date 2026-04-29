@@ -1,14 +1,14 @@
 // src/lib/utils/agents.ts
-// Converters between the three agent representations used in Canopy:
-//   - CanopyAgentDef  (.canopy/ filesystem scan, from Tauri IPC / canopy.ts)
+// Converters between the three agent representations used in Bizforge:
+//   - BizforgeAgentDef  (.bizforge/ filesystem scan, from Tauri IPC / bizforge.ts)
 //   - AgentTemplateData  (onboarding store, onboarding.svelte.ts)
-//   - CanopyAgent  (API / backend wire type, api/types.ts)
+//   - BizforgeAgent  (API / backend wire type, api/types.ts)
 
-import type { CanopyAgent, AdapterType } from "$api/types";
-import type { CanopyAgentDef } from "$lib/types/canopy";
+import type { BizforgeAgent, AdapterType } from "$api/types";
+import type { BizforgeAgentDef } from "$lib/types/bizforge";
 import type { AgentTemplateData } from "$lib/stores/onboarding.svelte";
 
-// The .canopy/ workspace uses hyphenated adapter names (e.g. "claude-code")
+// The .bizforge/ workspace uses hyphenated adapter names (e.g. "claude-code")
 // while the API uses underscored names (e.g. "claude_code"). This normalizes
 // any hyphenated value into the API's AdapterType union.
 function normalizeAdapter(raw: string): AdapterType {
@@ -40,8 +40,8 @@ const ZERO_USAGE = {
   cache_write: 0,
 } as const;
 
-/** Convert a scanned CanopyAgentDef (from Tauri IPC / .canopy/ workspace) to a CanopyAgent. */
-export function canopyDefToAgent(def: CanopyAgentDef): CanopyAgent {
+/** Convert a scanned BizforgeAgentDef (from Tauri IPC / .bizforge/ workspace) to a BizforgeAgent. */
+export function bizforgeDefToAgent(def: BizforgeAgentDef): BizforgeAgent {
   const now = new Date().toISOString();
   return {
     id: def.id,
@@ -67,8 +67,8 @@ export function canopyDefToAgent(def: CanopyAgentDef): CanopyAgent {
   };
 }
 
-/** Convert an onboarding AgentTemplateData to a CanopyAgent. */
-export function templateToAgent(tmpl: AgentTemplateData): CanopyAgent {
+/** Convert an onboarding AgentTemplateData to a BizforgeAgent. */
+export function templateToAgent(tmpl: AgentTemplateData): BizforgeAgent {
   const now = new Date().toISOString();
   return {
     id: tmpl.id,

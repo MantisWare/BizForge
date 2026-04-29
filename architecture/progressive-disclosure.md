@@ -1,6 +1,6 @@
 # Progressive Disclosure Model
 
-> How Canopy loads context in tiers — from lightweight catalog discovery to
+> How Bizforge loads context in tiers — from lightweight catalog discovery to
 > full resource activation. The system that keeps context windows focused and
 > token budgets under control without sacrificing depth when depth is needed.
 

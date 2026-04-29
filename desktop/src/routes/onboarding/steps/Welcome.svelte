@@ -28,7 +28,7 @@
 
       const { invoke } = await import('@tauri-apps/api/core');
       try {
-        const workspace = await invoke('scan_canopy_dir', { path: selected }) as {
+        const workspace = await invoke('scan_bizforge_dir', { path: selected }) as {
           name?: string;
           agents?: { id: string; name: string; adapter: string; role: string }[];
         };
@@ -76,7 +76,7 @@
       onended={(e) => { const v = e.currentTarget as HTMLVideoElement; v.src = '/OSLoopingActiveMode.mp4'; v.loop = true; v.play(); }}
     ></video>
   </div>
-  <h1 class="ob-title">Welcome to Canopy</h1>
+  <h1 class="ob-title">Welcome to Bizforge</h1>
   <p class="ob-subtitle">Your AI agent command center</p>
   <div class="ob-field">
     <label class="ob-label" for="ob-name">YOUR NAME</label>
@@ -98,7 +98,7 @@
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 10v5a2 2 0 002 2h10a2 2 0 002-2v-5"/><path d="M10 3v10M6 7l4-4 4 4"/></svg>
       Import existing workspace
     </button>
-    <p class="ob-import-hint">Have a .canopy/ workspace already? Import it and we'll detect your config.</p>
+    <p class="ob-import-hint">Have a .bizforge/ workspace already? Import it and we'll detect your config.</p>
   </div>
 </div>
 

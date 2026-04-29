@@ -686,7 +686,7 @@ Spatial adds value for **structural** tasks (placing, connecting, rearranging no
 The workspace is organized as a curved theater around the user:
 
 ```
-                        OVERVIEW CANOPY
+                        OVERVIEW BIZFORGE
                      (pipeline topology)
                     ~~~~~~~~~~~~~~~~~~~~~~~~
                    /                        \
@@ -705,7 +705,7 @@ The workspace is organized as a curved theater around the user:
 ```
 
 - **Focus Arc** (120 degrees, 1.2-2.0m): Primary node graph workspace
-- **Overview Canopy** (above, 2.5-4.0m): Miniature pipeline topology + health heatmap
+- **Overview Bizforge** (above, 2.5-4.0m): Miniature pipeline topology + health heatmap
 - **Utility Rails** (left/right flanks): Agent library, monitoring, logs
 - **Shelf** (below sightline, 0.8-1.0m): Run/stop, undo/redo, quick tools
 

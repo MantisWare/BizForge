@@ -54,9 +54,9 @@
   /** Read both localStorage onboarding keys (handles legacy + new format). */
   function isOnboardingComplete(): boolean {
     if (typeof localStorage === 'undefined') return false;
-    if (localStorage.getItem('canopy-onboarding-complete') === 'true') return true;
+    if (localStorage.getItem('bizforge-onboarding-complete') === 'true') return true;
     try {
-      const raw = localStorage.getItem('canopy-onboarding');
+      const raw = localStorage.getItem('bizforge-onboarding');
       return raw ? (JSON.parse(raw) as { completed?: boolean }).completed === true : false;
     } catch {
       return false;
@@ -67,7 +67,7 @@
 
   const isRegisterMode = $derived(mode === 'register');
   const submitLabel = $derived(isRegisterMode ? 'Create account' : 'Sign in');
-  const headingText = $derived(isRegisterMode ? 'Create your account' : 'Sign in to Canopy');
+  const headingText = $derived(isRegisterMode ? 'Create your account' : 'Sign in to Bizforge');
   const subheadingText = $derived(
     isRegisterMode
       ? 'Set up your workspace and start orchestrating agents'
@@ -126,10 +126,10 @@
         resetInitPromise();
 
         // Store registration data for onboarding to pre-fill.
-        localStorage.setItem('canopy-display-name', result.user.name);
-        localStorage.setItem('canopy-registered-name', result.user.name);
-        localStorage.setItem('canopy-registered-workspace-id', result.workspace.id);
-        localStorage.setItem('canopy-registered-workspace-name', result.workspace.name);
+        localStorage.setItem('bizforge-display-name', result.user.name);
+        localStorage.setItem('bizforge-registered-name', result.user.name);
+        localStorage.setItem('bizforge-registered-workspace-id', result.workspace.id);
+        localStorage.setItem('bizforge-registered-workspace-name', result.workspace.name);
 
         // New account → always needs onboarding; do NOT mark it complete.
         goto('/onboarding', { replaceState: true });
@@ -141,7 +141,7 @@
         await persistToken(result.token);
         resetInitPromise();
 
-        localStorage.setItem('canopy-display-name', result.user.name);
+        localStorage.setItem('bizforge-display-name', result.user.name);
 
         // Returning user: honour their existing onboarding state instead of
         // unconditionally marking onboarding complete.  If they haven't
@@ -177,14 +177,14 @@
   <div class="auth-container">
     <!-- Logo / Branding -->
     <header class="auth-header">
-      <div class="auth-logo" aria-label="Canopy logo">
+      <div class="auth-logo" aria-label="Bizforge logo">
         <!-- Tree / branching icon -->
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-hidden="true">
           <rect width="32" height="32" rx="8" fill="rgba(59,130,246,0.15)"/>
           <path d="M16 6 L16 26 M16 26 L10 20 M16 26 L22 20 M16 16 L10 12 M16 16 L22 12" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <span class="auth-wordmark">Canopy</span>
+      <span class="auth-wordmark">Bizforge</span>
     </header>
 
     <!-- Card -->
@@ -373,7 +373,7 @@
 
     <!-- Footer -->
     <footer class="auth-footer">
-      <span>Canopy</span>
+      <span>Bizforge</span>
       <span aria-hidden="true">·</span>
       <span>AI agent orchestration</span>
     </footer>

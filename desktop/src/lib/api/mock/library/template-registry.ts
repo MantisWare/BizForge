@@ -9,7 +9,7 @@ export interface TemplateManifest {
   emoji: string;
   description: string;
   category: string;
-  /** Path relative to the canopy-main repository root */
+  /** Path relative to the bizforge-main repository root */
   basePath: string;
   agentCount: number;
   skillCount: number;

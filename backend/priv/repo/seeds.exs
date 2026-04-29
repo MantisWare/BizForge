@@ -1,8 +1,8 @@
 import Ecto.Query
 
-alias Canopy.Repo
+alias Bizforge.Repo
 
-alias Canopy.Schemas.{
+alias Bizforge.Schemas.{
   User,
   Workspace,
   Agent,
@@ -36,30 +36,30 @@ alias Canopy.Schemas.{
 }
 
 # ---------------------------------------------------------------------------
-# Demo seed guard: set CANOPY_SEED_DEMO=true to populate the database with
+# Demo seed guard: set BIZFORGE_SEED_DEMO=true to populate the database with
 # sample users, workspaces, agents, and other demo data.
 #
-#   CANOPY_SEED_DEMO=true mix run priv/repo/seeds.exs
+#   BIZFORGE_SEED_DEMO=true mix run priv/repo/seeds.exs
 #
 # Without the env var, this file is a no-op so that production and CI
 # environments never accidentally create demo credentials.
 # ---------------------------------------------------------------------------
 
-unless System.get_env("CANOPY_SEED_DEMO") == "true" do
+unless System.get_env("BIZFORGE_SEED_DEMO") == "true" do
   IO.puts("""
 
-  === Canopy Seeds ===
+  === Bizforge Seeds ===
 
-  Skipped: CANOPY_SEED_DEMO is not set to "true".
+  Skipped: BIZFORGE_SEED_DEMO is not set to "true".
 
   To populate demo data, run:
 
-      CANOPY_SEED_DEMO=true mix run priv/repo/seeds.exs
+      BIZFORGE_SEED_DEMO=true mix run priv/repo/seeds.exs
 
   """)
 else
 
-IO.puts("\n=== Canopy Dev Seeds ===\n")
+IO.puts("\n=== Bizforge Dev Seeds ===\n")
 
 # ---------------------------------------------------------------------------
 # SECTION 1: Users
@@ -70,8 +70,8 @@ IO.puts("[1/27] Users...")
 Repo.insert(
   User.changeset(%User{}, %{
     name: "Roberto Luna",
-    email: "admin@canopy.dev",
-    password: "canopy123",
+    email: "admin@bizforge.dev",
+    password: "bizforge123",
     role: "admin"
   }),
   on_conflict: :nothing,
@@ -81,18 +81,18 @@ Repo.insert(
 Repo.insert(
   User.changeset(%User{}, %{
     name: "Dev User",
-    email: "dev@canopy.dev",
-    password: "canopy123",
+    email: "dev@bizforge.dev",
+    password: "bizforge123",
     role: "member"
   }),
   on_conflict: :nothing,
   conflict_target: :email
 )
 
-admin = Repo.get_by!(User, email: "admin@canopy.dev")
-_dev_user = Repo.get_by!(User, email: "dev@canopy.dev")
+admin = Repo.get_by!(User, email: "admin@bizforge.dev")
+_dev_user = Repo.get_by!(User, email: "dev@bizforge.dev")
 
-IO.puts("    admin@canopy.dev (admin), dev@canopy.dev (member)")
+IO.puts("    admin@bizforge.dev (admin), dev@bizforge.dev (member)")
 
 # ---------------------------------------------------------------------------
 # SECTION 2: Workspace
@@ -103,7 +103,7 @@ IO.puts("[2/27] Workspace...")
 Repo.insert(
   Workspace.changeset(%Workspace{}, %{
     name: "OSA Development",
-    path: Path.expand("~/.canopy/default"),
+    path: Path.expand("~/.bizforge/default"),
     status: "active",
     owner_id: admin.id
   }),
@@ -246,10 +246,10 @@ IO.puts("    3 schedules (all disabled): morning standup, nightly code review, i
 
 IO.puts("[5/27] Projects...")
 
-unless Repo.exists?(from p in Project, where: p.workspace_id == ^workspace.id and p.name == "Canopy Platform") do
+unless Repo.exists?(from p in Project, where: p.workspace_id == ^workspace.id and p.name == "Bizforge Platform") do
   Repo.insert!(%Project{
-    name: "Canopy Platform",
-    description: "The Canopy Command Center desktop application and backend API.",
+    name: "Bizforge Platform",
+    description: "The Bizforge Command Center desktop application and backend API.",
     status: "active",
     workspace_id: workspace.id
   })
@@ -264,10 +264,10 @@ unless Repo.exists?(from p in Project, where: p.workspace_id == ^workspace.id an
   })
 end
 
-canopy_project = Repo.get_by!(Project, workspace_id: workspace.id, name: "Canopy Platform")
+bizforge_project = Repo.get_by!(Project, workspace_id: workspace.id, name: "Bizforge Platform")
 infra_project = Repo.get_by!(Project, workspace_id: workspace.id, name: "Infrastructure")
 
-IO.puts("    2 projects: \"Canopy Platform\", \"Infrastructure\"")
+IO.puts("    2 projects: \"Bizforge Platform\", \"Infrastructure\"")
 
 # ---------------------------------------------------------------------------
 # SECTION 6: Goals
@@ -278,10 +278,10 @@ IO.puts("[6/27] Goals...")
 unless Repo.exists?(from g in Goal, where: g.workspace_id == ^workspace.id and g.title == "Launch MVP") do
   Repo.insert!(%Goal{
     title: "Launch MVP",
-    description: "Ship the first production-ready release of Canopy with core agent management features.",
+    description: "Ship the first production-ready release of Bizforge with core agent management features.",
     status: "active",
     workspace_id: workspace.id,
-    project_id: canopy_project.id
+    project_id: bizforge_project.id
   })
 end
 
@@ -293,7 +293,7 @@ unless Repo.exists?(from g in Goal, where: g.workspace_id == ^workspace.id and g
     description: "Build the pluggable adapter layer supporting osa, claude-code, bash, http, and codex adapters.",
     status: "active",
     workspace_id: workspace.id,
-    project_id: canopy_project.id,
+    project_id: bizforge_project.id,
     parent_id: launch_mvp.id
   })
 end
@@ -337,7 +337,7 @@ issues = [
     status: "todo",
     priority: "high",
     workspace_id: workspace.id,
-    project_id: canopy_project.id,
+    project_id: bizforge_project.id,
     goal_id: adapter_goal.id,
     assignee_id: developer.id
   },
@@ -347,7 +347,7 @@ issues = [
     status: "backlog",
     priority: "medium",
     workspace_id: workspace.id,
-    project_id: canopy_project.id,
+    project_id: bizforge_project.id,
     goal_id: adapter_goal.id
   },
   %{
@@ -356,17 +356,17 @@ issues = [
     status: "in_progress",
     priority: "critical",
     workspace_id: workspace.id,
-    project_id: canopy_project.id,
+    project_id: bizforge_project.id,
     goal_id: launch_mvp.id,
     assignee_id: developer.id
   },
   %{
     title: "Add budget enforcement UI",
-    description: "Budget policy editor in the Canopy UI: set monthly limits, warning thresholds, and view spend history.",
+    description: "Budget policy editor in the Bizforge UI: set monthly limits, warning thresholds, and view spend history.",
     status: "todo",
     priority: "medium",
     workspace_id: workspace.id,
-    project_id: canopy_project.id,
+    project_id: bizforge_project.id,
     goal_id: launch_mvp.id
   },
   %{
@@ -509,7 +509,7 @@ activity_seeds = [
   },
   %{
     event_type: "session.completed",
-    message: "Orchestrator completed session: architecture planning for Canopy adapter system.",
+    message: "Orchestrator completed session: architecture planning for Bizforge adapter system.",
     level: "info",
     metadata: %{duration_ms: 42_300, tokens_used: 18_400},
     workspace_id: workspace.id,
@@ -668,7 +668,7 @@ unless Repo.exists?(from m in OrganizationMembership, where: m.organization_id =
   )
 end
 
-IO.puts("    admin@canopy.dev: owner of MIOSA Labs, admin of Acme Corp")
+IO.puts("    admin@bizforge.dev: owner of MIOSA Labs, admin of Acme Corp")
 
 # ---------------------------------------------------------------------------
 # SECTION 13: Secrets
@@ -743,7 +743,7 @@ unless Repo.exists?(from a in Approval, where: a.workspace_id == ^workspace.id a
   Repo.insert!(
     Approval.changeset(%Approval{}, %{
       title: "Deploy v2.1 to production",
-      description: "Requesting approval to deploy Canopy v2.1 to the production environment. Includes adapter system, budget UI, and SSE fixes.",
+      description: "Requesting approval to deploy Bizforge v2.1 to the production environment. Includes adapter system, budget UI, and SSE fixes.",
       status: "pending",
       context: %{version: "2.1.0", environment: "production", risk: "medium"},
       requested_by: orchestrator.id,
@@ -792,7 +792,7 @@ plugins = [
     name: "Slack",
     version: "1.2.0",
     enabled: true,
-    config: %{channel: "#canopy-alerts", notify_on: ["session.completed", "budget.warning", "agent.error"]},
+    config: %{channel: "#bizforge-alerts", notify_on: ["session.completed", "budget.warning", "agent.error"]},
     workspace_id: workspace.id
   },
   %{
@@ -1131,7 +1131,7 @@ unless Repo.exists?(
       status: "active",
       trigger_type: "schedule",
       trigger_config: %{cron: "0 9 * * 1-5", timezone: "UTC"},
-      created_by: "admin@canopy.dev",
+      created_by: "admin@bizforge.dev",
       version: 1
     })
   )
@@ -1192,7 +1192,7 @@ unless Repo.exists?(
       status: "active",
       trigger_type: "schedule",
       trigger_config: %{cron: "0 2 * * 1", timezone: "UTC"},
-      created_by: "admin@canopy.dev",
+      created_by: "admin@bizforge.dev",
       version: 1
     })
   )
@@ -1332,7 +1332,7 @@ impl_messages = [
     conversation_id: impl_conv.id,
     role: "agent",
     content:
-      "Created lib/canopy/adapters/osa.ex implementing AdapterBehaviour. It wraps the local CLI subprocess with JSON-RPC framing.",
+      "Created lib/bizforge/adapters/osa.ex implementing AdapterBehaviour. It wraps the local CLI subprocess with JSON-RPC framing.",
     content_type: "text",
     inserted_at: now,
     updated_at: now
@@ -1436,7 +1436,7 @@ notifications_data = [
     severity: "info",
     title: "Approval required: Deploy v2.1 to production",
     body:
-      "Orchestrator has requested approval to deploy Canopy v2.1. Review and approve or reject.",
+      "Orchestrator has requested approval to deploy Bizforge v2.1. Review and approve or reject.",
     action_url: "/approvals",
     action_label: "Review"
   },
@@ -1775,11 +1775,11 @@ IO.puts("""
 
 === Seed complete ===
 
-  Users         admin@canopy.dev (admin), dev@canopy.dev (member)
+  Users         admin@bizforge.dev (admin), dev@bizforge.dev (member)
   Workspace     \"OSA Development\"
   Agents        6  (orchestrator, researcher, developer, reviewer, devops, api-monitor)
   Schedules     3  (all disabled)
-  Projects      2  (Canopy Platform, Infrastructure)
+  Projects      2  (Bizforge Platform, Infrastructure)
   Goals         4  (Launch MVP + child, Setup CI/CD, Security Audit)
   Issues        6  (todo x2, in_progress x1, in_review x1, backlog x2)
   Budgets       2  (agent $50/mo, workspace $200/mo)
@@ -1807,5 +1807,5 @@ IO.puts("""
   Reports       2  (weekly performance, monthly cost)
 """)
 
-# end of CANOPY_SEED_DEMO guard
+# end of BIZFORGE_SEED_DEMO guard
 end

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Canopy Command Center — Quick Launch
+# Bizforge Command Center — Quick Launch
 # Usage: ./scripts/launch.sh
 
 set -e
@@ -17,16 +17,16 @@ npm run dev &
 VITE_PID=$!
 
 # Wait for Vite to be ready
-echo "Starting Canopy..."
+echo "Starting Bizforge..."
 for i in $(seq 1 30); do
   curl -s -o /dev/null http://127.0.0.1:5200 2>/dev/null && break
   sleep 1
 done
 
 # Launch native app if binary exists, otherwise open in browser
-if [ -f "$DIR/src-tauri/target/debug/Canopy" ]; then
-  "$DIR/src-tauri/target/debug/Canopy" &
-  echo "Canopy desktop app launched"
+if [ -f "$DIR/src-tauri/target/debug/Bizforge" ]; then
+  "$DIR/src-tauri/target/debug/Bizforge" &
+  echo "Bizforge desktop app launched"
 else
   echo "No Tauri binary found. Run 'npm run tauri:build' first for native app."
   echo "Opening in browser at http://127.0.0.1:5200/app"

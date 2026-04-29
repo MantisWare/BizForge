@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateSessionEvents do
+defmodule Bizforge.Repo.Migrations.CreateSessionEvents do
   use Ecto.Migration
 
   def change do

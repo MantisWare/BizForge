@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateDocumentRevisions do
+defmodule Bizforge.Repo.Migrations.CreateDocumentRevisions do
   use Ecto.Migration
 
   def change do

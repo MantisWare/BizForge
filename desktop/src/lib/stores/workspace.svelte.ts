@@ -4,7 +4,7 @@ import { isTauri } from "$lib/utils/platform";
 import type { Workspace as BackendWorkspace } from "$api/types";
 import { toastStore } from "./toasts.svelte";
 import { workspaces as workspacesApi, isMockEnabled } from "$api/client";
-import type { CanopyWorkspace } from "$lib/types/canopy";
+import type { BizforgeWorkspace } from "$lib/types/bizforge";
 
 /**
  * Extract the `description` field from YAML frontmatter in a markdown file.
@@ -44,18 +44,18 @@ export interface LocalWorkspace {
   addedAt: string;
 }
 
-/** Tauri IPC scan result — structurally identical to CanopyWorkspace. */
-type CanopyWorkspaceScan = CanopyWorkspace;
+/** Tauri IPC scan result — structurally identical to BizforgeWorkspace. */
+type BizforgeWorkspaceScan = BizforgeWorkspace;
 
-const STORAGE_KEY = "canopy-workspaces";
-const ACTIVE_KEY = "canopy-active-workspace";
+const STORAGE_KEY = "bizforge-workspaces";
+const ACTIVE_KEY = "bizforge-active-workspace";
 
 class WorkspaceStore {
   workspaces = $state<LocalWorkspace[]>([]);
   activeWorkspaceId = $state<string | null>(null);
   isLoading = $state(false);
   error = $state<string | null>(null);
-  lastScan = $state<CanopyWorkspaceScan | null>(null);
+  lastScan = $state<BizforgeWorkspaceScan | null>(null);
 
   get activeWorkspace(): LocalWorkspace | null {
     return (
@@ -91,21 +91,21 @@ class WorkspaceStore {
     }
   }
 
-  /** Scan a directory via Tauri IPC — returns null if .canopy/ doesn't exist */
-  async scanWorkspace(path: string): Promise<CanopyWorkspaceScan | null> {
+  /** Scan a directory via Tauri IPC — returns null if .bizforge/ doesn't exist */
+  async scanWorkspace(path: string): Promise<BizforgeWorkspaceScan | null> {
     if (!isTauri()) return null;
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      const canopyPath = path.endsWith(".canopy") ? path : path + "/.canopy";
-      const result = await invoke<CanopyWorkspaceScan>("scan_canopy_dir", {
-        path: canopyPath,
+      const bizforgePath = path.endsWith(".bizforge") ? path : path + "/.bizforge";
+      const result = await invoke<BizforgeWorkspaceScan>("scan_bizforge_dir", {
+        path: bizforgePath,
       });
       this.lastScan = result;
       return result;
     } catch {
       toastStore.warning(
         "Workspace scan failed",
-        `.canopy directory not found at ${path}`,
+        `.bizforge directory not found at ${path}`,
       );
       return null;
     }
@@ -182,10 +182,10 @@ class WorkspaceStore {
     if (scan.agents.length === 0) return;
 
     // Dynamic import to avoid circular deps
-    const { canopyDefToAgent } = await import("$lib/utils/agents");
+    const { bizforgeDefToAgent } = await import("$lib/utils/agents");
     const { agentsStore } = await import("./agents.svelte");
 
-    const agents = scan.agents.map(canopyDefToAgent);
+    const agents = scan.agents.map(bizforgeDefToAgent);
     // Merge scanned agents with existing, deduplicating by ID (API record wins)
     agentsStore.agents = [
       ...new Map(
@@ -203,12 +203,12 @@ class WorkspaceStore {
       const { invoke } = await import("@tauri-apps/api/core");
       const { listen } = await import("@tauri-apps/api/event");
 
-      const canopyPath = ws.path.endsWith(".canopy")
+      const bizforgePath = ws.path.endsWith(".bizforge")
         ? ws.path
-        : ws.path + "/.canopy";
-      await invoke("watch_canopy_dir", { path: canopyPath });
+        : ws.path + "/.bizforge";
+      await invoke("watch_bizforge_dir", { path: bizforgePath });
 
-      listen("canopy-fs-event", async () => {
+      listen("bizforge-fs-event", async () => {
         const active = this.activeWorkspace;
         if (active) {
           await this.scanAndLoadAgents(active.path);
@@ -265,7 +265,7 @@ class WorkspaceStore {
             path:
               bws.path ??
               bws.directory ??
-              `~/.canopy/${bws.name.toLowerCase().replace(/\s+/g, "-")}`,
+              `~/.bizforge/${bws.name.toLowerCase().replace(/\s+/g, "-")}`,
             addedAt: bws.created_at ?? new Date().toISOString(),
           };
           this.workspaces = [...this.workspaces, localWs];
@@ -294,7 +294,7 @@ class WorkspaceStore {
     directory?: string,
   ): Promise<LocalWorkspace | null> {
     const rawPath =
-      directory ?? `~/.canopy/${name.toLowerCase().replace(/\s+/g, "-")}`;
+      directory ?? `~/.bizforge/${name.toLowerCase().replace(/\s+/g, "-")}`;
     const resolvedPath = await resolveHomePath(rawPath);
 
     let backendId: string | null = null;

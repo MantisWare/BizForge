@@ -1,11 +1,11 @@
-# Canopy
+# Bizforge
 
-![Canopy Command Center](desktop/static/canopy-screenshot.png)
+![Bizforge Command Center](desktop/static/bizforge-screenshot.png)
 
 > Open-source workspace protocol and command center for AI agent systems.
 > Build autonomous AI companies — not chatbots.
 
-Canopy is a workspace protocol that turns folders of markdown into fully operational AI companies. Define agents, skills, teams, budgets, and governance in plain files — then connect any AI backend (Claude Code, OSA, Codex, Gemini, Cursor, Aider, Windsurf) and watch them work autonomously on heartbeat schedules.
+Bizforge is a workspace protocol that turns folders of markdown into fully operational AI companies. Define agents, skills, teams, budgets, and governance in plain files — then connect any AI backend (Claude Code, OSA, Codex, Gemini, Cursor, Aider, Windsurf) and watch them work autonomously on heartbeat schedules.
 
 The desktop command center gives you a native app to hire from 330+ agents, watch them collaborate in a pixel-art virtual office, monitor token costs in real-time, and intervene when needed.
 
@@ -17,10 +17,10 @@ The desktop command center gives you a native app to hire from 330+ agents, watc
 
 ```bash
 # macOS: recommended installer (handles keg-only Homebrew, PG user detection)
-cd canopy && ./install_mac.sh
+cd bizforge && ./install_mac.sh
 
 # Cross-platform: install and launch in one command
-curl -fsSL https://raw.githubusercontent.com/Miosa-osa/canopy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MantisWare/BizForge/main/install.sh | bash
 ```
 
 Installs prerequisites, clones the repo, sets up the database, and opens the app.
@@ -28,12 +28,12 @@ Installs prerequisites, clones the repo, sets up the database, and opens the app
 ```bash
 # Already cloned? Manual setup
 brew install just            # one-time: install the command runner
-cd canopy && just setup && just dev
+cd bizforge && just setup && just dev
 ```
 
 ```bash
 # Just want the protocol? No app needed
-cd canopy/operations/sales-engine
+cd bizforge/operations/sales-engine
 # Claude Code, Cursor, OSA, Codex — any agent reads SYSTEM.md and starts working
 ```
 
@@ -101,7 +101,7 @@ Connected Agents (Claude Code, OSA, Cursor, Codex, Gemini, Aider, Windsurf, Open
 
 ### Workspace Protocol
 
-The Canopy workspace is a folder of plain markdown files. No proprietary server, no lock-in. The directory structure is the architecture:
+The Bizforge workspace is a folder of plain markdown files. No proprietary server, no lock-in. The directory structure is the architecture:
 
 ```
 L0  SYSTEM.md + company.yaml          Always loaded (~2K tokens)
@@ -218,7 +218,7 @@ Approval enforcement integrated into the controller pipeline:
 - **Auto-execution** — approved actions replay automatically via the Executor
 - **Idempotent** — duplicate pending approvals are deduplicated
 
-Governance is a Phoenix plug (`CanopyWeb.Plugs.Governance`) that halts with HTTP 202 when an action requires approval. The workspace's `governance` config determines which actions need approval and which roles are auto-approved.
+Governance is a Phoenix plug (`BizforgeWeb.Plugs.Governance`) that halts with HTTP 202 when an action requires approval. The workspace's `governance` config determines which actions need approval and which roles are auto-approved.
 
 ```
 POST /spawn  →  Governance plug  →  Gate.check(:spawn_agent)
@@ -258,7 +258,7 @@ DAG-based workflow execution with 7 step types:
 Workflows support:
 - Topological sort for dependency resolution
 - Retry with configurable backoff (constant, linear, exponential)
-- Cron-based scheduled execution via `Canopy.Workflows.Scheduler`
+- Cron-based scheduled execution via `Bizforge.Workflows.Scheduler`
 - Step-level status tracking (pending → running → completed/failed/skipped)
 - OTP supervision for fault tolerance
 
@@ -266,7 +266,7 @@ Workflows support:
 
 Agents will be able to buy things. Stripe's Machine Payments Protocol (MPP) lets agents transact autonomously — pay for APIs, buy compute, purchase services from other agent workspaces.
 
-Canopy's budget enforcement will wrap around MPP:
+Bizforge's budget enforcement will wrap around MPP:
 
 - **Under threshold** — agent pays autonomously, logged to budget
 - **Over threshold** — payment queued for human approval
@@ -382,7 +382,7 @@ sales-engine/
 |   +-- pipeline.json
 |   +-- call-notes/
 |
-+-- .canopy/                  Runtime state (gitignored)
++-- .bizforge/                  Runtime state (gitignored)
     +-- tasks/
     +-- sessions/
     +-- observations/
@@ -424,7 +424,7 @@ Browse the library in the Command Center or drop any agent file into your `agent
 
 ## Adapters
 
-Canopy dispatches work to any connected runtime. Eleven adapters — five fully functional, six in beta:
+Bizforge dispatches work to any connected runtime. Eleven adapters — five fully functional, six in beta:
 
 | Adapter | Status | Install |
 |---------|--------|---------|
@@ -441,7 +441,7 @@ Canopy dispatches work to any connected runtime. Eleven adapters — five fully 
 
 The Command Center auto-detects installed adapters and provides one-click setup wizards. Provider credentials are stored in the OS keychain via Tauri's secure store.
 
-All adapters implement the `Canopy.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
+All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
 
 ---
 
@@ -473,19 +473,19 @@ All adapters implement the `Canopy.Adapter` behaviour: `execute/2`, `stream/2`, 
 
 | Module | Purpose |
 |--------|---------|
-| `Canopy.Heartbeat` | 9-step agent execution cycle with Quantum scheduling |
-| `Canopy.BudgetEnforcer` | ETS atomic counters, 5-level cascade, hard stop enforcement |
-| `Canopy.Governance.Gate` | Plug-based approval enforcement on spawn/delete/budget/strategy |
-| `Canopy.Governance.Executor` | Replays approved actions (spawn, delete, budget override) |
-| `Canopy.Dispatch.Router` | Content-based adapter routing with label + regex matching |
-| `Canopy.Dispatch.Delegation` | Subtask creation with adapter-aware agent selection |
-| `Canopy.Sessions.Compactor` | Session summarization, handoff generation, context injection |
-| `Canopy.Sessions.Chain` | Linked session chains with cumulative token tracking |
-| `Canopy.Workflows.Engine` | DAG workflow execution with topological sort and retry |
-| `Canopy.Workflows.Scheduler` | Cron-based workflow triggering |
-| `Canopy.Notifications.Dispatcher` | Multi-channel notification creation and broadcasting |
-| `Canopy.EventBus` | Phoenix PubSub topic management for real-time updates |
-| `Canopy.IssueDispatcher` | Task assignment with priority queue and team routing |
+| `Bizforge.Heartbeat` | 9-step agent execution cycle with Quantum scheduling |
+| `Bizforge.BudgetEnforcer` | ETS atomic counters, 5-level cascade, hard stop enforcement |
+| `Bizforge.Governance.Gate` | Plug-based approval enforcement on spawn/delete/budget/strategy |
+| `Bizforge.Governance.Executor` | Replays approved actions (spawn, delete, budget override) |
+| `Bizforge.Dispatch.Router` | Content-based adapter routing with label + regex matching |
+| `Bizforge.Dispatch.Delegation` | Subtask creation with adapter-aware agent selection |
+| `Bizforge.Sessions.Compactor` | Session summarization, handoff generation, context injection |
+| `Bizforge.Sessions.Chain` | Linked session chains with cumulative token tracking |
+| `Bizforge.Workflows.Engine` | DAG workflow execution with topological sort and retry |
+| `Bizforge.Workflows.Scheduler` | Cron-based workflow triggering |
+| `Bizforge.Notifications.Dispatcher` | Multi-channel notification creation and broadcasting |
+| `Bizforge.EventBus` | Phoenix PubSub topic management for real-time updates |
+| `Bizforge.IssueDispatcher` | Task assignment with priority queue and team routing |
 
 ---
 
@@ -526,7 +526,7 @@ just doctor             # Check prerequisites and ports
 The backend reads from `.env` in the project root. Required variables:
 
 ```bash
-DATABASE_URL=postgres://localhost/canopy_dev
+DATABASE_URL=postgres://localhost/bizforge_dev
 SECRET_KEY_BASE=...         # mix phx.gen.secret
 GUARDIAN_SECRET_KEY=...     # mix guardian.gen.secret
 ```
@@ -553,7 +553,7 @@ just test                    # Both
 
 ## Theoretical Foundation
 
-Canopy implements the **Optimal System** architecture from *Signal Theory: The Architecture of Optimal Intent Encoding* (MIOSA Research, 2026). The protocol's directory structure, agent format, progressive disclosure, and governance model directly implement the paper's 7-layer system:
+Bizforge implements the **Optimal System** architecture from *Signal Theory: The Architecture of Optimal Intent Encoding* (MIOSA Research, 2026). The protocol's directory structure, agent format, progressive disclosure, and governance model directly implement the paper's 7-layer system:
 
 1. **Network** — `company.yaml` and `reportsTo` define who connects to whom
 2. **Signal** — `S=(M,G,T,F,W)` encodes intent across 5 dimensions
@@ -570,18 +570,18 @@ Every design decision traces to one of four governing principles: **Shannon** (c
 ## Ecosystem
 
 ```
-Canopy (protocol)   ->  Any agent reads it. Free. MIT license.
+Bizforge (protocol)   ->  Any agent reads it. Free. MIT license.
 Command Center      ->  Native desktop app. Free. Open source.
 MIOSA (platform)    ->  Managed VMs, marketplace, enterprise. Paid.
 ```
 
-Canopy is the open-source foundation. [MIOSA](https://miosa.ai) provides managed infrastructure, a marketplace for buying and selling agent workspaces, and enterprise governance tools built on top of the same protocol.
+Bizforge is the open-source foundation. [MIOSA](https://miosa.ai) provides managed infrastructure, a marketplace for buying and selling agent workspaces, and enterprise governance tools built on top of the same protocol.
 
 ---
 
 ## Repository
 
-[https://github.com/Miosa-osa/canopy](https://github.com/Miosa-osa/canopy)
+[https://github.com/MantisWare/BizForge](https://github.com/MantisWare/BizForge)
 
 Architecture reference docs live in `architecture/` — see the [Architecture README](architecture/README.md) for the full index.
 
@@ -607,7 +607,7 @@ Detailed documentation lives in the `docs/` directory:
 | [Getting Started](docs/getting-started.md) | End-user guide: from zero to a running AI Operation |
 | [Module Specs](docs/MODULE_SPECS.md) | Module specification reference |
 | [Known Issues](docs/KNOWN-ISSUES.md) | Known issues and workarounds |
-| [Contributing](docs/CONTRIBUTING.md) | How to contribute to Canopy |
+| [Contributing](docs/CONTRIBUTING.md) | How to contribute to Bizforge |
 
 ### Guides
 

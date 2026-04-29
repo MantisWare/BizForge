@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateAuditEvents do
+defmodule Bizforge.Repo.Migrations.CreateAuditEvents do
   use Ecto.Migration
 
   def change do

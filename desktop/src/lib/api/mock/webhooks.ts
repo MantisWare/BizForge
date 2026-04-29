@@ -5,7 +5,7 @@ let mockWebhookData: Webhook[] = [
     id: "wh-1",
     name: "GitHub Push Events",
     direction: "incoming",
-    url: "https://canopy.local/webhooks/github",
+    url: "https://bizforge.local/webhooks/github",
     events: ["push", "pull_request"],
     secret: null,
     enabled: true,

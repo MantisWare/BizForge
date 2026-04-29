@@ -33,7 +33,7 @@
 | 17 | [processing-pipeline.md](processing-pipeline.md) | 6R knowledge pipeline — Record, Reduce, Reflect, Reweave, Verify, Rethink with fresh context per phase |
 | 18 | [three-space-model.md](three-space-model.md) | Self/Knowledge/Ops separation — identity vs. growing graph vs. ephemeral scaffolding |
 | 19 | [team-coordination.md](team-coordination.md) | Multi-agent coordination — leader-worker hierarchy, filesystem messaging, git worktree isolation, team templates |
-| 20 | [optimal-system-mapping.md](optimal-system-mapping.md) | Canonical mapping of Canopy to the 7-layer Optimal System architecture from Signal Theory |
+| 20 | [optimal-system-mapping.md](optimal-system-mapping.md) | Canonical mapping of Bizforge to the 7-layer Optimal System architecture from Signal Theory |
 | 21 | [context-mesh.md](context-mesh.md) | Per-team context keeper GenServers — overflow context storage with 3 retrieval modes, 4-factor staleness scoring, and token budget allocation |
 | 22 | [decision-graph.md](decision-graph.md) | DAG-structured decision tracking — 5 node types, 10 edge types, confidence cascade, pivot chains, subtree merging, and narrative generation |
 | 23 | [self-healing.md](self-healing.md) | Autonomous error recovery — 8 error categories, 4 severities, ephemeral healing agents with budget caps, retry/escalation protocol |
@@ -103,7 +103,7 @@
    └─────────────┘
 ```
 
-The new `optimal-system-mapping.md` (entry 20) shows how ALL architecture specs in this index map to the 7 layers of the Optimal System — providing a single canonical cross-reference between Canopy's implementation documents and the Signal Theory architectural model.
+The new `optimal-system-mapping.md` (entry 20) shows how ALL architecture specs in this index map to the 7 layers of the Optimal System — providing a single canonical cross-reference between Bizforge's implementation documents and the Signal Theory architectural model.
 
 ## Runtime Subsystems (Entries 21–26)
 

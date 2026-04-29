@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.AddOrgFieldsAndWorkspaceFk do
+defmodule Bizforge.Repo.Migrations.AddOrgFieldsAndWorkspaceFk do
   use Ecto.Migration
 
   def change do

@@ -2,7 +2,7 @@
 <!-- Renders agents as pixel art characters in a tile-based office with rooms, furniture, and animations -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import type { CanopyAgent } from '$api/types';
+  import type { BizforgeAgent } from '$api/types';
   import type { Camera, OfficeCharacter, TimeOfDay } from './types';
   import { CharacterState } from './types';
   import { createDefaultLayout, findPath, SEATS } from './layout';
@@ -10,9 +10,9 @@
   import { clearSpriteCache } from './sprites';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
     selectedAgentId?: string | null;
-    onAgentClick?: (agent: CanopyAgent) => void;
+    onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
   let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
@@ -362,7 +362,7 @@
   {#if showSidebar}
     <div class="po-sidebar">
       <div class="po-sidebar-header">
-        <span class="po-team-name">CANOPY</span>
+        <span class="po-team-name">BIZFORGE</span>
         <span class="po-team-count">{agents.length} agents</span>
       </div>
       <div class="po-sidebar-tabs">

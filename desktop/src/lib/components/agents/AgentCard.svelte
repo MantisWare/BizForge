@@ -4,10 +4,10 @@
   import StatusDot from '$lib/components/shared/StatusDot.svelte';
   import TimeAgo from '$lib/components/shared/TimeAgo.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
-  import type { CanopyAgent, AgentStatus, AgentLifecycleAction } from '$api/types';
+  import type { BizforgeAgent, AgentStatus, AgentLifecycleAction } from '$api/types';
 
   interface Props {
-    agent: CanopyAgent;
+    agent: BizforgeAgent;
   }
 
   let { agent }: Props = $props();
@@ -46,7 +46,7 @@
     return `$${(cents / 100).toFixed(2)}`;
   }
 
-  function formatTokens(usage: CanopyAgent['token_usage_today']): string {
+  function formatTokens(usage: BizforgeAgent['token_usage_today']): string {
     const total = usage.input + usage.output;
     if (total === 0) return '0';
     if (total >= 1_000_000) return `${(total / 1_000_000).toFixed(1)}M`;

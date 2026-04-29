@@ -1,4 +1,4 @@
-# Canopy — Command Runner
+# Bizforge — Command Runner
 # Install: brew install just
 # Usage:  just --list        (show all recipes)
 #         just dev           (start full stack)
@@ -11,8 +11,8 @@ set positional-arguments := true
 root    := justfile_directory()
 backend := root / "backend"
 desktop := root / "desktop"
-pid_dir := root / ".canopy" / "pids"
-log_dir := root / ".canopy" / "logs"
+pid_dir := root / ".bizforge" / "pids"
+log_dir := root / ".bizforge" / "logs"
 
 # ── Setup ────────────────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ dev: _ensure-dirs
     # Open in browser (macOS)
     command -v open >/dev/null 2>&1 && open "http://127.0.0.1:5200/app" || true
 
-    printf "\nCanopy is running.\n"
+    printf "\nBizforge is running.\n"
     printf "  Backend:  http://127.0.0.1:9089\n"
     printf "  Desktop:  http://127.0.0.1:5200/app\n"
     printf "\nUse 'just status' to check, 'just logs backend' to tail, 'just stop' to shut down.\n"

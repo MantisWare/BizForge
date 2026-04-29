@@ -52,9 +52,9 @@
   /** Check both localStorage keys used for onboarding state. */
   function isOnboardingComplete(): boolean {
     if (typeof localStorage === 'undefined') return false;
-    if (localStorage.getItem('canopy-onboarding-complete') === 'true') return true;
+    if (localStorage.getItem('bizforge-onboarding-complete') === 'true') return true;
     try {
-      const raw = localStorage.getItem('canopy-onboarding');
+      const raw = localStorage.getItem('bizforge-onboarding');
       return raw ? (JSON.parse(raw) as { completed?: boolean }).completed === true : false;
     } catch {
       return false;

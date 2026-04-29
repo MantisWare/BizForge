@@ -1,5 +1,5 @@
 // src/lib/stores/office.svelte.ts
-import type { CanopyAgent } from "$api/types";
+import type { BizforgeAgent } from "$api/types";
 import { agentsStore } from "./agents.svelte";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -102,9 +102,9 @@ function slotToPixel(zone: OfficeZone, slot: number): { x: number; y: number } {
 /**
  * Determine whether an agent is a sub-agent.
  * Sub-agents carry `config.parent_id` (string) set by the caller at creation
- * time — a convention used throughout the Canopy agent creation flow.
+ * time — a convention used throughout the Bizforge agent creation flow.
  */
-function isSubAgent(agent: CanopyAgent): boolean {
+function isSubAgent(agent: BizforgeAgent): boolean {
   return (
     typeof agent.config?.parent_id === "string" && agent.config.parent_id !== ""
   );
@@ -115,7 +115,7 @@ function isSubAgent(agent: CanopyAgent): boolean {
  * Agents sharing the same `config.workspace_id` are considered collaborators.
  * Falls back to `budget_policy_id` when workspace_id is absent (legacy agents).
  */
-function workspaceKey(agent: CanopyAgent): string | null {
+function workspaceKey(agent: BizforgeAgent): string | null {
   if (
     typeof agent.config?.workspace_id === "string" &&
     agent.config.workspace_id !== ""
@@ -177,7 +177,7 @@ class OfficeStore {
    * Strength is 1.0 when both are running, 0.5 otherwise.
    */
   collaborationLinks = $derived.by<CollaborationLink[]>(() => {
-    const groups = new Map<string, CanopyAgent[]>();
+    const groups = new Map<string, BizforgeAgent[]>();
 
     for (const agent of agentsStore.agents) {
       const key = workspaceKey(agent);
@@ -214,15 +214,15 @@ class OfficeStore {
   });
 
   // ── Derived: selected agent object ────────────────────────────────────────
-  selectedAgent = $derived<CanopyAgent | null>(
+  selectedAgent = $derived<BizforgeAgent | null>(
     this.selectedAgentId
       ? (agentsStore.agents.find((a) => a.id === this.selectedAgentId) ?? null)
       : null,
   );
 
   // ── Derived: agents grouped by zone ───────────────────────────────────────
-  zoneAgents = $derived.by<Record<OfficeZone, CanopyAgent[]>>(() => {
-    const groups: Record<OfficeZone, CanopyAgent[]> = {
+  zoneAgents = $derived.by<Record<OfficeZone, BizforgeAgent[]>>(() => {
+    const groups: Record<OfficeZone, BizforgeAgent[]> = {
       desk: [],
       hotDesk: [],
       meeting: [],

@@ -9,7 +9,7 @@ const MOCK_PLUGINS: Plugin[] = [
     author: "MIOSA",
     status: "active",
     enabled: true,
-    config: { repo: "miosa/canopy", events: ["push", "pull_request"] },
+    config: { repo: "miosa/bizforge", events: ["push", "pull_request"] },
     capabilities: ["webhook_ingest", "pr_comment", "status_check"],
     installed_at: "2026-03-01T00:00:00Z",
     updated_at: "2026-03-15T00:00:00Z",

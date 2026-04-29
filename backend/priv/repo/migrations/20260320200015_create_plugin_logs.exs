@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreatePluginLogs do
+defmodule Bizforge.Repo.Migrations.CreatePluginLogs do
   use Ecto.Migration
 
   def change do

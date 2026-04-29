@@ -4,10 +4,10 @@
   import StatusDot from '$lib/components/shared/StatusDot.svelte';
   import TimeAgo from '$lib/components/shared/TimeAgo.svelte';
   import Badge from '$lib/components/shared/Badge.svelte';
-  import type { CanopyAgent, AgentStatus } from '$api/types';
+  import type { BizforgeAgent, AgentStatus } from '$api/types';
 
   interface Props {
-    agents: CanopyAgent[];
+    agents: BizforgeAgent[];
   }
 
   let { agents }: Props = $props();

@@ -1,8 +1,8 @@
-defmodule Canopy.TestHelpers do
+defmodule Bizforge.TestHelpers do
   @moduledoc "Factory functions and auth helpers for tests."
 
-  alias Canopy.Repo
-  alias Canopy.Schemas.{User, Workspace, Agent, BudgetPolicy, CostEvent, Approval, Team, TeamMembership, Department, Division, Organization}
+  alias Bizforge.Repo
+  alias Bizforge.Schemas.{User, Workspace, Agent, BudgetPolicy, CostEvent, Approval, Team, TeamMembership, Department, Division, Organization}
 
   # ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ defmodule Canopy.TestHelpers do
   end
 
   def generate_token(user) do
-    {:ok, token, _claims} = Canopy.Guardian.encode_and_sign(user)
+    {:ok, token, _claims} = Bizforge.Guardian.encode_and_sign(user)
     token
   end
 
@@ -35,7 +35,7 @@ defmodule Canopy.TestHelpers do
   def insert_user(attrs \\ %{}) do
     default = %{
       name: "Test User #{unique_id()}",
-      email: "test-#{unique_id()}@canopy.test",
+      email: "test-#{unique_id()}@bizforge.test",
       password: "testpassword123",
       role: "admin"
     }
@@ -48,7 +48,7 @@ defmodule Canopy.TestHelpers do
   def insert_workspace(user, attrs \\ %{}) do
     default = %{
       name: "Test Workspace #{unique_id()}",
-      path: "/tmp/canopy-test-#{unique_id()}",
+      path: "/tmp/bizforge-test-#{unique_id()}",
       status: "active",
       owner_id: user.id
     }

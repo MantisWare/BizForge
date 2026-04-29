@@ -1,4 +1,4 @@
-defmodule Canopy.Repo.Migrations.CreateIssueLabels do
+defmodule Bizforge.Repo.Migrations.CreateIssueLabels do
   use Ecto.Migration
 
   def change do

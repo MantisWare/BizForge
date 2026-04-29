@@ -8,17 +8,17 @@ import Config
 # NOTE: The username must match your local PostgreSQL role.
 # Change "rhl" to your OS username or the role you created for this project.
 # Example: username: System.get_env("PGUSER", "postgres")
-config :canopy, Canopy.Repo,
+config :bizforge, Bizforge.Repo,
   username: System.get_env("PGUSER", "postgres"),
   password: System.get_env("PGPASSWORD", ""),
   hostname: System.get_env("PGHOST", "localhost"),
-  database: "canopy_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "bizforge_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :canopy, CanopyWeb.Endpoint,
+config :bizforge, BizforgeWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "hGWbjAGuPwUJwljbt0gus/fwEUhHa4lP5D980bnFfGh6aI8+VoVsGCmsPETBq/0T",
   server: false
