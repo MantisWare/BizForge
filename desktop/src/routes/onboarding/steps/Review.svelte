@@ -192,9 +192,9 @@
   }
 
   .ob-step-icon--ready {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: #3b82f6;
+    background: rgba(242, 101, 34, 0.12);
+    border-color: rgba(242, 101, 34, 0.3);
+    color: #f26522;
   }
 
   .ob-title {
@@ -281,7 +281,7 @@
   }
 
   .ob-summary-on {
-    color: #3b82f6;
+    color: #f26522;
     font-size: 0.75rem;
   }
 
@@ -314,36 +314,21 @@
     padding: 0.875rem;
     font-size: 1rem;
     font-weight: 600;
-    background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+    background: #f26522;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(242, 101, 34, 0.6);
     border-radius: 9999px;
     letter-spacing: -0.01em;
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-      0 4px 16px 0 rgba(0, 0, 0, 0.3),
-      0 8px 24px 0 rgba(0, 0, 0, 0.15);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ob-btn--launch::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 100%);
-    border-radius: inherit;
-    pointer-events: none;
+    box-shadow: none;
   }
 
   .ob-btn--launch:not(:disabled):hover {
-    transform: translateY(-2px);
-    background: linear-gradient(180deg, #2a2a2a 0%, #0a0a0a 100%);
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.15) inset,
-      0 6px 24px 0 rgba(0, 0, 0, 0.4),
-      0 12px 32px 0 rgba(0, 0, 0, 0.2);
+    background: #e05a1a;
+    border-color: rgba(224, 90, 26, 0.7);
+  }
+
+  .ob-btn--launch:not(:disabled):active {
+    background: #cc5016;
   }
 
   .ob-skip-link {

@@ -41,6 +41,12 @@ cd bizforge/operations/sales-engine
 # Claude Code, Cursor, OSA, Codex — any agent reads SYSTEM.md and starts working
 ```
 
+Run in Tauri (https://v2.tauri.app/):
+
+```bash
+just app
+```
+
 ---
 
 ## How It Works

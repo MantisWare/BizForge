@@ -163,7 +163,7 @@
   }
 
   .ob-cloud-features li :global(svg) {
-    color: #3b82f6;
+    color: #f26522;
     flex-shrink: 0;
   }
 
@@ -204,8 +204,8 @@
   }
 
   .ob-toggle--on {
-    background: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.6);
+    background: #f26522;
+    border-color: rgba(242, 101, 34, 0.6);
   }
 
   .ob-toggle-thumb {

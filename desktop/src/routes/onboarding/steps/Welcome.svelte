@@ -67,14 +67,7 @@
 
 <div class="ob-step">
   <div class="ob-logo-wrap">
-    <video
-      class="ob-logo-video"
-      src="/MergedAnimationOS.mp4"
-      autoplay
-      muted
-      playsinline
-      onended={(e) => { const v = e.currentTarget as HTMLVideoElement; v.src = '/OSLoopingActiveMode.mp4'; v.loop = true; v.play(); }}
-    ></video>
+    <img class="ob-logo-img" src="/OSAIconLogo.png" alt="BizForge" width="120" height="120" />
   </div>
   <h1 class="ob-title">Welcome to Bizforge</h1>
   <p class="ob-subtitle">Your AI agent command center</p>
@@ -114,21 +107,18 @@
   }
 
   .ob-logo-wrap {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     margin: 0 auto 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 28px;
-    overflow: hidden;
   }
 
-  .ob-logo-video {
-    width: 140px;
-    height: 140px;
+  .ob-logo-img {
+    width: 120px;
+    height: 120px;
     object-fit: contain;
-    mix-blend-mode: lighten;
   }
 
   .ob-title {
@@ -179,7 +169,7 @@
   }
 
   .ob-input:focus {
-    border-color: rgba(59, 130, 246, 0.5);
+    border-color: rgba(242, 101, 34, 0.5);
   }
 
   .ob-import-section {

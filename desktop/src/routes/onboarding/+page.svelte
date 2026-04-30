@@ -459,12 +459,12 @@
   }
 
   .ob-dot--active {
-    background: #3b82f6;
+    background: #f26522;
     transform: scale(1.3);
   }
 
   .ob-dot--done {
-    background: rgba(59, 130, 246, 0.45);
+    background: rgba(242, 101, 34, 0.45);
   }
 
   /* ─── Card ───────────────────────────────────────────────────────────── */
@@ -523,41 +523,26 @@
   }
 
   .ob-btn--primary {
-    background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+    background: #f26522;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-      0 4px 16px 0 rgba(0, 0, 0, 0.3);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ob-btn--primary::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
-    border-radius: inherit;
-    pointer-events: none;
+    border: 1px solid rgba(242, 101, 34, 0.6);
+    box-shadow: none;
   }
 
   .ob-btn--primary:not(:disabled):hover {
-    transform: translateY(-1px);
-    background: linear-gradient(180deg, #2a2a2a 0%, #0a0a0a 100%);
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.15) inset,
-      0 6px 24px 0 rgba(0, 0, 0, 0.4);
+    background: #e05a1a;
+    border-color: rgba(224, 90, 26, 0.7);
+  }
+
+  .ob-btn--primary:not(:disabled):active {
+    background: #cc5016;
   }
 
   .ob-btn--secondary {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.06);
     color: #a1a1a6;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+    box-shadow: none;
   }
 
   .ob-btn--secondary:not(:disabled):hover {

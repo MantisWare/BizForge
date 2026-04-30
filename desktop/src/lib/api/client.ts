@@ -678,7 +678,7 @@ export interface AuthWorkspace {
 export interface RegisterResponse {
   token: string;
   user: AuthUser;
-  workspace: AuthWorkspace;
+  workspace?: AuthWorkspace;
 }
 
 export interface LoginResponse {
@@ -712,10 +712,19 @@ export const auth = {
       } catch {
         body = await res.text();
       }
-      const message =
-        typeof body === "object" && body !== null && "error" in body
-          ? String((body as Record<string, unknown>).error)
-          : "Registration failed";
+      let message = "Registration failed";
+      if (typeof body === "object" && body !== null) {
+        const obj = body as Record<string, unknown>;
+        if ("details" in obj && typeof obj.details === "object" && obj.details !== null) {
+          const details = obj.details as Record<string, string[]>;
+          const firstField = Object.keys(details)[0];
+          if (firstField !== undefined) {
+            message = `${firstField} ${details[firstField][0]}`;
+          }
+        } else if ("error" in obj) {
+          message = String(obj.error);
+        }
+      }
       throw new ApiError(res.status, message, body);
     }
     return res.json() as Promise<RegisterResponse>;

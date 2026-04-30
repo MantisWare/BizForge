@@ -158,8 +158,8 @@
   }
 
   .ob-template-card--selected {
-    background: rgba(59, 130, 246, 0.07);
-    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(242, 101, 34, 0.07);
+    border-color: rgba(242, 101, 34, 0.4);
   }
 
   .ob-template-header {
@@ -227,7 +227,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: #f26522;
     flex-shrink: 0;
   }
 

@@ -128,8 +128,10 @@
         // Store registration data for onboarding to pre-fill.
         localStorage.setItem('bizforge-display-name', result.user.name);
         localStorage.setItem('bizforge-registered-name', result.user.name);
-        localStorage.setItem('bizforge-registered-workspace-id', result.workspace.id);
-        localStorage.setItem('bizforge-registered-workspace-name', result.workspace.name);
+        if (result.workspace !== undefined) {
+          localStorage.setItem('bizforge-registered-workspace-id', result.workspace.id);
+          localStorage.setItem('bizforge-registered-workspace-name', result.workspace.name);
+        }
 
         // New account → always needs onboarding; do NOT mark it complete.
         goto('/onboarding', { replaceState: true });

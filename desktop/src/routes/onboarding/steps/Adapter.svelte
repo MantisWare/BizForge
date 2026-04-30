@@ -139,8 +139,8 @@
   }
 
   .ob-adapter-card--selected {
-    background: rgba(59, 130, 246, 0.07);
-    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(242, 101, 34, 0.07);
+    border-color: rgba(242, 101, 34, 0.4);
   }
 
   .ob-adapter-header {
@@ -183,8 +183,8 @@
   }
 
   .ob-badge--accent {
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
-    border-color: rgba(59, 130, 246, 0.25);
+    background: rgba(242, 101, 34, 0.12);
+    color: #f26522;
+    border-color: rgba(242, 101, 34, 0.25);
   }
 </style>

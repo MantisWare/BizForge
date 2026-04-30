@@ -183,7 +183,7 @@
   }
 
   .ob-input:focus {
-    border-color: rgba(59, 130, 246, 0.5);
+    border-color: rgba(242, 101, 34, 0.5);
   }
 
   .ob-input--path {
