@@ -11,15 +11,10 @@ export interface LibraryAgent {
   adapter: string;
   budget: number;
   description: string;
-  downloads: number;
-  favorites: number;
-  forks: number;
+  required_skills: string[];
   tags: string[];
   visibility: Visibility;
-  potency: number;
-  rating: number;
   version: string;
-  added_at: string;
   isOfficial: boolean;
 }
 
@@ -29,13 +24,9 @@ export interface LibrarySkill {
   category: string;
   description: string;
   enabled: boolean;
-  downloads: number;
-  favorites: number;
-  forks: number;
   tags: string[];
   visibility: Visibility;
   version: string;
-  added_at: string;
   isOfficial: boolean;
 }
 
@@ -45,11 +36,9 @@ export interface LibraryOperation {
   description: string;
   agent_count: number;
   skill_count: number;
+  required_skills: string[];
   category: string;
   emoji: string;
-  downloads: number;
-  favorites: number;
-  forks: number;
   tags: string[];
   version: string;
   isOfficial: boolean;
@@ -61,10 +50,8 @@ export interface LibraryTemplate {
   description: string;
   size: string;
   agent_count: number;
+  required_skills: string[];
   emoji: string;
-  downloads: number;
-  favorites: number;
-  forks: number;
   tags: string[];
   version: string;
   isOfficial: boolean;

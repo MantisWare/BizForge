@@ -1,6 +1,7 @@
 // src/lib/stores/inbox.svelte.ts
 import type { InboxItem, InboxItemStatus, InboxItemType } from "$api/types";
 import { inbox as inboxApi } from "$api/client";
+import { connectSSE, type StreamController } from "$api/sse";
 import { toastStore } from "./toasts.svelte";
 
 class InboxStore {
@@ -8,6 +9,7 @@ class InboxStore {
   selected = $state<InboxItem | null>(null);
   loading = $state(false);
   error = $state<string | null>(null);
+  private streamController: StreamController | null = null;
 
   // Filters
   filterType = $state<InboxItemType | "all">("all");
@@ -53,6 +55,8 @@ class InboxStore {
       "failure",
       "report",
       "budget_warning",
+      "message",
+      "integration",
     ];
     return types
       .map((type) => ({
@@ -165,6 +169,48 @@ class InboxStore {
       const msg = (e as Error).message;
       this.error = msg;
       toastStore.error("Failed to mark all as read", msg);
+    }
+  }
+
+  connectStream(workspaceId?: string): void {
+    this.disconnectStream();
+
+    const qs = workspaceId ? `?workspace_id=${workspaceId}` : "";
+
+    this.streamController = connectSSE(`/inbox/stream${qs}`, {
+      onEvent: (event) => {
+        if (
+          event.type === "notification.created" &&
+          (event as Record<string, unknown>).data !== undefined
+        ) {
+          const data = (event as Record<string, unknown>).data as InboxItem;
+          if (data.id !== undefined && !this.items.some((i) => i.id === data.id)) {
+            this.items = [data, ...this.items];
+          }
+        }
+      },
+      onError: () => {
+        // SSE will auto-reconnect via connectSSE
+      },
+    });
+  }
+
+  disconnectStream(): void {
+    if (this.streamController !== null) {
+      this.streamController.abort();
+      this.streamController = null;
+    }
+  }
+
+  async replyToItem(itemId: string, body: string): Promise<boolean> {
+    try {
+      await inboxApi.reply(itemId, body);
+      toastStore.success("Reply sent");
+      return true;
+    } catch (e) {
+      const msg = (e as Error).message;
+      toastStore.error("Failed to send reply", msg);
+      return false;
     }
   }
 

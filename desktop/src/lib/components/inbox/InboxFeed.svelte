@@ -4,6 +4,17 @@
   import type { InboxItem as InboxItemType } from '$api/types';
   import { inboxStore } from '$lib/stores/inbox.svelte';
   import InboxItem from './InboxItem.svelte';
+  import InboxReply from './InboxReply.svelte';
+
+  let replyingTo = $state<InboxItemType | null>(null);
+
+  function handleReply(item: InboxItemType) {
+    replyingTo = replyingTo?.id === item.id ? null : item;
+  }
+
+  function closeReply() {
+    replyingTo = null;
+  }
 
   interface DateGroup {
     label: string;
@@ -62,7 +73,10 @@
           {group.label}
         </div>
         {#each group.items as item (item.id)}
-          <InboxItem {item} />
+          <InboxItem {item} onReply={handleReply} />
+          {#if replyingTo?.id === item.id}
+            <InboxReply item={replyingTo} onClose={closeReply} />
+          {/if}
         {/each}
       </section>
     {/each}

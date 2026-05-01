@@ -17,11 +17,6 @@
     onUse?.(operation);
     setTimeout(() => { loading = false; }, 1500);
   }
-
-  function fmtCount(n: number): string {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return String(n);
-  }
 </script>
 
 <article class="loc-card" aria-label={operation.name}>
@@ -39,6 +34,7 @@
         {/if}
       </div>
     </div>
+    <span class="loc-version">v{operation.version}</span>
   </div>
 
   <!-- Description -->
@@ -62,34 +58,6 @@
       <span class="loc-comp-value">{operation.skill_count}</span>
       <span class="loc-comp-label">skills</span>
     </div>
-  </div>
-
-  <!-- Engagement stats row -->
-  <div class="loc-stats">
-    <span class="loc-stat" aria-label="{fmtCount(operation.downloads)} downloads">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      {fmtCount(operation.downloads)}
-    </span>
-    <span class="loc-stat" aria-label="{fmtCount(operation.favorites)} favorites">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-      </svg>
-      {fmtCount(operation.favorites)}
-    </span>
-    <span class="loc-stat" aria-label="{fmtCount(operation.forks)} forks">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="6" cy="6" r="3"/>
-        <circle cx="18" cy="6" r="3"/>
-        <path d="M6 9v6M18 9a9 9 0 01-9 9"/>
-      </svg>
-      {fmtCount(operation.forks)}
-    </span>
-    <span class="loc-version">v{operation.version}</span>
   </div>
 
   <!-- CTA -->
@@ -270,28 +238,12 @@
     font-size: 14px;
   }
 
-  /* Stats row */
-  .loc-stats {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;
-  }
-
-  .loc-stat {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--text-tertiary);
-    font-variant-numeric: tabular-nums;
-  }
-
   .loc-version {
-    margin-left: auto;
+    flex-shrink: 0;
     font-size: 10px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+    margin-top: 4px;
   }
 
   /* CTA */

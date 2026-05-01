@@ -10,6 +10,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Scout",
     source_entity_type: "budget",
     source_entity_id: "bp-1",
+    source_channel: null,
+    reply_to: null,
     actions: [
       { id: "approve", label: "Approve", type: "approve" },
       { id: "reject", label: "Reject", type: "reject" },
@@ -25,6 +27,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Sentinel",
     source_entity_type: "agent",
     source_entity_id: "agent-5",
+    source_channel: null,
+    reply_to: null,
     actions: [{ id: "ack", label: "Acknowledge", type: "acknowledge" }],
     created_at: new Date(Date.now() - 600_000).toISOString(),
   },
@@ -37,6 +41,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Architect",
     source_entity_type: "issue",
     source_entity_id: "issue-7",
+    source_channel: null,
+    reply_to: null,
     actions: [
       {
         id: "nav",
@@ -56,6 +62,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Scribe",
     source_entity_type: "schedule",
     source_entity_id: "sched-2",
+    source_channel: null,
+    reply_to: null,
     actions: [
       { id: "ack", label: "Acknowledge", type: "acknowledge" },
       {
@@ -76,6 +84,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Courier",
     source_entity_type: "budget",
     source_entity_id: "bp-1",
+    source_channel: null,
+    reply_to: null,
     actions: [
       {
         id: "nav",
@@ -95,6 +105,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Architect",
     source_entity_type: "budget",
     source_entity_id: "bp-2",
+    source_channel: null,
+    reply_to: null,
     actions: [
       { id: "approve", label: "Extend Limit", type: "approve" },
       { id: "ack", label: "Acknowledge", type: "acknowledge" },
@@ -110,6 +122,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Oracle",
     source_entity_type: "agent",
     source_entity_id: "agent-4",
+    source_channel: null,
+    reply_to: null,
     actions: [
       { id: "approve", label: "Approve", type: "approve" },
       { id: "reject", label: "Reject", type: "reject" },
@@ -125,6 +139,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Muse",
     source_entity_type: "agent",
     source_entity_id: "agent-8",
+    source_channel: null,
+    reply_to: null,
     actions: [{ id: "ack", label: "Acknowledged", type: "acknowledge" }],
     created_at: new Date(Date.now() - 14_400_000).toISOString(),
   },
@@ -137,6 +153,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Scout",
     source_entity_type: "issue",
     source_entity_id: "issue-12",
+    source_channel: null,
+    reply_to: null,
     actions: [
       {
         id: "nav",
@@ -157,6 +175,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: "Courier",
     source_entity_type: null,
     source_entity_id: null,
+    source_channel: null,
+    reply_to: null,
     actions: [
       {
         id: "nav",
@@ -176,6 +196,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: null,
     source_entity_type: "system",
     source_entity_id: null,
+    source_channel: null,
+    reply_to: null,
     actions: [{ id: "ack", label: "Acknowledged", type: "acknowledge" }],
     created_at: new Date(Date.now() - 21_600_000).toISOString(),
   },
@@ -188,6 +210,8 @@ const MOCK_INBOX: InboxItem[] = [
     source_agent: null,
     source_entity_type: "budget",
     source_entity_id: "bp-1",
+    source_channel: null,
+    reply_to: null,
     actions: [
       {
         id: "nav",
@@ -198,6 +222,38 @@ const MOCK_INBOX: InboxItem[] = [
       { id: "ack", label: "Acknowledge", type: "acknowledge" },
     ],
     created_at: new Date(Date.now() - 43_200_000).toISOString(),
+  },
+  {
+    id: "inb-13",
+    type: "message",
+    status: "unread",
+    title: "Slack: @alice asked about deployment status",
+    body: "Hey team, what's the ETA on the staging deployment? The QA team is waiting to start their regression pass. Can Scout or Architect provide an update?",
+    source_agent: null,
+    source_entity_type: "user",
+    source_entity_id: null,
+    source_channel: "slack",
+    reply_to: { channel: "C0123AGENTS", thread_ts: "1714600000.000100", team_id: "T01MIOSA" },
+    actions: [
+      { id: "ack", label: "Acknowledge", type: "acknowledge" },
+    ],
+    created_at: new Date(Date.now() - 120_000).toISOString(),
+  },
+  {
+    id: "inb-14",
+    type: "message",
+    status: "unread",
+    title: "Slack: @bob filed a bug via #incidents",
+    body: "Login page is returning 500 errors intermittently. Started about 20 minutes ago. Looks like the auth service might be overloaded. Can someone investigate?",
+    source_agent: null,
+    source_entity_type: "user",
+    source_entity_id: null,
+    source_channel: "slack",
+    reply_to: { channel: "C0456INCIDENTS", thread_ts: "1714601000.000200", team_id: "T01MIOSA" },
+    actions: [
+      { id: "ack", label: "Acknowledge", type: "acknowledge" },
+    ],
+    created_at: new Date(Date.now() - 240_000).toISOString(),
   },
 ];
 
@@ -210,7 +266,7 @@ export function performInboxAction(
   actionId: string,
 ): InboxItem {
   const item = MOCK_INBOX.find((i) => i.id === itemId);
-  if (!item) throw new Error(`Inbox item ${itemId} not found`);
+  if (item === undefined) throw new Error(`Inbox item ${itemId} not found`);
   if (actionId === "approve" || actionId === "reject") {
     item.status = "actioned";
   } else if (actionId === "ack") {

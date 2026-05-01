@@ -39,24 +39,6 @@ function hashId(id: string): number {
   return Math.abs(h);
 }
 
-function deriveFavorites(id: string, isOfficial: boolean): number {
-  const h = hashId(id);
-  if (isOfficial) return 500 + (h % 4501);
-  return 50 + (h % 451);
-}
-
-function deriveForks(id: string, isOfficial: boolean): number {
-  const h = hashId(id + "forks");
-  if (isOfficial) return 100 + (h % 901);
-  return 10 + (h % 91);
-}
-
-function deriveDownloads(id: string, isOfficial: boolean): number {
-  const h = hashId(id + "dl");
-  if (isOfficial) return 1000 + (h % 49001);
-  return 100 + (h % 4901);
-}
-
 function deriveTags(id: string, category: string): string[] {
   const h = hashId(id);
   const count = 2 + (h % 3);
@@ -78,25 +60,6 @@ function deriveTags(id: string, category: string): string[] {
   return result;
 }
 
-function derivePotency(id: string): number {
-  const h = hashId(id + "potency");
-  return 40 + (h % 61);
-}
-
-function deriveRating(id: string): number {
-  const h = hashId(id + "rating");
-  const steps = h % 16;
-  return Math.round((3.5 + steps * 0.1) * 10) / 10;
-}
-
-function deriveAddedAt(id: string): string {
-  const h = hashId(id);
-  const dayOffset = h % 90;
-  const base = new Date("2026-01-01T00:00:00.000Z");
-  base.setUTCDate(base.getUTCDate() + dayOffset);
-  return base.toISOString();
-}
-
 function deriveVersion(id: string): string {
   const h = hashId(id + "ver");
   const major = 1 + (h % 3);
@@ -109,52 +72,23 @@ function deriveVersion(id: string): string {
 
 export type RawAgent = Omit<
   LibraryAgent,
-  | "downloads"
-  | "favorites"
-  | "forks"
-  | "tags"
-  | "visibility"
-  | "potency"
-  | "rating"
-  | "version"
-  | "added_at"
-  | "isOfficial"
->;
+  "tags" | "visibility" | "version" | "isOfficial" | "required_skills"
+> & { version?: string; required_skills?: string[] };
 
 export type RawSkill = Omit<
   LibrarySkill,
-  | "enabled"
-  | "downloads"
-  | "favorites"
-  | "forks"
-  | "tags"
-  | "visibility"
-  | "version"
-  | "added_at"
-  | "isOfficial"
->;
+  "enabled" | "tags" | "visibility" | "version" | "isOfficial"
+> & { version?: string };
 
 export type RawOperation = Omit<
   LibraryOperation,
-  | "emoji"
-  | "downloads"
-  | "favorites"
-  | "forks"
-  | "tags"
-  | "version"
-  | "isOfficial"
-> & { emoji?: string };
+  "emoji" | "tags" | "version" | "isOfficial" | "required_skills"
+> & { emoji?: string; version?: string; required_skills?: string[] };
 
 export type RawTemplate = Omit<
   LibraryTemplate,
-  | "emoji"
-  | "downloads"
-  | "favorites"
-  | "forks"
-  | "tags"
-  | "version"
-  | "isOfficial"
-> & { emoji?: string };
+  "emoji" | "tags" | "version" | "isOfficial" | "required_skills"
+> & { emoji?: string; version?: string; required_skills?: string[] };
 
 // ── Enrichment functions ─────────────────────────────────────────────────────
 
@@ -162,16 +96,11 @@ export function enrichAgent(a: RawAgent): LibraryAgent {
   const isOfficial = a.adapter === "osa";
   return {
     ...a,
+    required_skills: a.required_skills ?? [],
     isOfficial,
-    downloads: deriveDownloads(a.id, isOfficial),
-    favorites: deriveFavorites(a.id, isOfficial),
-    forks: deriveForks(a.id, isOfficial),
     tags: deriveTags(a.id, a.category),
     visibility: "public" as Visibility,
-    potency: derivePotency(a.id),
-    rating: deriveRating(a.id),
-    version: deriveVersion(a.id),
-    added_at: deriveAddedAt(a.id),
+    version: a.version ?? deriveVersion(a.id),
   };
 }
 
@@ -181,13 +110,9 @@ export function enrichSkill(s: RawSkill): LibrarySkill {
     ...s,
     enabled: false,
     isOfficial,
-    downloads: deriveDownloads(s.id, isOfficial),
-    favorites: deriveFavorites(s.id, isOfficial),
-    forks: deriveForks(s.id, isOfficial),
     tags: deriveTags(s.id, s.category),
     visibility: "public" as Visibility,
-    version: deriveVersion(s.id),
-    added_at: deriveAddedAt(s.id),
+    version: s.version ?? deriveVersion(s.id),
   };
 }
 
@@ -195,13 +120,11 @@ export function enrichOperation(o: RawOperation): LibraryOperation {
   const isOfficial = true;
   return {
     ...o,
+    required_skills: o.required_skills ?? [],
     emoji: o.emoji ?? "building",
     isOfficial,
-    downloads: deriveDownloads(o.id, isOfficial),
-    favorites: deriveFavorites(o.id, isOfficial),
-    forks: deriveForks(o.id, isOfficial),
     tags: deriveTags(o.id, o.category),
-    version: deriveVersion(o.id),
+    version: o.version ?? deriveVersion(o.id),
   };
 }
 
@@ -209,12 +132,10 @@ export function enrichTemplate(t: RawTemplate): LibraryTemplate {
   const isOfficial = true;
   return {
     ...t,
+    required_skills: t.required_skills ?? [],
     emoji: t.emoji ?? "document-text",
     isOfficial,
-    downloads: deriveDownloads(t.id, isOfficial),
-    favorites: deriveFavorites(t.id, isOfficial),
-    forks: deriveForks(t.id, isOfficial),
     tags: deriveTags(t.id, t.size),
-    version: deriveVersion(t.id),
+    version: t.version ?? deriveVersion(t.id),
   };
 }

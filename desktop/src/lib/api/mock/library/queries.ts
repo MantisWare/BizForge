@@ -12,12 +12,13 @@ import { OPERATIONS } from "./operations";
 import { TEMPLATES } from "./templates";
 
 export function getLibraryAgents(): LibraryAgent[] {
-  return AGENTS;
+  return [...AGENTS].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getLibraryAgentsByCategory(): Map<string, LibraryAgent[]> {
+  const sorted = [...AGENTS].sort((a, b) => a.name.localeCompare(b.name));
   const map = new Map<string, LibraryAgent[]>();
-  for (const agent of AGENTS) {
+  for (const agent of sorted) {
     const list = map.get(agent.category) ?? [];
     list.push(agent);
     map.set(agent.category, list);
@@ -26,12 +27,13 @@ export function getLibraryAgentsByCategory(): Map<string, LibraryAgent[]> {
 }
 
 export function getLibrarySkills(): LibrarySkill[] {
-  return SKILLS;
+  return [...SKILLS].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getLibrarySkillsByCategory(): Map<string, LibrarySkill[]> {
+  const sorted = [...SKILLS].sort((a, b) => a.name.localeCompare(b.name));
   const map = new Map<string, LibrarySkill[]>();
-  for (const skill of SKILLS) {
+  for (const skill of sorted) {
     const list = map.get(skill.category) ?? [];
     list.push(skill);
     map.set(skill.category, list);
@@ -40,11 +42,11 @@ export function getLibrarySkillsByCategory(): Map<string, LibrarySkill[]> {
 }
 
 export function getLibraryOperations(): LibraryOperation[] {
-  return OPERATIONS;
+  return [...OPERATIONS].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getLibraryTemplates(): LibraryTemplate[] {
-  return TEMPLATES;
+  return [...TEMPLATES].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getLibraryCategoryCounts(): {

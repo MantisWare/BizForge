@@ -1,4 +1,4 @@
-import type { Skill } from "../types";
+import type { Skill, SkillCategory, SkillSource } from "../types";
 
 let mockSkillData: Skill[] = [
   {
@@ -12,8 +12,6 @@ let mockSkillData: Skill[] = [
     triggers: ["implement", "write", "refactor", "generate code"],
     version: "1.0.0",
     author: "MIOSA",
-    downloads: 0,
-    rating: 0,
   },
   {
     id: "skill-search",
@@ -26,8 +24,6 @@ let mockSkillData: Skill[] = [
     triggers: ["search", "find", "look up", "research"],
     version: "1.0.0",
     author: "MIOSA",
-    downloads: 0,
-    rating: 0,
   },
   {
     id: "skill-review",
@@ -40,8 +36,6 @@ let mockSkillData: Skill[] = [
     triggers: ["review", "PR", "pull request", "LGTM"],
     version: "1.0.0",
     author: "MIOSA",
-    downloads: 0,
-    rating: 0,
   },
   {
     id: "skill-deploy",
@@ -54,8 +48,6 @@ let mockSkillData: Skill[] = [
     triggers: ["deploy", "release", "rollout", "ship"],
     version: "1.0.0",
     author: "MIOSA",
-    downloads: 0,
-    rating: 0,
   },
 ];
 
@@ -75,4 +67,41 @@ export function toggleSkill(id: string): Skill | undefined {
     enabled: !mockSkillData[idx].enabled,
   };
   return mockSkillData[idx];
+}
+
+export function addSkill(skill: Skill): Skill {
+  const existing = mockSkillData.find((s) => s.id === skill.id);
+  if (existing !== undefined) {
+    return existing;
+  }
+  mockSkillData = [...mockSkillData, skill];
+  return skill;
+}
+
+export function bulkEnableSkills(ids: string[]): void {
+  const idSet = new Set(ids);
+  mockSkillData = mockSkillData.map((s) =>
+    idSet.has(s.id) ? { ...s, enabled: true } : s,
+  );
+}
+
+export function importSkill(body: {
+  id: string;
+  name: string;
+  description: string;
+  category?: string;
+  version?: string;
+}): Skill {
+  const skill: Skill = {
+    id: body.id,
+    name: body.name,
+    description: body.description,
+    category: (body.category ?? "imported") as SkillCategory,
+    source: "library" as SkillSource,
+    enabled: true,
+    triggers: [],
+    version: body.version ?? "1.0.0",
+    author: "Library",
+  };
+  return addSkill(skill);
 }

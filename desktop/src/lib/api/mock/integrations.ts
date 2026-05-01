@@ -1,6 +1,15 @@
-import type { Integration, Adapter } from "../types";
+import type { Integration, IntegrationCategory, Adapter } from "../types";
 
-const MOCK_INTEGRATIONS: Integration[] = [
+let mockIntegrationState: Integration[] | null = null;
+
+function getIntegrationState(): Integration[] {
+  if (mockIntegrationState === null) {
+    mockIntegrationState = structuredClone(SEED_INTEGRATIONS);
+  }
+  return mockIntegrationState;
+}
+
+const SEED_INTEGRATIONS: Integration[] = [
   // ── AI Providers & Auth ─────────────────────────────────────────────────────
   {
     id: "int-anthropic",
@@ -617,9 +626,55 @@ const MOCK_ADAPTERS: Adapter[] = [
 ];
 
 export function mockIntegrations(): Integration[] {
-  return MOCK_INTEGRATIONS;
+  return getIntegrationState();
 }
 
 export function mockAdapters(): Adapter[] {
   return MOCK_ADAPTERS;
+}
+
+const INTEGRATION_NAME_MAP: Record<string, { name: string; category: IntegrationCategory; description: string }> = {
+  github:  { name: 'GitHub',  category: 'version_control',    description: 'Repository sync, PR review, issue management' },
+  linear:  { name: 'Linear',  category: 'project_management', description: 'Issue and project sync' },
+  slack:   { name: 'Slack',   category: 'communication',      description: 'Notifications and commands' },
+  notion:  { name: 'Notion',  category: 'storage',            description: 'Document and database access' },
+  jira:    { name: 'Jira',    category: 'project_management', description: 'Issue tracking and sprint management' },
+  datadog: { name: 'Datadog', category: 'monitoring',         description: 'Metrics ingestion and alerts' },
+};
+
+export function mockConnectIntegration(slug: string, config?: Record<string, unknown>): Integration {
+  const state = getIntegrationState();
+  const existing = state.find((i) => i.provider === slug);
+  if (existing !== undefined) {
+    existing.status = 'connected';
+    existing.config = { ...existing.config, ...(config ?? {}) };
+    existing.last_sync_at = new Date().toISOString();
+    return existing;
+  }
+  const meta = INTEGRATION_NAME_MAP[slug];
+  const newIntegration: Integration = {
+    id: `int-${slug}-${Date.now()}`,
+    name: meta?.name ?? slug,
+    category: meta?.category ?? 'custom',
+    provider: slug,
+    description: meta?.description ?? `${slug} integration`,
+    features: [],
+    icon_url: null,
+    status: 'connected',
+    config: config ?? {},
+    docs_url: null,
+    last_sync_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  };
+  state.push(newIntegration);
+  return newIntegration;
+}
+
+export function mockDisconnectIntegration(slug: string): boolean {
+  const state = getIntegrationState();
+  const existing = state.find((i) => i.provider === slug);
+  if (existing === undefined) return false;
+  existing.status = 'disconnected';
+  existing.config = {};
+  return true;
 }

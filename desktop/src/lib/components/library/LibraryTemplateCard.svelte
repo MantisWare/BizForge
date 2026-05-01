@@ -24,15 +24,10 @@
     onCreate?.(template);
     setTimeout(() => { loading = false; }, 1500);
   }
-
-  function fmtCount(n: number): string {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return String(n);
-  }
 </script>
 
 <article class="ltc-card ltc-card--{template.size}" aria-label="{template.name} template">
-  <!-- Top: emoji + name -->
+  <!-- Top: emoji + name + version -->
   <div class="ltc-top">
     <span class="ltc-emoji" aria-hidden="true"><AgentIcon value={template.emoji} size={24} /></span>
     <div class="ltc-name-wrap">
@@ -46,6 +41,7 @@
         {/if}
       </div>
     </div>
+    <span class="ltc-version">v{template.version}</span>
   </div>
 
   <!-- Description -->
@@ -62,34 +58,6 @@
   <div class="ltc-meta">
     <span class="ltc-for">{SIZE_LABELS[template.size] ?? template.size}</span>
     <span class="ltc-agent-count">~{template.agent_count} agents</span>
-  </div>
-
-  <!-- Engagement stats -->
-  <div class="ltc-stats">
-    <span class="ltc-stat" aria-label="{fmtCount(template.downloads)} downloads">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      {fmtCount(template.downloads)}
-    </span>
-    <span class="ltc-stat" aria-label="{fmtCount(template.favorites)} favorites">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-      </svg>
-      {fmtCount(template.favorites)}
-    </span>
-    <span class="ltc-stat" aria-label="{fmtCount(template.forks)} forks">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="6" cy="6" r="3"/>
-        <circle cx="18" cy="6" r="3"/>
-        <path d="M6 9v6M18 9a9 9 0 01-9 9"/>
-      </svg>
-      {fmtCount(template.forks)}
-    </span>
-    <span class="ltc-version">v{template.version}</span>
   </div>
 
   <!-- CTA -->
@@ -266,28 +234,12 @@
     color: var(--text-secondary);
   }
 
-  /* Stats row */
-  .ltc-stats {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;
-  }
-
-  .ltc-stat {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--text-tertiary);
-    font-variant-numeric: tabular-nums;
-  }
-
   .ltc-version {
-    margin-left: auto;
+    flex-shrink: 0;
     font-size: 10px;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
+    margin-top: 4px;
   }
 
   /* CTA */

@@ -93,9 +93,9 @@
   }
 
   .ttg-card:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    background: rgba(59, 130, 246, 0.06);
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+    border-color: rgba(249, 115, 22, 0.4);
+    background: rgba(249, 115, 22, 0.06);
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15);
   }
 
   .ttg-card:active {

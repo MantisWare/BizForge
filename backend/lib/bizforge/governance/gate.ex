@@ -184,10 +184,13 @@ defmodule Bizforge.Governance.Gate do
       end
 
     if approval do
+      Bizforge.Notifications.Dispatcher.notify_approval_required(
+        approval,
+        approval.workspace_id
+      )
+
       {:pending_approval, approval}
     else
-      # Fallback: if we can't create the approval record, block the action
-      # to avoid silently bypassing governance when the DB is unhealthy.
       {:denied, "governance_error"}
     end
   end

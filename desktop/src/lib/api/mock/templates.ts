@@ -22,7 +22,7 @@ const MOCK_TEMPLATES: AgentTemplate[] = [
     skills: [],
     config: {},
     category: "starter",
-    downloads: 0,
+    version: "1.0.0",
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -36,7 +36,7 @@ const MOCK_TEMPLATES: AgentTemplate[] = [
     skills: ["analysis", "research", "execution"],
     config: {},
     category: "team",
-    downloads: 0,
+    version: "1.0.0",
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -50,7 +50,7 @@ const MOCK_TEMPLATES: AgentTemplate[] = [
     skills: ["planning", "analysis", "research", "writing", "review"],
     config: {},
     category: "department",
-    downloads: 0,
+    version: "1.0.0",
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -71,7 +71,7 @@ const MOCK_TEMPLATES: AgentTemplate[] = [
     ],
     config: {},
     category: "enterprise",
-    downloads: 0,
+    version: "1.0.0",
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -85,7 +85,7 @@ const MOCK_TEMPLATES: AgentTemplate[] = [
     skills: ["research", "content", "outreach", "sales", "analytics", "seo"],
     config: {},
     category: "growth",
-    downloads: 0,
+    version: "1.0.0",
     created_at: "2026-03-01T00:00:00Z",
   },
 ];

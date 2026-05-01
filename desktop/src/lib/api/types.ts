@@ -552,7 +552,9 @@ export type InboxItemType =
   | "mention"
   | "failure"
   | "report"
-  | "budget_warning";
+  | "budget_warning"
+  | "message"
+  | "integration";
 export type InboxItemStatus = "unread" | "read" | "actioned" | "dismissed";
 
 export interface InboxItem {
@@ -564,6 +566,8 @@ export interface InboxItem {
   source_agent: string | null;
   source_entity_type: string | null;
   source_entity_id: string | null;
+  source_channel: string | null;
+  reply_to: Record<string, unknown> | null;
   actions: InboxAction[];
   created_at: string;
 }
@@ -704,8 +708,6 @@ export interface Skill {
   triggers: string[];
   version: string;
   author: string;
-  downloads: number;
-  rating: number;
 }
 
 // ── Webhooks ──────────────────────────────────────────────────────────────────
@@ -1050,7 +1052,7 @@ export interface AgentTemplate {
   skills: string[];
   config: Record<string, unknown>;
   category: string;
-  downloads: number;
+  version: string;
   created_at: string;
 }
 

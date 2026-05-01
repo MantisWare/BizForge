@@ -233,9 +233,13 @@ status:
     lsof -ti:5200 >/dev/null 2>&1 && printf "  :5200  IN USE (desktop)\n"  || printf "  :5200  free\n"
     lsof -ti:8089 >/dev/null 2>&1 && printf "  :8089  IN USE (OSA)\n"      || printf "  :8089  free\n"
 
-# Tail logs for a service (backend or desktop)
+# Tail logs for a service (backend, desktop, or vite)
 logs service:
     tail -f {{log_dir}}/{{service}}.log
+
+# Tail all logs at once
+logs-all:
+    tail -f {{log_dir}}/*.log
 
 # ── Database ─────────────────────────────────────────────────────────────────
 

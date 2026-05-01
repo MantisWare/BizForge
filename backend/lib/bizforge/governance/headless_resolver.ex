@@ -121,6 +121,46 @@ defmodule Bizforge.Governance.HeadlessResolver do
       workspace_id: approval.workspace_id,
       requested_by: approval.requested_by
     })
+
+    send_slack_approval_buttons(approval)
+  end
+
+  defp send_slack_approval_buttons(approval) do
+    case approval.workspace_id do
+      nil ->
+        :ok
+
+      workspace_id ->
+        installation =
+          Repo.one(
+            from s in Bizforge.Schemas.SlackInstallation,
+              where: s.workspace_id == ^workspace_id and s.active == true,
+              limit: 1
+          )
+
+        case installation do
+          nil ->
+            :ok
+
+          inst ->
+            default_channel =
+              case inst.channel_mappings do
+                %{"approvals" => ch} -> ch
+                %{"default" => ch} -> ch
+                _ -> nil
+              end
+
+            if default_channel do
+              Task.start(fn ->
+                Bizforge.Integrations.Slack.Client.send_approval_message(
+                  inst.bot_token,
+                  default_channel,
+                  approval
+                )
+              end)
+            end
+        end
+    end
   end
 
   defp headless_governance_config(workspace_id) do

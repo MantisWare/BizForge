@@ -179,6 +179,13 @@ defmodule Bizforge.Workflows.Engine do
       |> Repo.update()
 
     broadcast_run_event(completed_run, "workflow_run.completed", %{output: output})
+
+    Bizforge.Notifications.Dispatcher.notify_workflow_status(
+      completed_run,
+      "completed",
+      completed_run.workspace_id
+    )
+
     Logger.info("[Workflows.Engine] Run #{run.id} completed successfully")
   end
 
@@ -626,6 +633,12 @@ defmodule Bizforge.Workflows.Engine do
       |> Repo.update()
 
     broadcast_run_event(updated, "workflow_run.failed", %{error: error_msg})
+
+    Bizforge.Notifications.Dispatcher.notify_workflow_status(
+      updated,
+      "failed",
+      updated.workspace_id
+    )
 
     Logger.error("[Workflows.Engine] Run #{run.id} failed: #{error_msg}")
   end

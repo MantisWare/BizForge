@@ -17,18 +17,14 @@
     enabled = !enabled;
     onToggle?.({ ...skill, enabled });
   }
-
-  function fmtCount(n: number): string {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return String(n);
-  }
 </script>
 
 <article class="lsc-card" aria-label={skill.name}>
-  <!-- Header: name + visibility -->
+  <!-- Header: name + version + visibility -->
   <div class="lsc-header">
     <div class="lsc-name">{skill.name}</div>
-    <span class="lsc-visibility" aria-label="Visibility: {skill.visibility}">
+    <span class="lsc-version">v{skill.version}</span>
+    <span class="lsc-visibility" title={skill.visibility === 'public' ? 'Public — visible to everyone' : skill.visibility === 'unlisted' ? 'Unlisted — only accessible via direct link' : 'Private — only visible to you'} aria-label="Visibility: {skill.visibility}">
       {#if skill.visibility === 'public'}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -67,34 +63,6 @@
     {#each skill.tags.slice(0, 3) as tag}
       <span class="lsc-tag">{tag}</span>
     {/each}
-  </div>
-
-  <!-- Stats + version -->
-  <div class="lsc-stats">
-    <span class="lsc-stat" aria-label="{fmtCount(skill.downloads)} downloads">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      {fmtCount(skill.downloads)}
-    </span>
-    <span class="lsc-stat" aria-label="{fmtCount(skill.favorites)} favorites">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-      </svg>
-      {fmtCount(skill.favorites)}
-    </span>
-    <span class="lsc-stat" aria-label="{fmtCount(skill.forks)} forks">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="6" cy="6" r="3"/>
-        <circle cx="18" cy="6" r="3"/>
-        <path d="M6 9v6M18 9a9 9 0 01-9 9"/>
-      </svg>
-      {fmtCount(skill.forks)}
-    </span>
-    <span class="lsc-version">v{skill.version}</span>
   </div>
 
   <!-- Enable toggle -->
@@ -149,12 +117,21 @@
     line-height: 1.3;
   }
 
+  .lsc-version {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+
   .lsc-visibility {
     color: var(--text-muted);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     margin-top: 1px;
+    cursor: help;
   }
 
   /* Badges */
@@ -244,30 +221,6 @@
     color: var(--text-muted);
     border: 1px solid rgba(255, 255, 255, 0.06);
     text-transform: lowercase;
-  }
-
-  /* Stats */
-  .lsc-stats {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: auto;
-  }
-
-  .lsc-stat {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .lsc-version {
-    margin-left: auto;
-    font-size: 10px;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
   }
 
   /* Toggle button */

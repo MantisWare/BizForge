@@ -6,9 +6,11 @@
 import type { BizforgeAgent, AdapterType } from "$api/types";
 import { workspaceStore } from "$lib/stores/workspace.svelte";
 import { agentsStore } from "$lib/stores/agents.svelte";
+import { skillsStore } from "$lib/stores/skills.svelte";
 import { toastStore } from "$lib/stores/toasts.svelte";
 import { isTauri } from "$lib/utils/platform";
 import { isMockEnabled } from "$api/client";
+import { resolveSkillsForTeam, partitionSkills } from "$lib/data/skill-dependencies";
 
 export interface DeployResult {
   success: boolean;
@@ -55,6 +57,24 @@ export async function deployTemplate(
       const result = await registerAgents(agents, ws.id);
       failedAgents = result.failures;
       warnings.push(...result.warnings);
+    }
+
+    // Step 3b: Install resolved skills for all deployed agents
+    if (agents.length > 0) {
+      try {
+        const agentSkillSources = agents
+          .filter((a) => Array.isArray(a.skills) && a.skills.length > 0)
+          .map((a) => ({ skills: a.skills as string[] }));
+        if (agentSkillSources.length > 0) {
+          const resolvedIds = resolveSkillsForTeam(agentSkillSources);
+          const { toAdd } = partitionSkills(resolvedIds, skillsStore.skills);
+          if (toAdd.length > 0) {
+            await skillsStore.installFromLibrary(toAdd);
+          }
+        }
+      } catch {
+        warnings.push("Some skills could not be auto-installed.");
+      }
     }
 
     // Step 4: Scaffold .bizforge/ directory on disk via Tauri IPC

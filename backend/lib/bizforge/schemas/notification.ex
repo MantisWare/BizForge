@@ -6,8 +6,8 @@ defmodule Bizforge.Schemas.Notification do
   @foreign_key_type :binary_id
 
   @recipient_types ~w(user agent team broadcast)
-  @sender_types ~w(system agent user workflow)
-  @categories ~w(task approval alert mention system budget workflow)
+  @sender_types ~w(system agent user workflow integration)
+  @categories ~w(task approval alert mention system budget workflow message integration)
   @severities ~w(info warning error critical)
 
   schema "notifications" do
@@ -25,6 +25,8 @@ defmodule Bizforge.Schemas.Notification do
     field :read_at, :utc_datetime
     field :dismissed_at, :utc_datetime
     field :expires_at, :utc_datetime
+    field :source_channel, :string
+    field :reply_to, :map, default: %{}
 
     belongs_to :workspace, Bizforge.Schemas.Workspace
 
@@ -48,7 +50,9 @@ defmodule Bizforge.Schemas.Notification do
       :metadata,
       :read_at,
       :dismissed_at,
-      :expires_at
+      :expires_at,
+      :source_channel,
+      :reply_to
     ])
     |> validate_required([:recipient_type, :category, :title])
     |> validate_inclusion(:recipient_type, @recipient_types)

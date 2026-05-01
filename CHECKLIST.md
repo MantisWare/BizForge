@@ -180,6 +180,11 @@ Active development phases and their progress.
 - [x] Add embedded domain-tailored PM agent to all 9 execution teams (Dev, Domo, Ops, Data Science, Sales, Content, Creative, Customer Success, Legal)
 - [x] System prompt template quick-fill buttons: 8 categories (Engineering, PM, Research, Writing, Strategy, Design, Specialist, General) with 4-5 templates each, role-auto-matched in both Hire Agent and Hire Team dialogs
 - [x] "From Template" button on Teams page: pick a team template, select department, instantly create team entity + batch-create all agents + assign them as members
+- [x] Register all 43 `library/teams/*.md` definitions as Library Teams entries — visible in Library > Teams tab with size, agent count, deploy support
+- [x] Auto-assign role-matched system prompts to all team agents on template select (agents with short stub prompts get the best match from `prompt-templates.ts`)
+- [x] Fix agent name/role column alignment in TeamAgentReview — switched from flex to CSS grid with fixed proportional columns
+- [x] Fix "Next: Configure" button unclickable on review step — added `stopPropagation` on modal and button clicks, `type="button"`, and `z-index` stacking on footer
+- [x] Rebrand Hire Agent and Hire Team dialogs from blue (`rgba(59,130,246)`) to orange (`rgba(249,115,22)`) accent — buttons, step dots, skill chips, template hover, adapter selection, schedule presets
 
 ### 12. User Management & Access Control
 
@@ -202,6 +207,9 @@ Active development phases and their progress.
 - [x] Service cards show icon/initial, name, provider, description, feature tags, status pill, connect/disconnect button, docs link
 - [x] Category groups show header with connected count
 - [x] Context-aware PageShell subtitle (adapters count vs services connected)
+- [x] Wire Settings > Integrations tab Connect/Disconnect/Configure buttons to integrationsStore actions with loading states
+- [x] Integration Connect Modal — per-service config fields (API key, tokens, domain), validation, loading spinner
+- [x] Fix mock layer connect/disconnect to persist state changes (no more `validation_failed` in mock mode)
 
 ### 14. Analytics
 
@@ -427,6 +435,111 @@ Active development phases and their progress.
 - [x] Zone-based agent positioning (agents distributed across department zones by index)
 - [x] Pass `zoneColor` prop from Scene3D to AgentDesk3D for per-zone theming
 
+## Phase: Bidirectional Inbox & Slack Integration
+
+> Unify the inbox around the notifications table, wire system event producers, build bidirectional Slack integration with inbound messages, agent replies, and interactive approvals.
+
+### 1. Inbox Foundation
+
+- [x] Rewrite `InboxController` to query `notifications` table instead of broken `activity_events` query
+- [x] Fix `SidebarBadgeController` to count unread notifications (was counting non-existent `activity_events` with `level == "notification"`)
+- [x] Add `source_channel` and `reply_to` fields to `Notification` schema and migration
+- [x] Add `"message"` and `"integration"` to notification categories and `"integration"` to sender types
+- [x] Update frontend `InboxItem` type with `source_channel` and `reply_to` fields
+- [x] Add `"message"` and `"integration"` to `InboxItemType` union
+- [x] Update inbox store type groups to include new types
+- [x] Add channel badge (Slack, Email, etc.) to `InboxItem` component
+- [x] Add Slack message mock items to mock inbox data
+- [x] Update inbox API client `read` method to use correct HTTP method (POST)
+- [x] Add `reply` endpoint to inbox API client
+
+### 2. System Event Producers
+
+- [x] Wire `Dispatcher.notify_system_alert` on heartbeat failure in `Heartbeat` module
+- [x] Wire `Dispatcher.notify_approval_required` when governance gate creates an approval
+- [x] Wire `Dispatcher.notify_workflow_status` on workflow run completion and failure
+- [x] Add `notify_integration_message` helper to `Dispatcher` for external integration messages
+
+### 3. Slack Bidirectional Integration
+
+- [x] Create `SlackInstallation` schema (team_id, bot_token, signing_secret, channel_mappings, default_agent_id)
+- [x] Create `slack_installations` migration with workspace FK and unique team_id constraint
+- [x] Add `connect_slack`, `disconnect_slack`, `slack_status` endpoints to `IntegrationController`
+- [x] Add Slack config routes to router (authenticated scope)
+- [x] Create `SlackController` with Events API endpoint (URL verification, `event_callback` dispatch)
+- [x] Implement Slack request signature verification (`x-slack-signature` HMAC-SHA256)
+- [x] Create `Slack.EventHandler` — processes `message` and `app_mention` events
+- [x] EventHandler creates notifications with `source_channel: "slack"` and `reply_to` metadata
+- [x] EventHandler routes messages to target agent via channel-to-agent mappings
+- [x] EventHandler creates sessions and dispatches to adapter for agent processing
+- [x] Create `Slack.Client` — wraps Slack Web API (`chat.postMessage`) using Req
+- [x] `Client.send_reply` — posts to specific Slack thread from `reply_to` metadata
+- [x] `Client.send_approval_message` — sends Block Kit interactive approval messages
+- [x] Create `Slack.ReplyHandler` — monitors session events and relays agent responses to Slack threads
+- [x] Add Slack Events API and Interactive Message routes outside authenticated scope
+- [x] `SlackController.interactive` handles `block_actions` for approve/reject button clicks
+- [x] Wire `HeadlessResolver.notify_pending` to send interactive Slack approval buttons
+- [x] Add Slack event routes to Phoenix router
+
+### 4. Inbox Reply from Desktop
+
+- [x] Create `InboxReply` component (textarea, send button, Cmd+Enter shortcut, Escape to close)
+- [x] Add Reply button to `InboxItem` for items with `source_channel`
+- [x] Wire `InboxReply` into `InboxFeed` (inline below the item being replied to)
+- [x] Add `replyToItem` method to inbox store
+- [x] Add `POST /inbox/:id/reply` backend endpoint that dispatches via `Slack.Client`
+- [x] Add reply mock route
+
+### 5. Realtime Inbox Updates
+
+- [x] Add `GET /inbox/stream` SSE endpoint subscribing to `notifications:<workspace_id>` PubSub topic
+- [x] Add inbox stream route to SSE streaming scope in router
+- [x] Add `connectStream` / `disconnectStream` methods to inbox store
+- [x] SSE integration via `connectSSE` with auto-reconnect
+
+## Phase: Auto-Resolve Skill Dependencies for Library Entities
+
+> Automatically install required workspace skills when adding agents, teams, or companies — from library catalog, hire dialogs, and template deploy flows.
+
+### 1. Data Layer
+
+- [x] Add `required_skills: string[]` field to `LibraryAgent`, `LibraryTemplate`, `LibraryOperation` types
+- [x] Update `RawAgent`, `RawTemplate`, `RawOperation` enrichment types and defaults
+- [x] Create `skill-dependencies.ts` — `AGENT_SKILL_TAG_MAP`, `resolveSkillsForAgent`, `resolveSkillsForTeam`, `resolveSkillsForLibraryEntity`, `partitionSkills`, `lookupLibrarySkills`
+- [x] Populate `required_skills` on all 157 library agents (2–6 skills each, matched to role/category)
+- [x] Populate `required_skills` on all 48 library team templates
+- [x] Populate `required_skills` on all 5 library company operations
+
+### 2. Workspace Skill Installation
+
+- [x] Add `installFromLibrary(librarySkills)` method to `SkillsStore` — imports new skills, bulk-enables existing disabled ones
+- [x] Add `addSkill`, `bulkEnableSkills`, `importSkill` exports to mock skills module
+- [x] Wire mock router to process `POST /skills/import` and `POST /skills/bulk-enable` with actual data
+
+### 3. Confirmation Modal
+
+- [x] Create `SkillsPreviewModal.svelte` — reusable dialog showing skills to add (grouped by category) and already-active skills, with Confirm/Cancel actions
+
+### 4. Library Page & Detail Page Integration
+
+- [x] Wire library page `handleAgentAdd`, `handleOperationUse`, `handleTemplateCreate` through skill resolver and preview modal
+- [x] Wire "Import to Workspace" button on agent detail page (resolve → modal → install)
+- [x] Wire "Import to Workspace" button on skill detail page (direct install)
+- [x] Wire Deploy button on team detail page through skill resolver and preview modal
+- [x] Wire Deploy button on company detail page through skill resolver and preview modal
+
+### 5. Hire Dialog Integration
+
+- [x] Add role-based recommended skills to `HireAgentDialog` (auto-populated chips from `ROLE_SKILL_TAGS` → `AGENT_SKILL_TAG_MAP` → library skills)
+- [x] Auto-select recommended skills when role changes, allow user toggle
+- [x] Install selected library skills on agent hire submit
+- [x] Add collapsible "Skills that will be added" summary to `HireTeamDialog` review step (shows new vs. existing)
+- [x] Install resolved team skills before creating agents in `HireTeamDialog` submit
+
+### 6. Template Deploy Service
+
+- [x] Install resolved skills for all deployed agents in `template-deploy.ts` after agent registration (Step 3b)
+
 ---
 
 > **Auto-updated by Cursor:** Fixed window size restore (non-maximized geometry preserved) and session persistence (auth token + onboarding state backed by Tauri disk store, token verification retries during cold start) on 2026-05-01.
@@ -475,3 +588,11 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Added playful lounge extras to Pixel and 3D views — second sofa facing first sofa, mini kitchen (counter, microwave, coffee machine, fridge), wall-mounted TV; pixel view has 5 new FurnitureType enums + sprites; 3D view has matching meshes with emissive TV screen and kitchen detail; lounge widened in both views on 2026-05-01.
 > **Auto-updated by Cursor:** Made Reports left panel resizable with drag handle, keyboard support, centered empty state CTA, and wrapping tabs on 2026-05-01.
 > **Auto-updated by Cursor:** Improved unauthorized error handling on Users and Organization pages — auth errors now show "Authentication required" with lock icon, session expiry explanation, and "Sign in" button linking to /auth; non-auth errors show generic message with retry; added /hierarchy mock route so mock mode returns valid hierarchy data instead of empty object on 2026-05-01.
+> **Auto-updated by Cursor:** Registered all 43 library/teams/ definitions in Library Teams mock — teams tab now shows 48 entries (43 domain teams + 5 generic size templates) with correct agent counts, size categories, descriptions, and deploy support on 2026-05-01.
+> **Auto-updated by Cursor:** Removed synthetic library metrics (downloads, favorites, forks, rating, potency, added_at) from all Library types, enrichment, card components, detail pages, and sort options — version field retained as real data element on each item on 2026-05-01.
+> **Auto-updated by Cursor:** Moved version numbers next to item labels (left of visibility icon) on all library cards (agents, skills, teams, companies); added tooltip to visibility eye icon explaining Public/Unlisted/Private states on 2026-05-01.
+> **Auto-updated by Cursor:** Implemented Bidirectional Inbox & Slack Integration — rewrote InboxController to use notifications table (fixing empty Messages tab), wired system event producers (heartbeat failures, governance approvals, workflow status), built full Slack integration (Events API inbound, agent routing, chat.postMessage outbound, interactive approval buttons), desktop reply composer, and SSE realtime inbox stream on 2026-05-01.
+> **Auto-updated by Cursor:** Implemented Auto-Resolve Skill Dependencies — `required_skills` on all 157 agents, 48 teams, 5 companies; `skill-dependencies.ts` resolver with tag-to-skill mapping; `SkillsStore.installFromLibrary` with mock layer support; `SkillsPreviewModal` confirmation UI; wired into library page, all 4 detail pages, HireAgentDialog (role-based recommendations), HireTeamDialog (review step summary), and template-deploy service on 2026-05-01.
+> **Auto-updated by Cursor:** Updated Wiki to reflect current application state — Library article updated with auto-resolve skill dependencies and 157/121/48/5 entity counts; Skills article updated with library import, bulk enable, and auto-resolve capabilities; Inbox article updated with bidirectional messaging, Slack integration, and reply composer; Agents Roster article updated with role-based skill recommendations in hire dialogs; Integrations article updated with full Slack integration details on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed Hire Team dialog bugs — auto-assign role-matched system prompts from prompt-templates.ts to all team agents (not just the first), fixed agent name/role column alignment with CSS grid layout, fixed "Next: Configure" button unclickable (stopPropagation on modal/button clicks + z-index stacking), rebranded all hire dialog accent colors from blue to orange across 7 components on 2026-05-01.
+> **Auto-updated by Cursor:** Wired Settings > Integrations tab — Connect buttons now open IntegrationConnectModal with per-service config fields (GitHub: PAT/org/webhook, Slack: bot token/signing secret/channel, Linear: API key/team ID, Notion: integration token/root page, Jira: email/API token/domain/project key, Datadog: API key/app key/site); modal validates required fields before submitting; Disconnect/Configure buttons work inline; mock layer now persists connect/disconnect state changes; fixed `validation_failed` error on 2026-05-01.

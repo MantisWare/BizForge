@@ -199,6 +199,13 @@ defmodule Bizforge.Heartbeat do
               %{session_id: session.id}
             )
 
+            Bizforge.Notifications.Dispatcher.notify_system_alert(
+              "Agent failure: #{agent.name}",
+              "Heartbeat run failed: #{Exception.message(e)}",
+              "error",
+              agent.workspace_id
+            )
+
             raise e
         end
 

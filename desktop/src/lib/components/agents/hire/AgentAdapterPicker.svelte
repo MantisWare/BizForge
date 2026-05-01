@@ -126,8 +126,8 @@
   }
 
   .hap-card--selected {
-    border-color: rgba(59, 130, 246, 0.5);
-    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(249, 115, 22, 0.5);
+    background: rgba(249, 115, 22, 0.1);
   }
 
   .hap-radio-hidden {

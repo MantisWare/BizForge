@@ -114,6 +114,102 @@ defmodule BizforgeWeb.IntegrationController do
     end
   end
 
+  def connect_slack(conn, params) do
+    workspace_id = params["workspace_id"]
+    bot_token = params["bot_token"]
+    signing_secret = params["signing_secret"]
+    default_agent_id = params["default_agent_id"]
+    channel_mappings = params["channel_mappings"] || %{}
+    team_name = params["team_name"] || "Slack Workspace"
+
+    attrs = %{
+      workspace_id: workspace_id,
+      bot_token: bot_token,
+      signing_secret: signing_secret,
+      default_agent_id: default_agent_id,
+      channel_mappings: channel_mappings,
+      team_name: team_name,
+      active: true
+    }
+
+    existing =
+      Repo.one(
+        from s in Bizforge.Schemas.SlackInstallation,
+          where: s.workspace_id == ^workspace_id and s.active == true,
+          limit: 1
+      )
+
+    result =
+      case existing do
+        nil ->
+          Bizforge.Schemas.SlackInstallation.changeset(
+            %Bizforge.Schemas.SlackInstallation{},
+            attrs
+          )
+          |> Repo.insert()
+
+        installation ->
+          Bizforge.Schemas.SlackInstallation.changeset(installation, attrs)
+          |> Repo.update()
+      end
+
+    case result do
+      {:ok, installation} ->
+        json(conn, %{
+          ok: true,
+          slack_installation: %{
+            id: installation.id,
+            team_name: installation.team_name,
+            active: installation.active,
+            channel_mappings: installation.channel_mappings,
+            default_agent_id: installation.default_agent_id
+          }
+        })
+
+      {:error, changeset} ->
+        conn
+        |> put_status(422)
+        |> json(%{error: "validation_failed", details: format_errors(changeset)})
+    end
+  end
+
+  def disconnect_slack(conn, params) do
+    workspace_id = params["workspace_id"]
+
+    query =
+      from s in Bizforge.Schemas.SlackInstallation,
+        where: s.workspace_id == ^workspace_id and s.active == true
+
+    {count, _} = Repo.update_all(query, set: [active: false])
+
+    json(conn, %{ok: true, deactivated: count})
+  end
+
+  def slack_status(conn, params) do
+    workspace_id = params["workspace_id"]
+
+    installation =
+      Repo.one(
+        from s in Bizforge.Schemas.SlackInstallation,
+          where: s.workspace_id == ^workspace_id and s.active == true,
+          limit: 1
+      )
+
+    case installation do
+      nil ->
+        json(conn, %{connected: false, status: "not_configured"})
+
+      inst ->
+        json(conn, %{
+          connected: true,
+          status: "connected",
+          team_name: inst.team_name,
+          channel_mappings: inst.channel_mappings,
+          default_agent_id: inst.default_agent_id
+        })
+    end
+  end
+
   def pull_all(conn, params) do
     workspace_id = params["workspace_id"]
 

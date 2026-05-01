@@ -1436,8 +1436,14 @@ export const inbox = {
     }),
   dismiss: (id: string) =>
     request<void>(`/inbox/${id}/read`, { method: "POST" }),
-  read: (id: string) => request<void>(`/inbox/${id}/read`, { method: "PATCH" }),
+  read: (id: string) =>
+    request<void>(`/inbox/${id}/read`, { method: "POST" }),
   readAll: () => request<void>("/inbox/read-all", { method: "POST" }),
+  reply: (id: string, body: string) =>
+    request<void>(`/inbox/${id}/reply`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    }),
 };
 
 // ── Skills ────────────────────────────────────────────────────────────────────

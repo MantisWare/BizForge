@@ -4,7 +4,13 @@
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
   import type { AgentCreateRequest, AdapterType } from '$api/types';
+  import {
+    resolveSkillsForAgent,
+    lookupLibrarySkills,
+  } from '$lib/data/skill-dependencies';
+  import type { LibrarySkill } from '$lib/api/mock/library/types';
   import AgentIdentity from './hire/AgentIdentity.svelte';
   import AgentAdapterPicker from './hire/AgentAdapterPicker.svelte';
   import AgentModelConfig from './hire/AgentModelConfig.svelte';
@@ -40,6 +46,41 @@
   let cronExpr = $state('');
   let isSubmitting = $state(false);
   let errors = $state<Record<string, string>>({});
+
+  // Recommended library skills based on selected role tag
+  const ROLE_SKILL_TAGS: Record<string, string[]> = {
+    'engineer':    ['code', 'debug', 'test', 'deploy'],
+    'developer':   ['code', 'debug', 'test'],
+    'researcher':  ['web_search', 'analyze', 'summarize'],
+    'writer':      ['write', 'edit', 'format'],
+    'designer':    ['design', 'brand'],
+    'analyst':     ['analyze', 'forecast', 'report'],
+    'strategist':  ['plan', 'analyze'],
+    'orchestrator': ['delegate', 'plan'],
+    'project manager': ['plan', 'prioritize', 'delegate', 'track'],
+    'reviewer':    ['edit', 'audit'],
+    'architect':   ['code', 'plan', 'deploy'],
+    'coach':       ['analyze', 'summarize'],
+    'closer':      ['analyze', 'web_search'],
+    'prospector':  ['web_search', 'analyze', 'enrich'],
+  };
+
+  let recommendedSkills = $derived.by((): LibrarySkill[] => {
+    const r = role.trim().toLowerCase();
+    if (r === '') return [];
+    const tags = ROLE_SKILL_TAGS[r] ?? [];
+    if (tags.length === 0) return [];
+    const ids = resolveSkillsForAgent({ skills: tags });
+    return lookupLibrarySkills(ids);
+  });
+
+  // Auto-select recommended skills when they change
+  $effect(() => {
+    if (recommendedSkills.length > 0) {
+      const recIds = recommendedSkills.map((s) => s.id);
+      selectedSkills = [...new Set([...selectedSkills, ...recIds])];
+    }
+  });
 
   function toggleSkill(skill: string) {
     if (selectedSkills.includes(skill)) {
@@ -84,6 +125,14 @@
       },
       schedule: cronExpr.trim() ? { cron: cronExpr.trim(), enabled: true } : undefined,
     };
+
+    // Install recommended library skills that are selected
+    const skillsToInstall = recommendedSkills.filter((ls) =>
+      selectedSkills.includes(ls.id),
+    );
+    if (skillsToInstall.length > 0) {
+      await skillsStore.installFromLibrary(skillsToInstall);
+    }
 
     const created = await agentsStore.createAgent(req);
     isSubmitting = false;
@@ -177,6 +226,26 @@
             onProviderId={(v) => (providerId = v)}
             onTemperature={(v) => (agentTemperature = v)}
           />
+
+          {#if recommendedSkills.length > 0}
+            <section class="had-section">
+              <h3 class="had-section-title">Recommended Skills</h3>
+              <p class="had-section-desc">Based on the role, these skills will be added to your workspace.</p>
+              <div class="had-skill-chips">
+                {#each recommendedSkills as ls}
+                  <button
+                    type="button"
+                    class="had-skill-chip"
+                    class:had-skill-chip--active={selectedSkills.includes(ls.id)}
+                    onclick={() => toggleSkill(ls.id)}
+                    title={ls.description}
+                  >
+                    {ls.name}
+                  </button>
+                {/each}
+              </div>
+            </section>
+          {/if}
 
           <AgentBudgetConfig
             {dailyLimitDollars}
@@ -349,15 +418,15 @@
   }
 
   .had-btn--primary {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-    color: #93c5fd;
+    background: rgba(249, 115, 22, 0.2);
+    border-color: rgba(251, 146, 60, 0.5);
+    color: #fdba74;
   }
 
   .had-btn--primary:hover:not(:disabled) {
-    background: rgba(59, 130, 246, 0.3);
-    border-color: rgba(59, 130, 246, 0.7);
-    color: #bfdbfe;
+    background: rgba(249, 115, 22, 0.3);
+    border-color: rgba(251, 146, 60, 0.7);
+    color: #fed7aa;
   }
 
   .had-btn:disabled {
@@ -368,13 +437,72 @@
   .had-spinner {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(147, 197, 253, 0.3);
-    border-top-color: #93c5fd;
+    border: 2px solid rgba(251, 146, 60, 0.3);
+    border-top-color: #fdba74;
     border-radius: 50%;
     animation: had-spin 0.7s linear infinite;
   }
 
   @keyframes had-spin {
     to { transform: rotate(360deg); }
+  }
+
+  .had-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .had-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin: 0;
+  }
+
+  .had-section-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+  }
+
+  .had-skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .had-skill-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-xs);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 120ms ease;
+    border: 1px solid var(--border-default);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+  }
+
+  .had-skill-chip:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-hover);
+  }
+
+  .had-skill-chip--active {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #fdba74;
+  }
+
+  .had-skill-chip--active:hover {
+    background: rgba(249, 115, 22, 0.2);
+    border-color: rgba(249, 115, 22, 0.5);
   }
 </style>

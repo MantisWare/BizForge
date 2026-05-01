@@ -5,10 +5,16 @@
   import LibrarySkillCard from '$lib/components/library/LibrarySkillCard.svelte';
   import LibraryOperationCard from '$lib/components/library/LibraryOperationCard.svelte';
   import LibraryTemplateCard from '$lib/components/library/LibraryTemplateCard.svelte';
+  import SkillsPreviewModal from '$lib/components/library/SkillsPreviewModal.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { goto } from '$app/navigation';
   import { deployTemplate } from '$lib/services/template-deploy';
   import { toastStore } from '$lib/stores/toasts.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
+  import {
+    resolveSkillsForLibraryEntity,
+    partitionSkills,
+  } from '$lib/data/skill-dependencies';
   import {
     getLibraryAgents,
     getLibrarySkills,
@@ -35,8 +41,8 @@
   const allTemplates = getLibraryTemplates();
 
   // ── Sort types ──────────────────────────────────────────────────────────────
-  type AgentSort = 'name-asc' | 'name-desc' | 'downloads' | 'rating' | 'favorites' | 'newest' | 'oldest';
-  type SkillSort  = 'name-asc' | 'name-desc' | 'downloads' | 'favorites' | 'newest' | 'oldest';
+  type AgentSort = 'name-asc' | 'name-desc';
+  type SkillSort  = 'name-asc' | 'name-desc';
 
   // ── View mode ───────────────────────────────────────────────────────────────
   type ViewMode = 'grid' | 'list';
@@ -103,11 +109,6 @@
       switch (sort) {
         case 'name-asc':   return a.name.localeCompare(b.name);
         case 'name-desc':  return b.name.localeCompare(a.name);
-        case 'downloads':  return b.downloads - a.downloads;
-        case 'rating':     return b.rating - a.rating;
-        case 'favorites':  return b.favorites - a.favorites;
-        case 'newest':     return b.added_at.localeCompare(a.added_at);
-        case 'oldest':     return a.added_at.localeCompare(b.added_at);
       }
     });
   }
@@ -117,10 +118,6 @@
       switch (sort) {
         case 'name-asc':   return a.name.localeCompare(b.name);
         case 'name-desc':  return b.name.localeCompare(a.name);
-        case 'downloads':  return b.downloads - a.downloads;
-        case 'favorites':  return b.favorites - a.favorites;
-        case 'newest':     return b.added_at.localeCompare(a.added_at);
-        case 'oldest':     return a.added_at.localeCompare(b.added_at);
       }
     });
   }
@@ -209,8 +206,52 @@
     notification = msg;
   }
 
+  // ── Skills preview modal state ──────────────────────────────────────────────
+  import type { LibrarySkill as LibSkill } from '$lib/api/mock/library/types';
+  let skillsModalOpen = $state(false);
+  let skillsModalEntity = $state('');
+  let skillsModalToAdd = $state<LibSkill[]>([]);
+  let skillsModalActive = $state<LibSkill[]>([]);
+  let skillsModalConfirmAction = $state<(() => void) | null>(null);
+
+  function openSkillsPreview(
+    entityName: string,
+    requiredIds: string[],
+    onConfirm: () => void,
+  ) {
+    if (requiredIds.length === 0) {
+      onConfirm();
+      return;
+    }
+    const { alreadyActive, toAdd } = partitionSkills(requiredIds, skillsStore.skills);
+    if (toAdd.length === 0) {
+      onConfirm();
+      return;
+    }
+    skillsModalEntity = entityName;
+    skillsModalToAdd = toAdd;
+    skillsModalActive = alreadyActive;
+    skillsModalConfirmAction = onConfirm;
+    skillsModalOpen = true;
+  }
+
+  async function handleSkillsConfirm() {
+    skillsModalOpen = false;
+    await skillsStore.installFromLibrary(skillsModalToAdd);
+    skillsModalConfirmAction?.();
+    skillsModalConfirmAction = null;
+  }
+
+  function handleSkillsCancel() {
+    skillsModalOpen = false;
+    skillsModalConfirmAction = null;
+  }
+
   function handleAgentAdd(agent: LibraryAgent) {
-    notify(`${agent.name} added to workspace`);
+    const ids = resolveSkillsForLibraryEntity(agent);
+    openSkillsPreview(agent.name, ids, () => {
+      notify(`${agent.name} added to workspace`);
+    });
   }
 
   function handleSkillToggle(skill: LibrarySkill) {
@@ -218,41 +259,47 @@
   }
 
   async function handleOperationUse(op: LibraryOperation) {
-    notify(`Deploying "${op.name}"…`);
-    const result = await deployTemplate(op.id, op.name);
-    if (result.success) {
-      const warn = result.warnings && result.warnings.length > 0
-        ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
-        : '';
-      notify(`${op.name} deployed — ${result.agentCount} agents${warn}`);
-      if (result.warnings) {
-        for (const w of result.warnings) {
-          toastStore.warning('Deploy warning', w);
+    const ids = resolveSkillsForLibraryEntity(op);
+    openSkillsPreview(op.name, ids, async () => {
+      notify(`Deploying "${op.name}"…`);
+      const result = await deployTemplate(op.id, op.name);
+      if (result.success) {
+        const warn = result.warnings && result.warnings.length > 0
+          ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
+          : '';
+        notify(`${op.name} deployed — ${result.agentCount} agents${warn}`);
+        if (result.warnings) {
+          for (const w of result.warnings) {
+            toastStore.warning('Deploy warning', w);
+          }
         }
+        goto('/app');
+      } else {
+        notify(`Deploy failed: ${result.error ?? 'unknown error'}`);
       }
-      goto('/app');
-    } else {
-      notify(`Deploy failed: ${result.error ?? 'unknown error'}`);
-    }
+    });
   }
 
   async function handleTemplateCreate(tmpl: LibraryTemplate) {
-    notify(`Deploying "${tmpl.name}"…`);
-    const result = await deployTemplate(tmpl.id, tmpl.name);
-    if (result.success) {
-      const warn = result.warnings && result.warnings.length > 0
-        ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
-        : '';
-      notify(`${tmpl.name} deployed — ${result.agentCount} agents${warn}`);
-      if (result.warnings) {
-        for (const w of result.warnings) {
-          toastStore.warning('Deploy warning', w);
+    const ids = resolveSkillsForLibraryEntity(tmpl);
+    openSkillsPreview(tmpl.name, ids, async () => {
+      notify(`Deploying "${tmpl.name}"…`);
+      const result = await deployTemplate(tmpl.id, tmpl.name);
+      if (result.success) {
+        const warn = result.warnings && result.warnings.length > 0
+          ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
+          : '';
+        notify(`${tmpl.name} deployed — ${result.agentCount} agents${warn}`);
+        if (result.warnings) {
+          for (const w of result.warnings) {
+            toastStore.warning('Deploy warning', w);
+          }
         }
+        goto('/app');
+      } else {
+        notify(`Deploy failed: ${result.error ?? 'unknown error'}`);
       }
-      goto('/app');
-    } else {
-      notify(`Deploy failed: ${result.error ?? 'unknown error'}`);
-    }
+    });
   }
 
   // ── Count helper for category chips ────────────────────────────────────────
@@ -262,11 +309,6 @@
 
   function skillCatCount(cat: SkillCategory): number {
     return allSkills.filter((s) => s.category === cat).length;
-  }
-
-  function fmtCount(n: number): string {
-    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return String(n);
   }
 </script>
 
@@ -319,11 +361,6 @@
       <select class="lib-sort-select" bind:value={agentSort} aria-label="Sort agents">
         <option value="name-asc">Name (A-Z)</option>
         <option value="name-desc">Name (Z-A)</option>
-        <option value="downloads">Most Downloads</option>
-        <option value="favorites">Most Favorites</option>
-        <option value="rating">Highest Rating</option>
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
       </select>
 
       <div class="lib-view-toggle" role="group" aria-label="View mode">
@@ -363,9 +400,7 @@
               <span class="lib-list-desc">{agent.description}</span>
             </div>
             <span class="lib-list-badge">{agent.category}</span>
-            <span class="lib-list-stat" title="Downloads">{fmtCount(agent.downloads)} dl</span>
-            <span class="lib-list-stat" title="Favorites">{fmtCount(agent.favorites)}</span>
-            <span class="lib-list-stat" title="Rating">{agent.rating}/5</span>
+            <span class="lib-list-stat">v{agent.version}</span>
             <span class="lib-list-source lib-list-source--{agent.isOfficial ? 'official' : 'community'}">{agent.isOfficial ? 'official' : 'community'}</span>
           </div>
         {/each}
@@ -395,10 +430,6 @@
       <select class="lib-sort-select" bind:value={skillSort} aria-label="Sort skills">
         <option value="name-asc">Name (A-Z)</option>
         <option value="name-desc">Name (Z-A)</option>
-        <option value="downloads">Most Downloads</option>
-        <option value="favorites">Most Favorites</option>
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
       </select>
 
       <div class="lib-view-toggle" role="group" aria-label="View mode">
@@ -437,8 +468,6 @@
               <span class="lib-list-desc">{skill.description}</span>
             </div>
             <span class="lib-list-badge">{skill.category}</span>
-            <span class="lib-list-stat" title="Downloads">{fmtCount(skill.downloads)} dl</span>
-            <span class="lib-list-stat" title="Favorites">{fmtCount(skill.favorites)}</span>
             <span class="lib-list-stat">v{skill.version}</span>
             <span class="lib-list-source lib-list-source--{skill.isOfficial ? 'official' : 'community'}">{skill.isOfficial ? 'official' : 'community'}</span>
           </div>
@@ -506,6 +535,15 @@
   </div>
   {/if}
 </PageShell>
+
+<SkillsPreviewModal
+  open={skillsModalOpen}
+  entityName={skillsModalEntity}
+  skillsToAdd={skillsModalToAdd}
+  skillsAlreadyActive={skillsModalActive}
+  onConfirm={handleSkillsConfirm}
+  onCancel={handleSkillsCancel}
+/>
 
 <style>
   /* ── Notification ────────────────────────────────────────────────────────── */

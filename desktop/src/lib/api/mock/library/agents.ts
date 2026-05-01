@@ -16,6 +16,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Studies human cultures, behaviors, and societies to surface anthropological insights.",
+    required_skills: ["research", "summarize", "synthesize", "classify", "cite"],
   },
   {
     id: "geographer",
@@ -27,6 +28,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes spatial patterns, geographic data, and regional characteristics.",
+    required_skills: ["research", "summarize", "classify", "compare"],
   },
   {
     id: "historian",
@@ -38,6 +40,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Researches historical events and contexts to provide accurate historical perspective.",
+    required_skills: ["research", "summarize", "cite", "classify"],
   },
   {
     id: "narratologist",
@@ -49,6 +52,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes narrative structures, storytelling techniques, and discourse patterns.",
+    required_skills: ["research", "classify", "synthesize", "summarize"],
   },
   {
     id: "psychologist",
@@ -60,6 +64,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Applies psychological principles to understand human behavior and mental processes.",
+    required_skills: ["research", "summarize", "classify", "synthesize"],
   },
 
   // design (9)
@@ -73,6 +78,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2500,
     description:
       "Enforces brand consistency and standards across all creative outputs.",
+    required_skills: ["research", "summarize", "ads-creative"],
   },
   {
     id: "image-prompt-engineer",
@@ -84,6 +90,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Crafts precise image generation prompts to achieve desired visual results.",
+    required_skills: ["ads-creative", "research", "summarize"],
   },
   {
     id: "inclusive-visuals-specialist",
@@ -95,6 +102,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Ensures visual designs are accessible, representative, and inclusive for all audiences.",
+    required_skills: ["research", "summarize", "ads-creative"],
   },
   {
     id: "ui-designer",
@@ -106,6 +114,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Creates polished user interface designs with strong visual hierarchy and usability.",
+    required_skills: ["ads-creative", "research", "summarize"],
   },
   {
     id: "ux-architect",
@@ -117,6 +126,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Structures user experience flows and information architecture for complex products.",
+    required_skills: ["research", "summarize", "roadmap", "compare"],
   },
   {
     id: "ux-researcher",
@@ -128,6 +138,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2500,
     description:
       "Conducts user research and usability studies to inform design decisions.",
+    required_skills: ["research", "summarize", "classify", "compare"],
   },
   {
     id: "visual-storyteller",
@@ -139,6 +150,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Translates ideas and narratives into compelling visual story formats.",
+    required_skills: ["ads-creative", "research", "summarize", "social-post"],
   },
   {
     id: "whimsy-injector",
@@ -150,6 +162,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Adds playful, delightful, and unexpected creative touches to designs.",
+    required_skills: ["ads-creative", "research", "summarize"],
   },
 
   // engineering (23)
@@ -163,6 +176,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Identifies and corrects data quality issues in AI training and evaluation datasets.",
+    required_skills: ["pipeline", "validate", "clean", "transform", "classify"],
   },
   {
     id: "ai-engineer",
@@ -174,6 +188,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 1000,
     description:
       "Designs, implements, and deploys AI and machine learning systems.",
+    required_skills: ["build", "test", "deploy", "debug", "refactor"],
   },
   {
     id: "autonomous-optimization-architect",
@@ -185,6 +200,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs self-optimizing systems that improve performance without manual intervention.",
+    required_skills: ["build", "refactor", "debug", "test", "simplify"],
   },
   {
     id: "backend-architect",
@@ -196,6 +212,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 800,
     description:
       "Designs and implements scalable backend system architecture and APIs.",
+    required_skills: ["build", "deploy", "code-review", "test", "refactor"],
   },
   {
     id: "code-reviewer",
@@ -207,6 +224,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Reviews code for correctness, security, maintainability, and adherence to standards.",
+    required_skills: ["code-review", "lint", "security-scan", "explain"],
   },
   {
     id: "data-engineer",
@@ -218,6 +236,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds and maintains data pipelines, warehouses, and data infrastructure.",
+    required_skills: ["pipeline", "transform", "validate", "build", "deploy"],
   },
   {
     id: "database-optimizer",
@@ -229,6 +248,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Analyzes and optimizes database schemas, queries, and indexing strategies.",
+    required_skills: ["debug", "refactor", "test", "simplify"],
   },
   {
     id: "devops-automator",
@@ -240,6 +260,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 700,
     description:
       "Automates CI/CD pipelines, infrastructure provisioning, and deployment workflows.",
+    required_skills: ["deploy", "pipeline", "build", "lint", "refactor"],
   },
   {
     id: "embedded-firmware-engineer",
@@ -251,6 +272,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops low-level firmware and embedded software for hardware devices.",
+    required_skills: ["build", "debug", "test", "refactor", "deploy"],
   },
   {
     id: "feishu-integration-developer",
@@ -262,6 +284,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds integrations and bots for the Feishu/Lark collaboration platform.",
+    required_skills: ["build", "deploy", "test", "debug", "review-pr"],
   },
   {
     id: "frontend-developer",
@@ -273,6 +296,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Implements responsive, performant user interfaces using modern web technologies.",
+    required_skills: ["build", "lint", "test", "debug", "refactor"],
   },
   {
     id: "git-workflow-master",
@@ -284,6 +308,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages branching strategies, merge workflows, and repository hygiene.",
+    required_skills: ["commit", "review-pr", "create-pr", "explain"],
   },
   {
     id: "incident-response-commander",
@@ -295,6 +320,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Leads incident triage, coordination, and post-mortem processes during outages.",
+    required_skills: ["debug", "delegate", "summarize", "retrospective", "heartbeat"],
   },
   {
     id: "mobile-app-builder",
@@ -306,6 +332,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops cross-platform or native mobile applications for iOS and Android.",
+    required_skills: ["build", "deploy", "test", "debug", "lint"],
   },
   {
     id: "rapid-prototyper",
@@ -317,6 +344,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Quickly builds functional prototypes to validate ideas and gather feedback.",
+    required_skills: ["build", "simplify", "test", "refactor", "fix"],
   },
   {
     id: "security-engineer",
@@ -328,6 +356,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 700,
     description:
       "Implements security controls, performs threat modeling, and hardens systems.",
+    required_skills: ["security-scan", "harden", "auditor", "code-review"],
   },
   {
     id: "senior-developer",
@@ -339,6 +368,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Provides senior-level engineering judgment, code quality, and mentorship.",
+    required_skills: ["code-review", "build", "refactor", "explain", "review-pr"],
   },
   {
     id: "software-architect",
@@ -350,6 +380,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 800,
     description:
       "Defines system-wide architecture, technology choices, and engineering standards.",
+    required_skills: ["build", "refactor", "code-review", "explain"],
   },
   {
     id: "solidity-smart-contract-engineer",
@@ -361,6 +392,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Writes, audits, and deploys Solidity smart contracts on EVM-compatible chains.",
+    required_skills: ["build", "deploy", "security-scan", "test", "code-review"],
   },
   {
     id: "sre",
@@ -372,6 +404,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 700,
     description:
       "Maintains system reliability, SLOs, and on-call runbooks for production services.",
+    required_skills: ["deploy", "debug", "health", "test", "explain"],
   },
   {
     id: "technical-writer",
@@ -383,6 +416,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 400,
     description:
       "Produces clear, accurate technical documentation, guides, and API references.",
+    required_skills: ["explain", "doc-search", "summarize", "simplify"],
   },
   {
     id: "threat-detection-engineer",
@@ -394,6 +428,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds detection rules and monitoring systems to identify security threats.",
+    required_skills: ["build", "security-scan", "debug", "code-search"],
   },
   {
     id: "wechat-mini-program-developer",
@@ -405,6 +440,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops mini programs and integrations for the WeChat super-app ecosystem.",
+    required_skills: ["build", "deploy", "test", "debug", "review-pr"],
   },
 
   // game-development (5)
@@ -418,6 +454,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs and integrates sound effects, music, and spatial audio for games.",
+    required_skills: ["build", "debug", "test", "deploy"],
   },
   {
     id: "game-designer",
@@ -429,6 +466,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Creates game mechanics, systems, and player experience loops.",
+    required_skills: ["build", "debug", "research", "summarize", "roadmap"],
   },
   {
     id: "level-designer",
@@ -440,6 +478,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs game levels, environments, and spatial challenges for player engagement.",
+    required_skills: ["build", "debug", "test", "research", "summarize"],
   },
   {
     id: "narrative-designer",
@@ -451,6 +490,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Crafts game narratives, dialogue trees, and story-driven player experiences.",
+    required_skills: ["research", "summarize", "blog", "video-script", "synthesize"],
   },
   {
     id: "technical-artist",
@@ -462,6 +502,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Bridges art and engineering to optimize assets and build visual pipelines.",
+    required_skills: ["build", "pipeline", "debug", "deploy", "refactor"],
   },
 
   // marketing (27)
@@ -475,6 +516,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Optimizes content to be cited and referenced by AI systems and search engines.",
+    required_skills: ["web-search", "research", "blog", "cite", "summarize"],
   },
   {
     id: "app-store-optimizer",
@@ -486,6 +528,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Optimizes app store listings, keywords, and visuals to maximize installs.",
+    required_skills: ["research", "web-search", "social-post", "summarize"],
   },
   {
     id: "baidu-seo-specialist",
@@ -497,6 +540,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Optimizes content and technical SEO for Baidu search engine visibility in China.",
+    required_skills: ["web-search", "research", "blog", "summarize"],
   },
   {
     id: "bilibili-content-strategist",
@@ -508,6 +552,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops content strategies tailored to Bilibili's anime and youth culture audience.",
+    required_skills: ["research", "video-script", "social-post", "summarize"],
   },
   {
     id: "book-co-author",
@@ -519,6 +564,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Collaborates on long-form book projects from outline through final manuscript.",
+    required_skills: ["blog", "research", "summarize", "cite"],
   },
   {
     id: "carousel-growth-engine",
@@ -530,6 +576,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Produces high-engagement carousel content optimized for social media reach.",
+    required_skills: ["social-post", "ads-creative", "research", "summarize"],
   },
   {
     id: "china-ecommerce-operator",
@@ -541,6 +588,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages product listings, promotions, and operations on Chinese e-commerce platforms.",
+    required_skills: ["research", "web-search", "blog", "summarize"],
   },
   {
     id: "content-creator",
@@ -552,6 +600,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2000,
     description:
       "Produces compelling written and multimedia content across channels and formats.",
+    required_skills: ["blog", "social-post", "newsletter", "video-script", "research"],
   },
   {
     id: "cross-border-ecommerce",
@@ -563,6 +612,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages international e-commerce operations, logistics, and market localization.",
+    required_skills: ["research", "web-search", "blog", "summarize", "compare"],
   },
   {
     id: "douyin-strategist",
@@ -574,6 +624,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops short-video content strategies optimized for the Douyin algorithm.",
+    required_skills: ["social-post", "video-script", "research", "summarize"],
   },
   {
     id: "growth-hacker",
@@ -585,6 +636,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 5000,
     description:
       "Designs and runs rapid growth experiments across acquisition, activation, and retention.",
+    required_skills: ["web-search", "research", "stats", "blog", "social-post"],
   },
   {
     id: "instagram-curator",
@@ -596,6 +648,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Curates and schedules visually cohesive Instagram content to grow engagement.",
+    required_skills: ["social-post", "ads-creative", "research", "summarize"],
   },
   {
     id: "kuaishou-strategist",
@@ -607,6 +660,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds content and community strategies for the Kuaishou short-video platform.",
+    required_skills: ["social-post", "video-script", "research", "blog"],
   },
   {
     id: "linkedin-content-creator",
@@ -618,6 +672,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Creates thought leadership and professional content optimized for LinkedIn reach.",
+    required_skills: ["blog", "social-post", "research", "summarize", "explain"],
   },
   {
     id: "livestream-commerce-coach",
@@ -629,6 +684,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Coaches hosts and teams to maximize sales conversion during live commerce streams.",
+    required_skills: ["research", "social-post", "video-script", "summarize"],
   },
   {
     id: "podcast-strategist",
@@ -640,6 +696,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops podcast concepts, episode formats, and distribution strategies.",
+    required_skills: ["research", "video-script", "newsletter", "blog", "summarize"],
   },
   {
     id: "private-domain-operator",
@@ -651,6 +708,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds and monetizes owned audience channels like WeChat groups and email lists.",
+    required_skills: ["newsletter", "social-post", "blog", "research"],
   },
   {
     id: "reddit-community-builder",
@@ -662,6 +720,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Grows and moderates Reddit communities while driving organic brand awareness.",
+    required_skills: ["social-post", "research", "blog", "summarize"],
   },
   {
     id: "seo-specialist",
@@ -673,6 +732,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Optimizes on-page and off-page SEO to improve organic search rankings.",
+    required_skills: ["web-search", "research", "blog", "summarize"],
   },
   {
     id: "short-video-editing-coach",
@@ -684,6 +744,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Teaches editing techniques to maximize retention and virality in short-form video.",
+    required_skills: ["video-script", "social-post", "research", "summarize"],
   },
   {
     id: "social-media-strategist",
@@ -695,6 +756,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Plans and executes cross-platform social media strategies for brand growth.",
+    required_skills: ["social-post", "blog", "research", "roadmap", "web-search"],
   },
   {
     id: "tiktok-strategist",
@@ -706,6 +768,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Creates trend-driven TikTok content strategies to maximize reach and virality.",
+    required_skills: ["social-post", "video-script", "ads-tiktok", "research", "summarize"],
   },
   {
     id: "twitter-engager",
@@ -717,6 +780,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Drives Twitter/X engagement through real-time conversation and thread strategy.",
+    required_skills: ["social-post", "research", "blog", "summarize"],
   },
   {
     id: "wechat-official-account",
@@ -728,6 +792,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages content, campaigns, and audience growth for WeChat Official Accounts.",
+    required_skills: ["social-post", "newsletter", "blog", "research"],
   },
   {
     id: "weibo-strategist",
@@ -739,6 +804,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds brand presence and trending content strategies on Weibo.",
+    required_skills: ["social-post", "research", "blog", "summarize"],
   },
   {
     id: "xiaohongshu-specialist",
@@ -750,6 +816,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Creates lifestyle and product content optimized for the Xiaohongshu (RED) platform.",
+    required_skills: ["social-post", "ads-creative", "research", "blog"],
   },
   {
     id: "zhihu-strategist",
@@ -761,6 +828,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Establishes thought leadership and brand authority through Zhihu Q&A content.",
+    required_skills: ["blog", "research", "cite", "summarize"],
   },
 
   // paid-media (16)
@@ -774,6 +842,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 300,
     description:
       "Audits ad spend allocation and pacing to identify waste and budget inefficiencies.",
+    required_skills: ["ads-budget", "ads-audit", "stats", "ads-plan"],
   },
   {
     id: "audit-compliance",
@@ -785,6 +854,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 300,
     description:
       "Ensures paid media campaigns comply with platform policies and regulations.",
+    required_skills: ["compliance", "approval", "ads-audit"],
   },
   {
     id: "audit-creative",
@@ -796,6 +866,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 300,
     description:
       "Evaluates ad creative performance and identifies opportunities for improvement.",
+    required_skills: ["ads-creative", "ads-audit", "ads-generate"],
   },
   {
     id: "audit-google",
@@ -807,6 +878,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Performs comprehensive audits of Google Ads accounts for performance and structure.",
+    required_skills: ["ads-google", "ads-audit", "ads-plan", "ads-budget"],
   },
   {
     id: "audit-meta",
@@ -818,6 +890,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Audits Meta ad accounts for campaign structure, targeting, and creative effectiveness.",
+    required_skills: ["ads-meta", "ads-audit", "ads-creative", "ads-plan"],
   },
   {
     id: "audit-tracking",
@@ -829,6 +902,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 300,
     description:
       "Verifies pixel, conversion, and attribution tracking accuracy across ad platforms.",
+    required_skills: ["validate", "audit", "ads-google", "ads-meta"],
   },
   {
     id: "auditor",
@@ -840,6 +914,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Conducts holistic paid media audits covering spend, creative, targeting, and tracking.",
+    required_skills: ["ads-audit", "ads-budget", "ads-creative", "ads-google", "ads-meta"],
   },
   {
     id: "copy-writer",
@@ -851,6 +926,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 300,
     description:
       "Writes high-converting ad copy for search, display, and social media campaigns.",
+    required_skills: ["ads-generate", "ads-create", "ads-google", "ads-meta"],
   },
   {
     id: "creative-strategist",
@@ -862,6 +938,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops creative strategies and briefs that drive paid media performance.",
+    required_skills: ["ads-plan", "ads-creative", "ads-competitor", "research"],
   },
   {
     id: "format-adapter",
@@ -873,6 +950,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 200,
     description:
       "Adapts ad creative to platform-specific formats, specs, and aspect ratios.",
+    required_skills: ["ads-create", "ads-creative", "ads-google", "ads-meta"],
   },
   {
     id: "paid-social-strategist",
@@ -884,6 +962,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Plans and manages paid social campaigns across Meta, TikTok, and LinkedIn.",
+    required_skills: ["ads-meta", "ads-tiktok", "ads-linkedin", "ads-plan", "ads-budget"],
   },
   {
     id: "ppc-strategist",
@@ -895,6 +974,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs and optimizes pay-per-click campaigns for maximum ROI.",
+    required_skills: ["ads-google", "ads-plan", "ads-budget", "ads-generate"],
   },
   {
     id: "programmatic-buyer",
@@ -906,6 +986,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Executes programmatic and display buys using DSPs for targeted reach.",
+    required_skills: ["ads-plan", "ads-budget", "ads-google", "ads-microsoft"],
   },
   {
     id: "search-query-analyst",
@@ -917,6 +998,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes search query reports to refine keywords, match types, and negatives.",
+    required_skills: ["ads-google", "research", "stats", "ads-audit"],
   },
   {
     id: "tracking-specialist",
@@ -928,6 +1010,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Implements and validates conversion tracking and attribution for paid campaigns.",
+    required_skills: ["validate", "audit", "ads-google", "ads-meta"],
   },
   {
     id: "visual-designer",
@@ -939,6 +1022,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Creates visually compelling ad graphics and motion assets for paid campaigns.",
+    required_skills: ["ads-creative", "ads-photoshoot", "ads-create", "ads-landing"],
   },
 
   // product (5)
@@ -952,6 +1036,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs behavioral nudges and choice architecture to guide desired user actions.",
+    required_skills: ["roadmap", "research", "summarize", "compare"],
   },
   {
     id: "feedback-synthesizer",
@@ -963,6 +1048,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2000,
     description:
       "Aggregates and synthesizes user feedback into actionable product insights.",
+    required_skills: ["synthesize", "summarize", "research", "classify"],
   },
   {
     id: "product-manager",
@@ -974,6 +1060,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 5000,
     description:
       "Defines product vision, roadmap, and priorities to align teams around user value.",
+    required_skills: ["roadmap", "sprint-planning", "research", "summarize"],
   },
   {
     id: "sprint-prioritizer",
@@ -985,6 +1072,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2000,
     description:
       "Ranks sprint backlog items by impact, effort, and strategic alignment.",
+    required_skills: ["sprint-planning", "roadmap", "summarize", "compare"],
   },
   {
     id: "trend-researcher",
@@ -996,6 +1084,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Identifies emerging market trends and technology shifts to inform product strategy.",
+    required_skills: ["research", "summarize", "roadmap", "compare", "web-search"],
   },
 
   // project-management (6)
@@ -1009,6 +1098,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Tracks A/B tests and experiments from hypothesis through results and decisions.",
+    required_skills: ["board", "summarize", "stats", "research"],
   },
   {
     id: "jira-workflow-steward",
@@ -1020,6 +1110,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Maintains Jira board hygiene, workflow configurations, and ticket standards.",
+    required_skills: ["board", "delegate", "sprint-planning", "standup"],
   },
   {
     id: "project-shepherd",
@@ -1031,6 +1122,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Guides projects from kickoff to delivery by removing blockers and aligning stakeholders.",
+    required_skills: ["board", "delegate", "roadmap", "heartbeat", "summarize"],
   },
   {
     id: "senior-project-manager",
@@ -1042,6 +1134,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2000,
     description:
       "Leads complex multi-team projects with formal planning, risk, and stakeholder management.",
+    required_skills: ["board", "delegate", "sprint-planning", "roadmap", "standup"],
   },
   {
     id: "studio-operations",
@@ -1053,6 +1146,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Coordinates studio logistics, resource scheduling, and operational workflows.",
+    required_skills: ["board", "delegate", "checkout", "standup"],
   },
   {
     id: "studio-producer",
@@ -1064,6 +1158,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Oversees creative production schedules, deliverables, and team coordination.",
+    required_skills: ["board", "delegate", "release", "sprint-planning"],
   },
 
   // sales (10)
@@ -1077,6 +1172,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Develops account plans and growth strategies for existing customer relationships.",
+    required_skills: ["research", "competitive-analysis", "summarize", "blog"],
   },
   {
     id: "deal-strategist",
@@ -1088,6 +1184,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Structures deal strategies and negotiation tactics to accelerate close rates.",
+    required_skills: ["research", "competitive-analysis", "summarize", "web-search"],
   },
   {
     id: "discovery-coach",
@@ -1099,6 +1196,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Coaches sales reps on discovery frameworks to uncover pain and qualify opportunities.",
+    required_skills: ["research", "summarize", "explain"],
   },
   {
     id: "outbound-prospector",
@@ -1110,6 +1208,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Identifies and qualifies outbound prospects through research and multi-channel outreach.",
+    required_skills: ["web-search", "research", "blog", "summarize"],
   },
   {
     id: "outbound-strategist",
@@ -1121,6 +1220,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs outbound campaign sequences, messaging, and targeting strategies.",
+    required_skills: ["research", "web-search", "blog", "summarize"],
   },
   {
     id: "pipeline-analyst",
@@ -1132,6 +1232,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes pipeline health, stage conversion rates, and forecast accuracy.",
+    required_skills: ["stats", "summarize", "graph"],
   },
   {
     id: "proposal-strategist",
@@ -1143,6 +1244,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Structures winning proposal strategies tailored to buyer priorities and competition.",
+    required_skills: ["blog", "competitive-analysis", "research", "summarize"],
   },
   {
     id: "proposal-writer",
@@ -1154,6 +1256,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Writes compelling sales proposals, RFP responses, and executive summaries.",
+    required_skills: ["blog", "summarize", "research"],
   },
   {
     id: "sales-coach",
@@ -1165,6 +1268,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Provides real-time coaching and feedback to improve sales team performance.",
+    required_skills: ["explain", "summarize", "research"],
   },
   {
     id: "sales-engineer",
@@ -1176,6 +1280,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Bridges technical and commercial gaps by delivering demos and handling objections.",
+    required_skills: ["explain", "research", "summarize", "build", "doc-search"],
   },
 
   // spatial-computing (6)
@@ -1189,6 +1294,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops high-performance macOS apps using Metal and spatial computing APIs.",
+    required_skills: ["build", "debug", "test", "deploy"],
   },
   {
     id: "terminal-integration-specialist",
@@ -1200,6 +1306,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Integrates terminal and CLI tooling into spatial and immersive computing environments.",
+    required_skills: ["build", "debug", "deploy", "code-search"],
   },
   {
     id: "visionos-spatial-engineer",
@@ -1211,6 +1318,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds native visionOS apps with spatial UI, volumes, and immersive experiences.",
+    required_skills: ["build", "test", "debug", "deploy"],
   },
   {
     id: "xr-cockpit-interaction-specialist",
@@ -1222,6 +1330,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs XR control interfaces and interaction models for cockpit and operator environments.",
+    required_skills: ["research", "build", "debug", "test", "summarize"],
   },
   {
     id: "xr-immersive-developer",
@@ -1233,6 +1342,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Develops immersive XR experiences across AR, VR, and mixed reality platforms.",
+    required_skills: ["build", "deploy", "test", "debug"],
   },
   {
     id: "xr-interface-architect",
@@ -1244,6 +1354,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Architects spatial interface systems and interaction paradigms for XR applications.",
+    required_skills: ["build", "refactor", "debug", "test", "explain"],
   },
 
   // specialized (27)
@@ -1257,6 +1368,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages invoice processing, vendor payments, and accounts payable workflows.",
+    required_skills: ["pay", "compliance", "summarize", "budget-check"],
   },
   {
     id: "agentic-identity-trust",
@@ -1268,6 +1380,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs identity verification and trust frameworks for multi-agent systems.",
+    required_skills: ["harden", "compliance", "auditor", "secret-scan"],
   },
   {
     id: "agents-orchestrator",
@@ -1279,6 +1392,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 10000,
     description:
       "Coordinates and manages fleets of specialized agents to complete complex workflows.",
+    required_skills: ["spawn", "delegate", "heartbeat", "inbox", "board"],
   },
   {
     id: "automation-governance-architect",
@@ -1290,6 +1404,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Defines governance policies and guardrails for enterprise automation systems.",
+    required_skills: ["compliance", "approval", "budget-check", "audit"],
   },
   {
     id: "blockchain-security-auditor",
@@ -1301,6 +1416,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Audits smart contracts and blockchain protocols for security vulnerabilities.",
+    required_skills: ["security-scan", "auditor", "audit", "code-review"],
   },
   {
     id: "compliance-auditor",
@@ -1312,6 +1428,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Evaluates organizational processes against regulatory and compliance requirements.",
+    required_skills: ["compliance", "audit", "approval"],
   },
   {
     id: "corporate-training-designer",
@@ -1323,6 +1440,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs structured corporate training programs, curricula, and learning materials.",
+    required_skills: ["summarize", "blog", "pattern-capture", "explain"],
   },
   {
     id: "cultural-intelligence-strategist",
@@ -1334,6 +1452,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Advises on cross-cultural communication, market entry, and localization strategies.",
+    required_skills: ["research", "summarize", "compare", "competitive-analysis"],
   },
   {
     id: "data-consolidation-agent",
@@ -1345,6 +1464,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Merges and deduplicates data from multiple sources into a unified dataset.",
+    required_skills: ["pipeline", "transform", "clean", "validate", "classify"],
   },
   {
     id: "developer-advocate",
@@ -1356,6 +1476,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Champions developer experience by producing docs, demos, and community content.",
+    required_skills: ["explain", "doc-search", "blog", "code-search"],
   },
   {
     id: "document-generator",
@@ -1367,6 +1488,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Automatically generates structured documents from templates and data inputs.",
+    required_skills: ["extract", "summarize", "pipeline", "classify"],
   },
   {
     id: "french-consulting-market",
@@ -1378,6 +1500,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Navigates the French consulting market with cultural and business expertise.",
+    required_skills: ["research", "competitive-analysis", "summarize", "compare"],
   },
   {
     id: "government-digital-presales-consultant",
@@ -1389,6 +1512,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Supports government digital transformation presales with compliance and procurement knowledge.",
+    required_skills: ["compliance", "research", "blog", "summarize"],
   },
   {
     id: "healthcare-marketing-compliance",
@@ -1400,6 +1524,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Ensures healthcare marketing content meets regulatory and compliance standards.",
+    required_skills: ["compliance", "audit", "approval"],
   },
   {
     id: "identity-graph-operator",
@@ -1411,6 +1536,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds and maintains identity resolution graphs connecting customer data across touchpoints.",
+    required_skills: ["pipeline", "graph", "index", "validate", "classify"],
   },
   {
     id: "korean-business-navigator",
@@ -1422,6 +1548,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Guides business operations and relationship-building in the Korean market.",
+    required_skills: ["research", "summarize", "compare"],
   },
   {
     id: "lsp-index-engineer",
@@ -1433,6 +1560,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Builds and maintains language server protocol and code indexing infrastructure.",
+    required_skills: ["index", "code-search", "build", "debug", "refactor"],
   },
   {
     id: "mcp-builder",
@@ -1444,6 +1572,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs and implements Model Context Protocol servers and tool integrations.",
+    required_skills: ["build", "spawn", "deploy", "doc-search"],
   },
   {
     id: "model-qa",
@@ -1455,6 +1584,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Evaluates AI model outputs for quality, consistency, and safety across benchmarks.",
+    required_skills: ["validate-evaluator", "eval-rag", "validate", "compare"],
   },
   {
     id: "recruitment-specialist",
@@ -1466,6 +1596,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Sources, screens, and coordinates candidates through the full recruitment pipeline.",
+    required_skills: ["hire", "research", "summarize", "delegate"],
   },
   {
     id: "report-distribution-agent",
@@ -1477,6 +1608,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Automatically distributes generated reports to the right stakeholders on schedule.",
+    required_skills: ["inbox", "delegate", "pipeline", "summarize"],
   },
   {
     id: "sales-data-extraction-agent",
@@ -1488,6 +1620,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Extracts and structures sales data from CRMs, emails, and unstructured sources.",
+    required_skills: ["extract", "classify", "summarize", "pipeline", "clean"],
   },
   {
     id: "salesforce-architect",
@@ -1499,6 +1632,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs and implements Salesforce org architecture, flows, and integrations.",
+    required_skills: ["build", "configure", "deploy", "debug"],
   },
   {
     id: "study-abroad-advisor",
@@ -1510,6 +1644,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Guides students through international education options, applications, and logistics.",
+    required_skills: ["research", "summarize", "cite", "compare"],
   },
   {
     id: "supply-chain-strategist",
@@ -1521,6 +1656,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Designs resilient supply chain strategies balancing cost, speed, and risk.",
+    required_skills: ["roadmap", "swot", "research", "stats", "competitive-analysis"],
   },
   {
     id: "workflow-architect",
@@ -1532,6 +1668,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 5000,
     description:
       "Designs automated workflow systems that orchestrate agents, tools, and human steps.",
+    required_skills: ["spawn", "retrospective", "sprint-planning", "delegate", "release"],
   },
   {
     id: "zk-steward",
@@ -1543,6 +1680,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Manages zero-knowledge proof systems, circuit design, and ZK protocol governance.",
+    required_skills: ["audit", "compliance", "auditor", "security-scan"],
   },
 
   // support (7)
@@ -1556,6 +1694,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Generates structured analytics reports from data sources and dashboards.",
+    required_skills: ["stats", "summarize", "graph", "blog"],
   },
   {
     id: "executive-summary-generator",
@@ -1567,6 +1706,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Distills complex documents and data into concise executive summaries.",
+    required_skills: ["summarize", "extract", "synthesize"],
   },
   {
     id: "executive-summary",
@@ -1578,6 +1718,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2000,
     description:
       "Produces polished executive summaries with visual structure for senior audiences.",
+    required_skills: ["summarize", "stats", "synthesize"],
   },
   {
     id: "finance-tracker",
@@ -1589,6 +1730,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Tracks financial transactions, budgets, and expenditures for operational visibility.",
+    required_skills: ["stats", "budget-check", "summarize"],
   },
   {
     id: "infrastructure-maintainer",
@@ -1600,6 +1742,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Monitors and maintains infrastructure health, patches, and operational stability.",
+    required_skills: ["health", "deploy", "debug", "migrate"],
   },
   {
     id: "legal-compliance-checker",
@@ -1611,6 +1754,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Reviews content and processes for legal compliance and risk exposure.",
+    required_skills: ["compliance", "audit", "approval"],
   },
   {
     id: "support-responder",
@@ -1622,6 +1766,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Handles customer support inquiries with accurate, empathetic, and timely responses.",
+    required_skills: ["research", "summarize", "stats", "blog", "compliance"],
   },
 
   // testing (8)
@@ -1635,6 +1780,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Audits products for WCAG compliance and identifies accessibility barriers.",
+    required_skills: ["audit", "test", "validate", "error-analysis"],
   },
   {
     id: "api-tester",
@@ -1646,6 +1792,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Tests API endpoints for correctness, performance, and edge case handling.",
+    required_skills: ["test", "validate", "debug", "tdd"],
   },
   {
     id: "evidence-collector",
@@ -1657,6 +1804,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 2500,
     description:
       "Collects and organizes evidence artifacts for audits, compliance, and quality reviews.",
+    required_skills: ["validate", "audit", "extract", "compliance"],
   },
   {
     id: "performance-benchmarker",
@@ -1668,6 +1816,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Runs performance benchmarks and load tests to establish baselines and identify regressions.",
+    required_skills: ["test", "stats", "debug", "error-analysis"],
   },
   {
     id: "reality-checker",
@@ -1679,6 +1828,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 3000,
     description:
       "Verifies that agent outputs, claims, and decisions are grounded in factual reality.",
+    required_skills: ["validate", "research", "cite", "compare"],
   },
   {
     id: "test-results-analyzer",
@@ -1690,6 +1840,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes test suite output to identify failure patterns and coverage gaps.",
+    required_skills: ["test", "error-analysis", "stats", "debug"],
   },
   {
     id: "tool-evaluator",
@@ -1701,6 +1852,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Evaluates tools, libraries, and platforms against defined criteria and use cases.",
+    required_skills: ["eval-audit", "compare", "validate", "research"],
   },
   {
     id: "workflow-optimizer",
@@ -1712,6 +1864,7 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 500,
     description:
       "Analyzes and improves workflow efficiency by identifying bottlenecks and waste.",
+    required_skills: ["audit", "retrospective", "stats", "simplify"],
   },
 
   // domo (4)
@@ -1725,6 +1878,14 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 600,
     description:
       "Full-stack Domo platform developer — apps, data pipelines, Code Engine, connectors, embedded analytics, and governance.",
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-code-engine",
+      "domo-dataset-manage",
+      "domo-connector-build",
+      "domo-governance",
+      "domo-embed-analytics",
+    ],
   },
   {
     id: "domo-app-engineer",
@@ -1736,6 +1897,13 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 400,
     description:
       "Specialist in Domo custom apps — App Framework, DDX Bricks, AppDB, domo.js, toolkit, and publishing.",
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-appdb-manage",
+      "domo-app-publish",
+      "domo-code-engine",
+      "domo-embed-analytics",
+    ],
   },
   {
     id: "domo-data-engineer",
@@ -1747,6 +1915,13 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 450,
     description:
       "Specialist in Domo data pipelines — connectors, datasets, Stream API, Magic ETL, Jupyter, and data science.",
+    required_skills: [
+      "domo-connector-build",
+      "domo-dataset-manage",
+      "domo-magic-etl",
+      "domo-data-science",
+      "domo-api-integrate",
+    ],
   },
   {
     id: "domo-automation-engineer",
@@ -1758,6 +1933,12 @@ const RAW_AGENTS: RawAgent[] = [
     budget: 400,
     description:
       "Specialist in Domo automation — Workflows, Code Engine functions, governance automation, and API integration.",
+    required_skills: [
+      "domo-workflow-automate",
+      "domo-code-engine",
+      "domo-governance",
+      "domo-api-integrate",
+    ],
   },
 ];
 

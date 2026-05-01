@@ -2,7 +2,7 @@ defmodule BizforgeWeb.SidebarBadgeController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{ActivityEvent, Approval, Issue, Agent, Session}
+  alias Bizforge.Schemas.{Notification, Approval, Issue, Agent, Session}
   import Ecto.Query
 
   def show(conn, params) do
@@ -27,13 +27,12 @@ defmodule BizforgeWeb.SidebarBadgeController do
 
   defp count_inbox_unread(workspace_id) do
     query =
-      from e in ActivityEvent,
-        where: e.level == "notification",
-        where: fragment("COALESCE((?->>'read')::boolean, false) = false", e.metadata)
+      from n in Notification,
+        where: is_nil(n.read_at) and is_nil(n.dismissed_at)
 
     query =
       if workspace_id,
-        do: where(query, [e], e.workspace_id == ^workspace_id),
+        do: where(query, [n], n.workspace_id == ^workspace_id),
         else: query
 
     Repo.aggregate(query, :count)

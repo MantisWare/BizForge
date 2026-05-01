@@ -160,11 +160,12 @@ defmodule BizforgeWeb.Router do
     delete "/documents/*path", DocumentController, :delete
     post "/documents", DocumentController, :create
 
-    # Inbox (legacy — activity-event based)
+    # Inbox (unified — notifications-based)
     get "/inbox", InboxController, :index
     post "/inbox/read-all", InboxController, :read_all
     post "/inbox/:id/read", InboxController, :read
     post "/inbox/:id/action", InboxController, :perform_action
+    post "/inbox/:id/reply", InboxController, :reply
 
     # Notifications
     get "/notifications/badges", NotificationController, :badges
@@ -226,6 +227,11 @@ defmodule BizforgeWeb.Router do
     post "/integrations/:slug/connect", IntegrationController, :connect
     delete "/integrations/:slug", IntegrationController, :disconnect
     get "/integrations/:slug/status", IntegrationController, :status
+
+    # Slack integration config
+    post "/integrations/slack/configure", IntegrationController, :connect_slack
+    delete "/integrations/slack/configure", IntegrationController, :disconnect_slack
+    get "/integrations/slack/config-status", IntegrationController, :slack_status
 
     # Admin
     resources "/users", UserController, except: [:new, :edit]
@@ -375,11 +381,19 @@ defmodule BizforgeWeb.Router do
     get "/activity/stream", ActivityController, :stream
     get "/logs/stream", LogController, :stream
     get "/sessions/:session_id/stream", SessionController, :stream
+    get "/inbox/stream", InboxController, :stream
   end
 
   # Incoming webhook receiver (no JWT — uses webhook secret)
   scope "/api/v1", BizforgeWeb do
     pipe_through :api
     post "/hooks/:webhook_id", WebhookController, :receive
+  end
+
+  # Slack integration endpoints (no JWT — Slack signs requests via HMAC)
+  scope "/api/v1/slack", BizforgeWeb do
+    pipe_through :api
+    post "/events", SlackController, :events
+    post "/interactive", SlackController, :interactive
   end
 end

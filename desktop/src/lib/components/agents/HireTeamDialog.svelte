@@ -4,12 +4,20 @@
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
   import { teams as teamsApi } from '$api/client';
   import { HIREABLE_TEAM_TEMPLATES, TEMPLATE_AGENTS } from '$lib/data/team-templates';
   import type { TeamTemplateId } from '$lib/data/team-templates';
   import type { AgentTemplateData } from '$lib/stores/onboarding.svelte';
   import type { AgentCreateRequest, AdapterType } from '$api/types';
+  import {
+    resolveSkillsForTeam,
+    partitionSkills,
+    lookupLibrarySkills,
+  } from '$lib/data/skill-dependencies';
+  import type { LibrarySkill } from '$lib/api/mock/library/types';
 
+  import { getTemplatesForRole } from '$lib/data/prompt-templates';
   import TeamTemplateGrid from './hire/TeamTemplateGrid.svelte';
   import TeamAgentReview from './hire/TeamAgentReview.svelte';
   import AgentAdapterPicker from './hire/AgentAdapterPicker.svelte';
@@ -46,9 +54,22 @@
     if (providersStore.totalCount === 0) void providersStore.fetch();
   });
 
+  const STUB_PROMPT_THRESHOLD = 120;
+
+  function assignDefaultPrompt(agent: AgentTemplateData): AgentTemplateData {
+    const existing = agent.system_prompt ?? '';
+    if (existing.length >= STUB_PROMPT_THRESHOLD) return agent;
+
+    const group = getTemplatesForRole(agent.role);
+    const bestTemplate = group.templates[0];
+    if (bestTemplate === undefined) return agent;
+
+    return { ...agent, system_prompt: bestTemplate.prompt };
+  }
+
   function selectTemplate(id: TeamTemplateId) {
     selectedTemplateId = id;
-    agents = TEMPLATE_AGENTS[id].map((a) => ({ ...a }));
+    agents = TEMPLATE_AGENTS[id].map((a) => assignDefaultPrompt({ ...a }));
     const meta = HIREABLE_TEAM_TEMPLATES.find((t) => t.id === id);
     teamName = meta?.name ?? '';
     step = 'review';
@@ -79,6 +100,11 @@
 
     isSubmitting = true;
     progress = 0;
+
+    // Install required skills before creating agents
+    if (teamSkillPartition.toAdd.length > 0) {
+      await skillsStore.installFromLibrary(teamSkillPartition.toAdd);
+    }
 
     const requests: AgentCreateRequest[] = agents.map((a) => ({
       name: toSlug(a.name),
@@ -147,17 +173,22 @@
     if (e.key === 'Escape') resetAndClose();
   }
 
+  // Resolved skills for the current team
+  let teamSkillIds = $derived(resolveSkillsForTeam(agents));
+  let teamSkillPartition = $derived(partitionSkills(teamSkillIds, skillsStore.skills));
+  let skillsExpanded = $state(false);
+
   const stepLabel = $derived(
     step === 'template' ? 'Choose Template'
     : step === 'review' ? 'Review Agents'
     : 'Configure & Hire',
   );
 
-  const canProceed = $derived(
-    step === 'review' ? agents.length > 0
-    : step === 'config' ? agents.length > 0 && model.trim() !== ''
-    : false,
-  );
+  const canProceed = $derived.by(() => {
+    if (step === 'review') return agents.length > 0;
+    if (step === 'config') return agents.length > 0 && model.trim() !== '';
+    return false;
+  });
 </script>
 
 {#if open}
@@ -167,12 +198,16 @@
     class="htd-overlay"
     onclick={handleBackdrop}
     onkeydown={handleKeyDown}
-    role="dialog"
-    aria-modal="true"
-    aria-label="Hire an agent team"
-    tabindex="-1"
   >
-    <div class="htd-modal">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="htd-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Hire an agent team"
+      onclick={(e) => e.stopPropagation()}
+    >
       <header class="htd-header">
         <div class="htd-header-left">
           {#if step !== 'template'}
@@ -207,6 +242,44 @@
 
         {:else if step === 'review'}
           <TeamAgentReview {agents} onUpdate={(updated) => agents = updated} />
+
+          {#if teamSkillIds.length > 0}
+            <section class="htd-skills-summary">
+              <button
+                type="button"
+                class="htd-skills-toggle"
+                onclick={() => skillsExpanded = !skillsExpanded}
+                aria-expanded={skillsExpanded}
+              >
+                <span class="htd-skills-toggle-icon" class:htd-skills-toggle-icon--open={skillsExpanded}>▸</span>
+                Skills that will be added ({teamSkillPartition.toAdd.length} new, {teamSkillPartition.alreadyActive.length} existing)
+              </button>
+              {#if skillsExpanded}
+                <div class="htd-skills-list">
+                  {#if teamSkillPartition.toAdd.length > 0}
+                    <div class="htd-skills-group">
+                      <span class="htd-skills-label htd-skills-label--add">Will be added</span>
+                      <div class="htd-skill-chips">
+                        {#each teamSkillPartition.toAdd as skill}
+                          <span class="htd-skill-chip htd-skill-chip--add" title={skill.description}>{skill.name}</span>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                  {#if teamSkillPartition.alreadyActive.length > 0}
+                    <div class="htd-skills-group">
+                      <span class="htd-skills-label htd-skills-label--active">Already active</span>
+                      <div class="htd-skill-chips">
+                        {#each teamSkillPartition.alreadyActive as skill}
+                          <span class="htd-skill-chip htd-skill-chip--active" title={skill.description}>{skill.name}</span>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </section>
+          {/if}
 
         {:else if step === 'config'}
           <div class="htd-config">
@@ -298,8 +371,8 @@
           <button class="htd-btn htd-btn--secondary" onclick={goBack}>Back</button>
           <div class="htd-footer-spacer"></div>
           <button
+            type="button"
             class="htd-btn htd-btn--primary"
-            disabled={!canProceed}
             onclick={goToConfig}
           >
             Next: Configure
@@ -308,6 +381,7 @@
           <button class="htd-btn htd-btn--secondary" onclick={goBack} disabled={isSubmitting}>Back</button>
           <div class="htd-footer-spacer"></div>
           <button
+            type="button"
             class="htd-btn htd-btn--primary"
             disabled={isSubmitting || !canProceed}
             onclick={handleSubmit}
@@ -346,7 +420,7 @@
     border-radius: var(--radius-xl);
     width: 80vw;
     max-width: 780px;
-    height: 80vh;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
@@ -442,8 +516,8 @@
   }
 
   .htd-step-dot--active {
-    background: rgba(59, 130, 246, 0.8);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    background: rgba(249, 115, 22, 0.8);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
   }
 
   .htd-step-dot--done {
@@ -463,9 +537,12 @@
 
   /* Body */
   .htd-body {
-    flex: 1;
+    flex: 1 1 auto;
     overflow-y: auto;
     padding: 20px;
+    position: relative;
+    z-index: 1;
+    min-height: 0;
   }
 
   .htd-body::-webkit-scrollbar {
@@ -585,6 +662,8 @@
     border-top: 1px solid var(--border-default);
     flex-shrink: 0;
     background: var(--bg-secondary);
+    position: relative;
+    z-index: 2;
   }
 
   .htd-footer-spacer {
@@ -620,15 +699,15 @@
   }
 
   .htd-btn--primary {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-    color: #93c5fd;
+    background: rgba(249, 115, 22, 0.2);
+    border-color: rgba(251, 146, 60, 0.5);
+    color: #fdba74;
   }
 
   .htd-btn--primary:hover:not(:disabled) {
-    background: rgba(59, 130, 246, 0.3);
-    border-color: rgba(59, 130, 246, 0.7);
-    color: #bfdbfe;
+    background: rgba(249, 115, 22, 0.3);
+    border-color: rgba(251, 146, 60, 0.7);
+    color: #fed7aa;
   }
 
   .htd-btn:disabled {
@@ -639,13 +718,109 @@
   .htd-spinner {
     width: 12px;
     height: 12px;
-    border: 2px solid rgba(147, 197, 253, 0.3);
-    border-top-color: #93c5fd;
+    border: 2px solid rgba(251, 146, 60, 0.3);
+    border-top-color: #fdba74;
     border-radius: 50%;
     animation: htd-spin 0.7s linear infinite;
   }
 
   @keyframes htd-spin {
     to { transform: rotate(360deg); }
+  }
+
+  .htd-skills-summary {
+    margin-top: 8px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+
+  .htd-skills-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    text-align: left;
+    transition: background 120ms ease;
+  }
+
+  .htd-skills-toggle:hover {
+    background: var(--bg-elevated);
+  }
+
+  .htd-skills-toggle-icon {
+    display: inline-block;
+    transition: transform 120ms ease;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .htd-skills-toggle-icon--open {
+    transform: rotate(90deg);
+  }
+
+  .htd-skills-list {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--border-default);
+  }
+
+  .htd-skills-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .htd-skills-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .htd-skills-label--add {
+    color: #fdba74;
+  }
+
+  .htd-skills-label--active {
+    color: rgba(34, 197, 94, 0.8);
+  }
+
+  .htd-skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .htd-skill-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: var(--radius-xs);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .htd-skill-chip--add {
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    color: #fdba74;
+  }
+
+  .htd-skill-chip--active {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: rgba(34, 197, 94, 0.8);
   }
 </style>

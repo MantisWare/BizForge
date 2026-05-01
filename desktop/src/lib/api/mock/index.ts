@@ -55,7 +55,7 @@ import {
   updateMockEntry,
   deleteMockEntry,
 } from "./memory";
-import { mockSkills, toggleSkill } from "./skills";
+import { mockSkills, toggleSkill, importSkill, bulkEnableSkills } from "./skills";
 import {
   mockWebhooks,
   addWebhook,
@@ -63,7 +63,7 @@ import {
   deleteWebhook,
 } from "./webhooks";
 import { mockAlertRules, addAlertRule, deleteAlertRule } from "./alerts";
-import { mockIntegrations, mockAdapters } from "./integrations";
+import { mockIntegrations, mockAdapters, mockConnectIntegration, mockDisconnectIntegration } from "./integrations";
 import {
   mockGateways,
   addGateway,
@@ -1319,6 +1319,11 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     },
   },
   {
+    // POST /inbox/:id/reply
+    pattern: /^\/inbox\/([^/]+)\/reply$/,
+    handler: () => ({ ok: true, channel: "slack" }),
+  },
+  {
     pattern: /^\/inbox$/,
     handler: () => ({ items: getInbox(), count: getInbox().length }),
   },
@@ -1441,6 +1446,21 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   {
     pattern: /^\/integrations$/,
     handler: () => ({ integrations: mockIntegrations() }),
+  },
+  {
+    pattern: /^\/integrations\/([^/]+)$/,
+    handler: (path, options) => {
+      const slug = path.split("/")[2];
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "DELETE") {
+        mockDisconnectIntegration(slug);
+        return { ok: true };
+      }
+      const all = mockIntegrations();
+      const match = all.find((i) => i.provider === slug);
+      if (match !== undefined) return { integration: match };
+      return { error: "not_found" };
+    },
   },
 
   // ── Adapters ──────────────────────────────────────────────────────────────────
@@ -1865,7 +1885,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           skills: (body.skills as string[]) ?? [],
           config: (body.config as Record<string, unknown>) ?? {},
           category: (body.category as string) ?? "starter",
-          downloads: 0,
+          version: "1.0.0",
           created_at: new Date().toISOString(),
         };
       }
@@ -2381,7 +2401,24 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   },
   {
     pattern: /^\/skills\/(bulk-enable|bulk-disable|import)$/,
-    handler: () => ({ ok: true }),
+    handler: (path, options) => {
+      const action = path.split("/").pop();
+      try {
+        const body = JSON.parse(
+          typeof options.body === "string"
+            ? options.body
+            : JSON.stringify(options.body ?? {}),
+        );
+        if (action === "bulk-enable" && Array.isArray(body.ids)) {
+          bulkEnableSkills(body.ids as string[]);
+        } else if (action === "import" && typeof body.id === "string") {
+          importSkill(body as { id: string; name: string; description: string; category?: string; version?: string });
+        }
+      } catch {
+        // best-effort parse
+      }
+      return { ok: true };
+    },
   },
   {
     pattern: /^\/skills\/([^/]+)\/(toggle|inject)$/,
@@ -2438,9 +2475,30 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   // ── Integrations sub-routes ────────────────────────────────────────────────────
   {
     pattern: /^\/integrations\/([^/]+)\/(connect|disconnect|status)$/,
-    handler: (path) => {
-      const action = path.split("/")[3];
-      if (action === "status") return { connected: false, last_sync: null };
+    handler: (path, options) => {
+      const parts = path.split("/");
+      const slug = parts[2];
+      const action = parts[3];
+      if (action === "status") {
+        const all = mockIntegrations();
+        const match = all.find((i) => i.provider === slug);
+        if (match !== undefined) {
+          return { connected: match.status === "connected", last_sync: match.last_sync_at };
+        }
+        return { connected: false, last_sync: null };
+      }
+      if (action === "connect") {
+        let config: Record<string, unknown> | undefined;
+        if (options.body !== undefined && options.body !== null) {
+          try { config = JSON.parse(options.body as string); } catch { /* ignore */ }
+        }
+        const integration = mockConnectIntegration(slug, config);
+        return { integration };
+      }
+      if (action === "disconnect") {
+        mockDisconnectIntegration(slug);
+        return { ok: true };
+      }
       return { ok: true };
     },
   },

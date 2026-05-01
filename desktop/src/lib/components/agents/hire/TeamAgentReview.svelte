@@ -201,7 +201,8 @@
   }
 
   .tar-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 28px minmax(120px, 1.5fr) minmax(90px, 1fr) 1fr auto;
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
@@ -219,10 +220,7 @@
   }
 
   .tar-fields {
-    display: flex;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
+    display: contents;
   }
 
   .tar-input {
@@ -236,6 +234,7 @@
     font-family: var(--font-sans);
     outline: none;
     transition: border-color 120ms ease, background 120ms ease;
+    min-width: 0;
   }
 
   .tar-input:hover {
@@ -250,13 +249,9 @@
 
   .tar-input--name {
     font-weight: 600;
-    flex: 1;
-    min-width: 80px;
   }
 
   .tar-input--role {
-    flex: 1;
-    min-width: 60px;
     color: var(--text-secondary);
   }
 
@@ -264,6 +259,7 @@
     display: flex;
     gap: 4px;
     flex-shrink: 0;
+    overflow: hidden;
   }
 
   .tar-skill {
@@ -345,8 +341,8 @@
   }
 
   .tar-tpl-btn:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(249, 115, 22, 0.4);
+    background: rgba(249, 115, 22, 0.08);
     color: var(--text-primary);
   }
 

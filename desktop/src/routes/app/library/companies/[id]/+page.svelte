@@ -3,12 +3,19 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import PageShell from '$lib/components/layout/PageShell.svelte';
+  import SkillsPreviewModal from '$lib/components/library/SkillsPreviewModal.svelte';
   import {
     getLibraryCompanyDetail,
     type LibraryOperation,
   } from '$lib/api/mock/library';
+  import type { LibrarySkill } from '$lib/api/mock/library/types';
   import { deployTemplate } from '$lib/services/template-deploy';
   import { toastStore } from '$lib/stores/toasts.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
+  import {
+    resolveSkillsForLibraryEntity,
+    partitionSkills,
+  } from '$lib/data/skill-dependencies';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   const id = $derived(page.params.id ?? '');
@@ -17,7 +24,38 @@
   let deploying = $state(false);
   let deployed = $state(false);
 
-  async function handleDeploy() {
+  let skillsModalOpen = $state(false);
+  let skillsModalToAdd = $state<LibrarySkill[]>([]);
+  let skillsModalActive = $state<LibrarySkill[]>([]);
+
+  function handleDeploy() {
+    if (!company || deploying) return;
+    const ids = resolveSkillsForLibraryEntity(company);
+    if (ids.length === 0) {
+      executeDeploy();
+      return;
+    }
+    const { alreadyActive, toAdd } = partitionSkills(ids, skillsStore.skills);
+    if (toAdd.length === 0) {
+      executeDeploy();
+      return;
+    }
+    skillsModalToAdd = toAdd;
+    skillsModalActive = alreadyActive;
+    skillsModalOpen = true;
+  }
+
+  async function handleSkillsConfirm() {
+    skillsModalOpen = false;
+    await skillsStore.installFromLibrary(skillsModalToAdd);
+    executeDeploy();
+  }
+
+  function handleSkillsCancel() {
+    skillsModalOpen = false;
+  }
+
+  async function executeDeploy() {
     if (!company || deploying) return;
     deploying = true;
     try {
@@ -39,11 +77,6 @@
     }
   }
 
-  function formatNumber(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-    return String(n);
-  }
 
   function categoryColor(cat: string): string {
     const map: Record<string, string> = {
@@ -148,31 +181,10 @@
             </div>
           </section>
 
-          <!-- Stats grid -->
-          <section class="ldc-card" aria-label="Company statistics">
-            <h2 class="ldc-card-title">Stats</h2>
-            <div class="ldc-stats-grid" role="list">
-              <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
-                <span class="ldc-stat-value">{formatNumber(company.downloads)}</span>
-                <span class="ldc-stat-label">Downloads</span>
-              </div>
-              <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
-                <span class="ldc-stat-value">{formatNumber(company.favorites)}</span>
-                <span class="ldc-stat-label">Favorites</span>
-              </div>
-              <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
-                <span class="ldc-stat-value">{formatNumber(company.forks)}</span>
-                <span class="ldc-stat-label">Forks</span>
-              </div>
-              <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true">v</span>
-                <span class="ldc-stat-value">{company.version}</span>
-                <span class="ldc-stat-label">Version</span>
-              </div>
-            </div>
+          <!-- Version -->
+          <section class="ldc-card" aria-label="Company version">
+            <h2 class="ldc-card-title">Version</h2>
+            <p class="ldc-description">v{company.version}</p>
           </section>
 
           <!-- Tags -->
@@ -247,6 +259,15 @@
     </div>
   {/if}
 </PageShell>
+
+<SkillsPreviewModal
+  open={skillsModalOpen}
+  entityName={company?.name ?? 'Company'}
+  skillsToAdd={skillsModalToAdd}
+  skillsAlreadyActive={skillsModalActive}
+  onConfirm={handleSkillsConfirm}
+  onCancel={handleSkillsCancel}
+/>
 
 <style>
   /* Not found */

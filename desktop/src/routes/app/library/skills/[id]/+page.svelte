@@ -8,22 +8,24 @@
     type LibrarySkill,
   } from '$lib/api/mock/library';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
+  import { toastStore } from '$lib/stores/toasts.svelte';
 
   const id = $derived(page.params.id ?? '');
   const skill = $derived<LibrarySkill | null>(id ? getLibrarySkillDetail(id) : null);
 
-  // Configuration state
   let enabled = $state(false);
 
   $effect(() => {
     if (skill) enabled = skill.enabled;
   });
 
-  function formatNumber(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-    return String(n);
+  async function handleImport() {
+    if (skill === null) return;
+    await skillsStore.installFromLibrary([skill]);
+    toastStore.success(`${skill.name} imported`, 'Skill added to workspace.');
   }
+
 
   function categoryColor(cat: string): string {
     const map: Record<string, string> = {
@@ -121,31 +123,10 @@
             <p class="lds-description">{skill.description}</p>
           </section>
 
-          <!-- Stats grid -->
-          <section class="lds-card" aria-label="Skill statistics">
-            <h2 class="lds-card-title">Stats</h2>
-            <div class="lds-stats-grid" role="list">
-              <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
-                <span class="lds-stat-value">{formatNumber(skill.downloads)}</span>
-                <span class="lds-stat-label">Downloads</span>
-              </div>
-              <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
-                <span class="lds-stat-value">{formatNumber(skill.favorites)}</span>
-                <span class="lds-stat-label">Favorites</span>
-              </div>
-              <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
-                <span class="lds-stat-value">{formatNumber(skill.forks)}</span>
-                <span class="lds-stat-label">Forks</span>
-              </div>
-              <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true">v</span>
-                <span class="lds-stat-value">{skill.version}</span>
-                <span class="lds-stat-label">Version</span>
-              </div>
-            </div>
+          <!-- Version -->
+          <section class="lds-card" aria-label="Skill version">
+            <h2 class="lds-card-title">Version</h2>
+            <p class="lds-description">v{skill.version}</p>
           </section>
 
           <!-- Tags -->
@@ -191,10 +172,6 @@
                 <span class="lds-meta-value">{skill.version}</span>
               </div>
               <div class="lds-meta-row">
-                <span class="lds-meta-label">Added</span>
-                <span class="lds-meta-value">{skill.added_at}</span>
-              </div>
-              <div class="lds-meta-row">
                 <span class="lds-meta-label">Default state</span>
                 <span class="lds-meta-value">{skill.enabled ? 'Enabled' : 'Disabled'}</span>
               </div>
@@ -202,7 +179,7 @@
 
             <button
               class="lds-import-btn"
-              onclick={() => {/* import handler */}}
+              onclick={handleImport}
               aria-label="Import {skill.name} to workspace"
             >
               Import to Workspace

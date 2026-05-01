@@ -100,6 +100,21 @@ defmodule Bizforge.Notifications.Dispatcher do
     })
   end
 
+  @doc "Create an inbox message from an external integration (Slack, email, etc.)."
+  def notify_integration_message(attrs) do
+    notify(
+      Map.merge(
+        %{
+          recipient_type: "broadcast",
+          sender_type: "integration",
+          category: "message",
+          severity: "info"
+        },
+        attrs
+      )
+    )
+  end
+
   # --- Private ---
 
   defp broadcast(notification) do
@@ -126,6 +141,8 @@ defmodule Bizforge.Notifications.Dispatcher do
       action_url: n.action_url,
       action_label: n.action_label,
       metadata: n.metadata,
+      source_channel: n.source_channel,
+      reply_to: n.reply_to,
       read_at: n.read_at,
       dismissed_at: n.dismissed_at,
       expires_at: n.expires_at,

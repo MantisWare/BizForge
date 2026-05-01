@@ -3,16 +3,23 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import PageShell from '$lib/components/layout/PageShell.svelte';
+  import SkillsPreviewModal from '$lib/components/library/SkillsPreviewModal.svelte';
   import {
     getLibraryAgentDetail,
     type LibraryAgent,
   } from '$lib/api/mock/library';
+  import type { LibrarySkill } from '$lib/api/mock/library/types';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
+  import { skillsStore } from '$lib/stores/skills.svelte';
+  import { toastStore } from '$lib/stores/toasts.svelte';
+  import {
+    resolveSkillsForLibraryEntity,
+    partitionSkills,
+  } from '$lib/data/skill-dependencies';
 
   const id = $derived(page.params.id ?? '');
   const agent = $derived<LibraryAgent | null>(id ? getLibraryAgentDetail(id) : null);
 
-  // Configuration state
   let budget = $state(0);
   let adapter = $state('osa');
 
@@ -22,25 +29,39 @@
 
   const ADAPTERS = ['osa', 'claude_code', 'cursor', 'windsurf', 'aider', 'custom'];
 
-  function formatNumber(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-    return String(n);
+  let skillsModalOpen = $state(false);
+  let skillsModalToAdd = $state<LibrarySkill[]>([]);
+  let skillsModalActive = $state<LibrarySkill[]>([]);
+
+  function handleImport() {
+    if (agent === null) return;
+    const ids = resolveSkillsForLibraryEntity(agent);
+    if (ids.length === 0) {
+      toastStore.success(`${agent.name} imported`, 'Agent added to workspace.');
+      return;
+    }
+    const { alreadyActive, toAdd } = partitionSkills(ids, skillsStore.skills);
+    if (toAdd.length === 0) {
+      toastStore.success(`${agent.name} imported`, 'Agent added to workspace.');
+      return;
+    }
+    skillsModalToAdd = toAdd;
+    skillsModalActive = alreadyActive;
+    skillsModalOpen = true;
   }
 
-  function potencyLabel(p: number): string {
-    if (p >= 90) return 'Elite';
-    if (p >= 75) return 'Advanced';
-    if (p >= 50) return 'Intermediate';
-    return 'Starter';
+  async function handleSkillsConfirm() {
+    skillsModalOpen = false;
+    await skillsStore.installFromLibrary(skillsModalToAdd);
+    if (agent !== null) {
+      toastStore.success(`${agent.name} imported`, 'Agent and skills added to workspace.');
+    }
   }
 
-  function potencyColor(p: number): string {
-    if (p >= 90) return '#fb923c';
-    if (p >= 75) return '#60a5fa';
-    if (p >= 50) return 'rgba(52, 211, 153, 0.6)';
-    return '#94a3b8';
+  function handleSkillsCancel() {
+    skillsModalOpen = false;
   }
+
 </script>
 
 <svelte:head>
@@ -107,47 +128,10 @@
             <p class="lda-description">{agent.description}</p>
           </section>
 
-          <!-- Stats grid -->
-          <section class="lda-card" aria-label="Agent statistics">
-            <h2 class="lda-card-title">Stats</h2>
-            <div class="lda-stats-grid" role="list">
-              <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
-                <span class="lda-stat-value">{formatNumber(agent.downloads)}</span>
-                <span class="lda-stat-label">Downloads</span>
-              </div>
-              <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
-                <span class="lda-stat-value">{formatNumber(agent.favorites)}</span>
-                <span class="lda-stat-label">Favorites</span>
-              </div>
-              <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
-                <span class="lda-stat-value">{formatNumber(agent.forks)}</span>
-                <span class="lda-stat-label">Forks</span>
-              </div>
-              <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="sparkles" size={16} /></span>
-                <span class="lda-stat-value">{agent.rating.toFixed(1)}</span>
-                <span class="lda-stat-label">Rating</span>
-              </div>
-              <div class="lda-stat" role="listitem">
-                <span
-                  class="lda-stat-icon"
-                  aria-hidden="true"
-                  style="color: {potencyColor(agent.potency)}"
-                ><AgentIcon value="bolt" size={16} /></span>
-                <span class="lda-stat-value" style="color: {potencyColor(agent.potency)}">
-                  {agent.potency}
-                </span>
-                <span class="lda-stat-label">{potencyLabel(agent.potency)}</span>
-              </div>
-              <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true">v</span>
-                <span class="lda-stat-value">{agent.version}</span>
-                <span class="lda-stat-label">Version</span>
-              </div>
-            </div>
+          <!-- Version -->
+          <section class="lda-card" aria-label="Agent version">
+            <h2 class="lda-card-title">Version</h2>
+            <p class="lda-description">v{agent.version}</p>
           </section>
 
           <!-- Tags -->
@@ -203,17 +187,13 @@
               </div>
               <div class="lda-meta-row">
                 <span class="lda-meta-label">Default budget</span>
-                <span class="lda-meta-value">{formatNumber(agent.budget)} tokens</span>
-              </div>
-              <div class="lda-meta-row">
-                <span class="lda-meta-label">Added</span>
-                <span class="lda-meta-value">{agent.added_at}</span>
+                <span class="lda-meta-value">{agent.budget.toLocaleString()} tokens</span>
               </div>
             </div>
 
             <button
               class="lda-import-btn"
-              onclick={() => {/* import handler */}}
+              onclick={handleImport}
               aria-label="Import {agent.name} to workspace"
             >
               Import to Workspace
@@ -225,6 +205,15 @@
     </div>
   {/if}
 </PageShell>
+
+<SkillsPreviewModal
+  open={skillsModalOpen}
+  entityName={agent?.name ?? 'Agent'}
+  skillsToAdd={skillsModalToAdd}
+  skillsAlreadyActive={skillsModalActive}
+  onConfirm={handleSkillsConfirm}
+  onCancel={handleSkillsCancel}
+/>
 
 <style>
   /* Not found */

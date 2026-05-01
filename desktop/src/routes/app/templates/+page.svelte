@@ -140,7 +140,7 @@
             <p class="tpl-desc">{template.description ?? '—'}</p>
             <div class="tpl-meta">
               <span class="tpl-model">{template.model ?? '—'}</span>
-              <span class="tpl-downloads">{(template.downloads ?? 0).toLocaleString()} downloads</span>
+              <span class="tpl-downloads">v{template.version ?? '1.0.0'}</span>
             </div>
             {#if (template.skills ?? []).length > 0}
               <div class="tpl-skills">

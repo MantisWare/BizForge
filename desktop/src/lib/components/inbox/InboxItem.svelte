@@ -8,9 +8,12 @@
   interface Props {
     item: InboxItem;
     onAction?: (itemId: string, actionId: string) => void;
+    onReply?: (item: InboxItem) => void;
   }
 
-  let { item, onAction }: Props = $props();
+  let { item, onAction, onReply }: Props = $props();
+
+  let canReply = $derived(item.source_channel !== null && item.source_channel !== undefined);
 
   // SVG icon paths per type
   const TYPE_ICONS: Record<string, { path: string; color: string }> = {
@@ -38,6 +41,20 @@
       path: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
       color: '#f97316',
     },
+    message: {
+      path: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+      color: '#8b5cf6',
+    },
+    integration: {
+      path: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1',
+      color: '#06b6d4',
+    },
+  };
+
+  const CHANNEL_LABELS: Record<string, string> = {
+    slack: 'Slack',
+    email: 'Email',
+    webhook: 'Webhook',
   };
 
   const ACTION_VARIANTS: Record<string, string> = {
@@ -95,29 +112,48 @@
 
     <p class="ii-text">{item.body}</p>
 
-    {#if item.source_agent}
-      <div class="ii-source" aria-label="From {item.source_agent}">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        {item.source_agent}
-      </div>
-    {/if}
+    <div class="ii-meta-row">
+      {#if item.source_agent}
+        <div class="ii-source" aria-label="From {item.source_agent}">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          {item.source_agent}
+        </div>
+      {/if}
+      {#if item.source_channel}
+        <span class="ii-channel-badge" title="Via {CHANNEL_LABELS[item.source_channel] ?? item.source_channel}">
+          {CHANNEL_LABELS[item.source_channel] ?? item.source_channel}
+        </span>
+      {/if}
+    </div>
 
     <!-- Actions -->
-    {#if item.actions.length > 0 && !isActioned}
+    {#if (item.actions.length > 0 && !isActioned) || canReply}
       <div class="ii-actions" role="group" aria-label="Actions for {item.title}">
-        {#each item.actions as action (action.id)}
+        {#if item.actions.length > 0 && !isActioned}
+          {#each item.actions as action (action.id)}
+            <button
+              class="ii-action-btn"
+              style="color: {ACTION_VARIANTS[action.type] ?? '#a0a0a0'}"
+              onclick={(e) => handleAction(action, e)}
+              aria-label="{action.label} for {item.title}"
+              type="button"
+            >
+              {action.label}
+            </button>
+          {/each}
+        {/if}
+        {#if canReply}
           <button
-            class="ii-action-btn"
-            style="color: {ACTION_VARIANTS[action.type] ?? '#a0a0a0'}"
-            onclick={(e) => handleAction(action, e)}
-            aria-label="{action.label} for {item.title}"
+            class="ii-action-btn ii-reply-btn"
+            onclick={(e) => { e.stopPropagation(); onReply?.(item); }}
+            aria-label="Reply via {item.source_channel}"
             type="button"
           >
-            {action.label}
+            Reply
           </button>
-        {/each}
+        {/if}
       </div>
     {/if}
   </div>
@@ -205,12 +241,29 @@
     -webkit-box-orient: vertical;
   }
 
+  .ii-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .ii-source {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
     color: var(--text-muted);
+  }
+
+  .ii-channel-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
   }
 
   .ii-actions {
@@ -234,6 +287,11 @@
   }
   .ii-action-btn:hover { background: rgba(255,255,255,0.1); }
   .ii-action-btn:focus-visible { outline: 2px solid var(--accent-primary); }
+
+  .ii-reply-btn {
+    color: #a78bfa !important;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
 
   .ii-unread-dot {
     width: 7px;
