@@ -92,7 +92,7 @@
         {color}
         roughness={0.6}
         metalness={0.1}
-        emissive={selected ? '#6366f1' : emissive}
+        emissive={selected ? '#f97316' : emissive}
         emissiveIntensity={selected ? 0.5 : (agent.status === 'running' ? 0.3 : 0.05)}
       />
     </T.Mesh>
@@ -103,7 +103,7 @@
       <T.MeshStandardMaterial
         color="#e8d5c4"
         roughness={0.8}
-        emissive={selected ? '#6366f1' : '#000000'}
+        emissive={selected ? '#f97316' : '#000000'}
         emissiveIntensity={selected ? 0.3 : 0}
       />
     </T.Mesh>
@@ -113,7 +113,7 @@
       <T.Mesh position.y={-0.1} rotation.x={Math.PI / 2}>
         <T.TorusGeometry args={[0.35, 0.02, 8, 32]} />
         <T.MeshBasicMaterial
-          color={selected ? '#6366f1' : emissive}
+          color={selected ? '#f97316' : emissive}
           transparent
           opacity={0.6}
         />
@@ -122,7 +122,7 @@
 
     <!-- Selection glow -->
     {#if selected}
-      <T.PointLight position.y={0.5} intensity={1} color="#6366f1" distance={3} decay={2} />
+      <T.PointLight position.y={0.5} intensity={1} color="#f97316" distance={3} decay={2} />
     {/if}
   </T.Group>
 
@@ -132,7 +132,7 @@
       <Text
         text={shortLabel}
         fontSize={0.15}
-        color={selected ? '#a5b4fc' : '#8888a0'}
+        color={selected ? '#fdba74' : '#8888a0'}
         anchorX="center"
         anchorY="middle"
       />

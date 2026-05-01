@@ -36,7 +36,7 @@
   }
 
   function potencyColor(p: number): string {
-    if (p >= 90) return '#a78bfa';
+    if (p >= 90) return '#fb923c';
     if (p >= 75) return '#60a5fa';
     if (p >= 50) return 'rgba(52, 211, 153, 0.6)';
     return '#94a3b8';
@@ -394,9 +394,9 @@
   }
 
   .lda-badge--category {
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    color: #a5b4fc;
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    color: #fdba74;
   }
 
   .lda-badge--visibility {
@@ -484,10 +484,10 @@
     height: 24px;
     padding: 0 10px;
     border-radius: var(--radius-xs);
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.2);
     font-size: 12px;
-    color: #a5b4fc;
+    color: #fdba74;
     font-family: var(--font-mono);
   }
 
@@ -597,9 +597,9 @@
     height: 38px;
     width: 100%;
     border-radius: var(--radius-sm);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    background: rgba(249, 115, 22, 0.15);
+    color: #fdba74;
     font-size: 13px;
     font-weight: 600;
     font-family: var(--font-sans);
@@ -608,12 +608,12 @@
   }
 
   .lda-import-btn:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.6);
-    color: #c7d2fe;
+    background: rgba(249, 115, 22, 0.25);
+    border-color: rgba(249, 115, 22, 0.6);
+    color: #fdba74;
   }
 
   .lda-import-btn:active {
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(249, 115, 22, 0.3);
   }
 </style>

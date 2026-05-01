@@ -840,7 +840,7 @@
   }
 
   .pj-status--active    { background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); color: rgba(34, 197, 94, 0.8); }
-  .pj-status--completed { background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); color: #a5b4fc; }
+  .pj-status--completed { background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.25); color: #fdba74; }
   .pj-status--archived  { background: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-muted); }
 
   /* Inline description editing */
@@ -881,7 +881,7 @@
   .pj-desc-textarea {
     padding: 8px 10px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid var(--border-focus, #6366f1);
+    border: 1px solid var(--border-focus, #f97316);
     background: var(--bg-surface);
     color: var(--text-primary);
     font-size: 13px;
@@ -928,9 +928,9 @@
     height: 30px;
     padding: 0 12px;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid rgba(99, 102, 241, 0.35);
-    background: rgba(99, 102, 241, 0.1);
-    color: #a5b4fc;
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    background: rgba(249, 115, 22, 0.1);
+    color: #fdba74;
     font-size: 12px;
     font-weight: 500;
     font-family: var(--font-sans);
@@ -939,9 +939,9 @@
   }
 
   .pj-btn-primary:hover {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: rgba(99, 102, 241, 0.5);
-    color: #c7d2fe;
+    background: rgba(249, 115, 22, 0.18);
+    border-color: rgba(249, 115, 22, 0.5);
+    color: #fdba74;
   }
 
   /* ── Tab content area ───────────────────────────────────────────────────── */
@@ -1062,7 +1062,7 @@
   .pj-progress-fill {
     height: 100%;
     border-radius: 3px;
-    background: #6366f1;
+    background: #f97316;
     transition: width 300ms ease;
   }
 
@@ -1110,7 +1110,7 @@
   }
 
   .pj-activity-kind--issue { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
-  .pj-activity-kind--goal  { background: rgba(99, 102, 241, 0.1); color: #a5b4fc; }
+  .pj-activity-kind--goal  { background: rgba(249, 115, 22, 0.1); color: #fdba74; }
 
   .pj-activity-title {
     color: var(--text-primary);

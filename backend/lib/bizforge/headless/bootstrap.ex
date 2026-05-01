@@ -64,9 +64,16 @@ defmodule Bizforge.Headless.Bootstrap do
       "[Headless.Bootstrap] #{length(unscheduled_agents)} agent(s) without schedules"
     )
 
-    check_adapter_availability(agents)
+    adapter_issues = check_adapter_availability(agents)
 
     print_boot_summary(agents, schedules, unscheduled_agents)
+
+    Bizforge.Headless.Notifier.notify("workspace.boot_complete", %{
+      agents: length(agents),
+      schedules: length(schedules),
+      unscheduled: length(unscheduled_agents),
+      adapter_issues: adapter_issues
+    })
 
     {:noreply, %{state | bootstrapped: true}}
   end
@@ -169,25 +176,30 @@ defmodule Bizforge.Headless.Bootstrap do
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
 
-    Enum.each(adapters, fn adapter_name ->
+    Enum.reduce(adapters, [], fn adapter_name, issues ->
       case Bizforge.Adapter.resolve(adapter_name) do
         {:ok, mod} ->
           if function_exported?(mod, :health, 0) do
             case mod.health() do
               :ok ->
                 Logger.info("[Headless.Bootstrap] Adapter '#{adapter_name}' is healthy")
+                issues
 
               {:error, reason} ->
                 Logger.warning(
                   "[Headless.Bootstrap] Adapter '#{adapter_name}' unhealthy: #{inspect(reason)}"
                 )
+
+                [%{adapter: adapter_name, issue: "unhealthy", reason: inspect(reason)} | issues]
             end
           else
             Logger.debug("[Headless.Bootstrap] Adapter '#{adapter_name}' resolved (no health check)")
+            issues
           end
 
         {:error, _} ->
           Logger.warning("[Headless.Bootstrap] Adapter '#{adapter_name}' not found")
+          [%{adapter: adapter_name, issue: "not_found"} | issues]
       end
     end)
   end

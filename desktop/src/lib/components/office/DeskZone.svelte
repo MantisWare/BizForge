@@ -184,7 +184,7 @@
       y={y + height - 8}
       text-anchor="end"
       font-size="9"
-      fill="#6366f1"
+      fill="#f97316"
       font-family="system-ui, sans-serif"
     >+{agents.length - COLS * ROWS} more</text>
   {/if}

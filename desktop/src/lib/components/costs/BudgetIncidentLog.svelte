@@ -266,7 +266,7 @@
 
   .bil-row--warning  { border-left: 2px solid rgba(245, 158, 11, 0.4); }
   .bil-row--hard_stop { border-left: 2px solid rgba(239, 68, 68, 0.5); }
-  .bil-row--anomaly  { border-left: 2px solid rgba(167, 139, 250, 0.5); }
+  .bil-row--anomaly  { border-left: 2px solid rgba(251, 146, 60, 0.5); }
 
   .bil-td {
     padding: var(--space-2);
@@ -295,7 +295,7 @@
 
   .bil-type--warning  { color: #f59e0b; background: rgba(245,158,11,0.1); }
   .bil-type--hard_stop { color: #ef4444; background: rgba(239,68,68,0.1); }
-  .bil-type--anomaly  { color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .bil-type--anomaly  { color: #fb923c; background: rgba(251,146,60,0.1); }
 
   .bil-resolved {
     font-size: 11px;

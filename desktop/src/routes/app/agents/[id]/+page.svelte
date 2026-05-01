@@ -260,7 +260,7 @@
 
   function adapterStatusColor(a: AdapterType): string {
     switch (a) {
-      case 'osa':         return '#a78bfa';
+      case 'osa':         return '#fb923c';
       case 'claude_code': return '#60a5fa';
       case 'bash':        return '#34d399';
       default:            return 'var(--text-tertiary)';
@@ -1579,7 +1579,7 @@
   .ad-inbox-type--alert        { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25); color: #f87171; }
   .ad-inbox-type--failure      { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25); color: #f87171; }
   .ad-inbox-type--budget_warning { background: rgba(234, 179, 8, 0.1); border-color: rgba(234, 179, 8, 0.25); color: #fde047; }
-  .ad-inbox-type--mention      { background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.25); color: #c4b5fd; }
+  .ad-inbox-type--mention      { background: rgba(249, 115, 22, 0.1); border-color: rgba(249, 115, 22, 0.25); color: #fdba74; }
   .ad-inbox-type--report       { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.25); color: #86efac; }
 
   .ad-inbox-time {

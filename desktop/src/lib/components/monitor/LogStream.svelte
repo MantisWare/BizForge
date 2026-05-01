@@ -14,7 +14,7 @@
     info: '#3b82f6',
     warning: '#eab308',
     error: '#ef4444',
-    debug: '#8b5cf6',
+    debug: '#f97316',
   };
 
   function formatTime(ts: string): string {

@@ -80,7 +80,7 @@ const LOG_STYLES = {
   warn: "color: #eab308; font-weight: bold",
   error: "color: #ef4444; font-weight: bold",
   success: "color: #22c55e; font-weight: bold",
-  mock: "color: #a855f7; font-weight: bold",
+  mock: "color: #f97316; font-weight: bold",
   auth: "color: #f59e0b; font-weight: bold",
   health: "color: #06b6d4; font-weight: bold",
   net: "color: #64748b; font-weight: bold",
@@ -644,7 +644,11 @@ async function doFetch<T>(
   const fetchStart = performance.now();
   logInfo("net", `${method} ${path}${retried ? " (retry)" : ""}`);
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    signal: options.signal ?? AbortSignal.timeout(15_000),
+  });
 
   const elapsed = Math.round(performance.now() - fetchStart);
 
@@ -1529,6 +1533,70 @@ export const providers = {
       `/providers/${id}/test`,
       { method: "POST" },
     );
+  },
+
+  /**
+   * Fetch available models from a provider endpoint by proxying through the
+   * backend. This avoids CORS issues with cloud providers (Anthropic, OpenAI,
+   * Google, etc.) that reject browser-originated preflight requests.
+   */
+  fetchModels: async (
+    endpoint: string,
+    apiKey?: string,
+    slug?: string,
+  ): Promise<{ models: string[]; error?: string }> => {
+    try {
+      const result = await request<{
+        status: string;
+        models: string[];
+        latency_ms?: number;
+        error?: string;
+      }>("/providers/discover-models", {
+        method: "POST",
+        body: JSON.stringify({
+          endpoint: endpoint.replace(/\/+$/, ""),
+          api_key: apiKey ?? "",
+          slug: slug ?? "",
+        }),
+      });
+
+      if (result.status === "connected") {
+        return { models: result.models ?? [] };
+      }
+
+      return { models: [], error: result.error ?? "Connection failed" };
+    } catch (e) {
+      const err = e as Error;
+      return { models: [], error: err.message };
+    }
+  },
+
+  /**
+   * Fetch models for an already-saved provider by ID. The backend reads the
+   * stored API key from the database so it doesn't need to be sent from the client.
+   */
+  fetchModelsById: async (
+    providerId: string,
+  ): Promise<{ models: string[]; error?: string }> => {
+    try {
+      const result = await request<{
+        status: string;
+        models: string[];
+        latency_ms?: number;
+        error?: string;
+      }>(`/providers/${providerId}/discover-models`, {
+        method: "POST",
+      });
+
+      if (result.status === "connected") {
+        return { models: result.models ?? [] };
+      }
+
+      return { models: [], error: result.error ?? "Connection failed" };
+    } catch (e) {
+      const err = e as Error;
+      return { models: [], error: err.message };
+    }
   },
 };
 

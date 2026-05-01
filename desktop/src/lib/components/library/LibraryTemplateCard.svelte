@@ -125,7 +125,7 @@
   /* Size-specific accent borders */
   .ltc-card--micro      { border-color: rgba(34, 197, 94, 0.15); }
   .ltc-card--small      { border-color: rgba(59, 130, 246, 0.15); }
-  .ltc-card--full       { border-color: rgba(168, 85, 247, 0.15); }
+  .ltc-card--full       { border-color: rgba(249, 115, 22, 0.15); }
   .ltc-card--enterprise { border-color: rgba(249, 115, 22, 0.15); }
 
   .ltc-card:hover {
@@ -136,7 +136,7 @@
 
   .ltc-card--micro:hover      { border-color: rgba(34, 197, 94, 0.30); }
   .ltc-card--small:hover      { border-color: rgba(59, 130, 246, 0.30); }
-  .ltc-card--full:hover       { border-color: rgba(168, 85, 247, 0.30); }
+  .ltc-card--full:hover       { border-color: rgba(249, 115, 22, 0.30); }
   .ltc-card--enterprise:hover { border-color: rgba(249, 115, 22, 0.30); }
 
   /* Top row */
@@ -189,7 +189,7 @@
 
   .ltc-size--micro      { background: rgba(34, 197, 94, 0.08); color: rgba(34, 197, 94, 0.6); border-color: rgba(34, 197, 94, 0.15); }
   .ltc-size--small      { background: rgba(59, 130, 246, 0.10); color: #7ab3f8; border-color: rgba(59, 130, 246, 0.20); }
-  .ltc-size--full       { background: rgba(168, 85, 247, 0.10); color: #c084fc; border-color: rgba(168, 85, 247, 0.20); }
+  .ltc-size--full       { background: rgba(249, 115, 22, 0.10); color: #fb923c; border-color: rgba(249, 115, 22, 0.20); }
   .ltc-size--enterprise { background: rgba(249, 115, 22, 0.10); color: #fb923c; border-color: rgba(249, 115, 22, 0.20); }
 
   .ltc-source-badge {
@@ -203,9 +203,9 @@
   }
 
   .ltc-source--official {
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: rgba(249, 115, 22, 0.15);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.25);
   }
 
   .ltc-source--community {
@@ -324,9 +324,9 @@
   }
 
   .ltc-card--full .ltc-btn:hover:not(:disabled) {
-    background: rgba(168, 85, 247, 0.10);
-    border-color: rgba(168, 85, 247, 0.30);
-    color: #c084fc;
+    background: rgba(249, 115, 22, 0.10);
+    border-color: rgba(249, 115, 22, 0.30);
+    color: #fb923c;
   }
 
   .ltc-card--enterprise .ltc-btn:hover:not(:disabled) {

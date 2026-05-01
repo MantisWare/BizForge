@@ -15,13 +15,23 @@
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
 
+  let initialLoadDone = $state(false);
+
   $effect(() => {
     const org = organizationsStore.current;
-    if (org) {
-      void hierarchyStore.fetchTree(org.id);
-      void agentsStore.fetchAgents();
-    } else {
-      void organizationsStore.fetchOrganizations();
+    if (org !== null) {
+      Promise.all([
+        hierarchyStore.fetchTree(org.id),
+        agentsStore.fetchAgents(),
+      ]).finally(() => {
+        initialLoadDone = true;
+      });
+    } else if (!organizationsStore.loading) {
+      void organizationsStore.fetchOrganizations().then(() => {
+        if (organizationsStore.current === null) {
+          initialLoadDone = true;
+        }
+      });
     }
   });
 
@@ -252,13 +262,7 @@
   {/snippet}
 
   {#snippet children()}
-    {#if hierarchyStore.loading && !hierarchyStore.tree}
-      <div class="hc-loading" aria-label="Loading hierarchy" aria-live="polite">
-        <LoadingSpinner size="md" />
-        <span>Loading hierarchy…</span>
-      </div>
-
-    {:else if !organizationsStore.current}
+    {#if organizationsStore.current === null && !organizationsStore.loading && initialLoadDone}
       <div class="hc-empty" role="status">
         <div class="hc-empty-icon" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -269,7 +273,27 @@
         <p class="hc-empty-sub">Select or create an organization to view its hierarchy.</p>
       </div>
 
-    {:else if !hierarchyStore.tree || hierarchyStore.tree.divisions.length === 0}
+    {:else if (hierarchyStore.loading || organizationsStore.loading) && !hierarchyStore.tree}
+      <div class="hc-loading" aria-label="Loading hierarchy" aria-live="polite">
+        <LoadingSpinner size="md" />
+        <span>{organizationsStore.loading ? 'Loading organization…' : 'Loading hierarchy…'}</span>
+      </div>
+
+    {:else if hierarchyStore.error !== null && !hierarchyStore.tree}
+      <div class="hc-empty" role="status">
+        <div class="hc-empty-icon" aria-hidden="true">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+        </div>
+        <p class="hc-empty-text">Could not load organization hierarchy.</p>
+        <p class="hc-empty-sub">{hierarchyStore.error}</p>
+        <button class="hc-btn hc-btn--ghost hc-retry-btn" onclick={() => { const org = organizationsStore.current; if (org) void hierarchyStore.fetchTree(org.id); }}>
+          Try again
+        </button>
+      </div>
+
+    {:else if hierarchyStore.tree === null || !Array.isArray(hierarchyStore.tree.divisions) || hierarchyStore.tree.divisions.length === 0}
       <div class="hc-empty" role="status">
         <div class="hc-empty-icon" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -278,6 +302,12 @@
         </div>
         <p class="hc-empty-text">No hierarchy configured yet.</p>
         <p class="hc-empty-sub">Add your first division to start building the org structure.</p>
+        <button class="hc-btn hc-btn--primary hc-empty-action" onclick={() => (showAddDivision = true)}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add your first Division
+        </button>
       </div>
 
     {:else}
@@ -964,6 +994,14 @@
     max-width: 320px;
   }
 
+  .hc-retry-btn {
+    margin-top: 8px;
+  }
+
+  .hc-empty-action {
+    margin-top: 12px;
+  }
+
   /* ── Two-panel layout ───────────────────────────────────────────────────── */
   .hc-layout {
     display: flex;
@@ -1098,8 +1136,8 @@
   }
 
   .hc-detail-icon--department {
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    color: #8b5cf6;
+    background: color-mix(in srgb, #f97316 15%, transparent);
+    color: #f97316;
   }
 
   .hc-detail-icon--team {
@@ -1145,9 +1183,9 @@
   }
 
   .hc-type-badge--department {
-    background: color-mix(in srgb, #8b5cf6 12%, transparent);
-    color: #8b5cf6;
-    border: 1px solid color-mix(in srgb, #8b5cf6 25%, transparent);
+    background: color-mix(in srgb, #f97316 12%, transparent);
+    color: #f97316;
+    border: 1px solid color-mix(in srgb, #f97316 25%, transparent);
   }
 
   .hc-type-badge--team {
@@ -1347,8 +1385,8 @@
   }
 
   .hc-related-icon--dept {
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    color: #8b5cf6;
+    background: color-mix(in srgb, #f97316 15%, transparent);
+    color: #f97316;
   }
 
   .hc-related-icon--team {
@@ -1653,8 +1691,8 @@
   }
 
   .hc-node-icon--department {
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    color: #8b5cf6;
+    background: color-mix(in srgb, #f97316 15%, transparent);
+    color: #f97316;
   }
 
   .hc-node-icon--team {
@@ -1717,9 +1755,9 @@
   }
 
   .hc-chip--purple {
-    background: color-mix(in srgb, #8b5cf6 12%, transparent);
-    border-color: color-mix(in srgb, #8b5cf6 30%, transparent);
-    color: #8b5cf6;
+    background: color-mix(in srgb, #f97316 12%, transparent);
+    border-color: color-mix(in srgb, #f97316 30%, transparent);
+    color: #f97316;
   }
 
   .hc-chip--green {

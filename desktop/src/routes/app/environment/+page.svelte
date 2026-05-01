@@ -607,7 +607,7 @@
     background: #3b82f6;
   }
   .env-resource-fill--mem {
-    background: #8b5cf6;
+    background: #f97316;
   }
   .env-resource-value {
     font-size: 12px;

@@ -172,7 +172,7 @@ export const agents: BizforgeAgent[] = [
     "marketing",
     ["strategy", "campaigns"],
     "ceo",
-    "#7c3aed",
+    "#ea580c",
     "You are the Marketing Lead. You own the marketing strategy, brand voice, and campaign calendar.",
   ),
   agent(
@@ -183,7 +183,7 @@ export const agents: BizforgeAgent[] = [
     "marketing",
     ["writing", "content"],
     "marketing-lead",
-    "#8b5cf6",
+    "#f97316",
     "You are the Content Creator. You produce blog posts, social content, and marketing copy.",
   ),
   agent(
@@ -194,7 +194,7 @@ export const agents: BizforgeAgent[] = [
     "marketing",
     ["seo", "web-search"],
     "marketing-lead",
-    "#a78bfa",
+    "#fb923c",
     "You are the SEO Specialist. You optimise content and strategies for search engine visibility.",
   ),
 

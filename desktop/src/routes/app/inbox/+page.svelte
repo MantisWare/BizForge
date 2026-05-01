@@ -748,8 +748,8 @@
 
   /* ── Notification tab badge variant ─────────────────────────────────────── */
   .ib-tab-badge--critical {
-    background: rgba(168, 85, 247, 0.15);
-    color: #c084fc;
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
   }
 
   /* ── Notification toolbar ────────────────────────────────────────────────── */
@@ -810,12 +810,12 @@
   .ntf-item:hover { border-color: var(--border-hover); }
 
   .ntf-item--unread {
-    border-left: 3px solid var(--border-focus, rgba(99, 102, 241, 0.5));
+    border-left: 3px solid var(--border-focus, rgba(249, 115, 22, 0.5));
     padding-left: 13px;
   }
 
   .ntf-item--critical.ntf-item--unread {
-    border-left-color: rgba(168, 85, 247, 0.6);
+    border-left-color: rgba(249, 115, 22, 0.6);
   }
 
   /* ── Meta row: dot + category + time ───────────────────────────────────── */
@@ -836,7 +836,7 @@
   .ntf-severity-dot--info    { background: #60a5fa; }
   .ntf-severity-dot--warning { background: #fbbf24; }
   .ntf-severity-dot--error   { background: #f87171; }
-  .ntf-severity-dot--critical{ background: #c084fc; }
+  .ntf-severity-dot--critical{ background: #fb923c; }
 
   .ntf-category-badge {
     font-size: 10px;
@@ -853,7 +853,7 @@
   .ntf-category-badge--alert    { background: rgba(239, 68, 68, 0.08);   color: #f87171;  border-color: rgba(239, 68, 68, 0.2); }
   .ntf-category-badge--budget   { background: rgba(245, 158, 11, 0.08);  color: #fbbf24;  border-color: rgba(245, 158, 11, 0.2); }
   .ntf-category-badge--approval { background: rgba(245, 158, 11, 0.08);  color: #fbbf24;  border-color: rgba(245, 158, 11, 0.2); }
-  .ntf-category-badge--workflow { background: rgba(99, 102, 241, 0.08);  color: #818cf8;  border-color: rgba(99, 102, 241, 0.2); }
+  .ntf-category-badge--workflow { background: rgba(249, 115, 22, 0.08);  color: #fb923c;  border-color: rgba(249, 115, 22, 0.2); }
   .ntf-category-badge--task     { background: rgba(34, 197, 94, 0.08);   color: #4ade80;  border-color: rgba(34, 197, 94, 0.2); }
   .ntf-category-badge--mention  { background: rgba(56, 189, 248, 0.08);  color: #38bdf8;  border-color: rgba(56, 189, 248, 0.2); }
   .ntf-category-badge--system   { background: var(--bg-elevated);        color: var(--text-tertiary); }
@@ -897,16 +897,16 @@
   .ntf-action-link {
     font-size: 11px;
     font-weight: 500;
-    color: var(--accent-primary, #6366f1);
+    color: var(--accent-primary, #f97316);
     text-decoration: none;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(249, 115, 22, 0.3);
     border-radius: 4px;
     padding: 2px 8px;
     transition: background 100ms ease;
   }
 
   .ntf-action-link:hover {
-    background: rgba(99, 102, 241, 0.08);
+    background: rgba(249, 115, 22, 0.08);
   }
 
   .ntf-btn {

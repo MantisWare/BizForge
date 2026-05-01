@@ -42,17 +42,22 @@ defmodule Bizforge.Headless.Notifier do
       Task.start(fn -> deliver(webhook, body, 0) end)
     end)
 
+    if Bizforge.Headless.Notifications.Slack.configured?() do
+      Task.start(fn -> Bizforge.Headless.Notifications.Slack.send(event, payload) end)
+    end
+
+    Bizforge.Headless.Notifications.EmailDigest.add_event(event, payload)
+
     {:noreply, state}
   end
 
   defp deliver(webhook, body, attempt) do
     encoded = Jason.encode!(body)
 
-    headers = [
-      {"content-type", "application/json"},
-      {"user-agent", "BizForge-Headless/1.0"},
-      {"x-bizforge-event", body.event}
-    ]
+    headers = %{
+      "user-agent" => "BizForge-Headless/1.0",
+      "x-bizforge-event" => body.event
+    }
 
     headers =
       case Map.get(webhook, :secret) do
@@ -63,14 +68,14 @@ defmodule Bizforge.Headless.Notifier do
           signature =
             :crypto.mac(:hmac, :sha256, secret, encoded) |> Base.encode16(case: :lower)
 
-          [{"x-bizforge-signature", "sha256=#{signature}"} | headers]
+          Map.put(headers, "x-bizforge-signature", "sha256=#{signature}")
       end
 
-    case :httpc.request(:post, {to_charlist(webhook.url), headers, ~c"application/json", encoded}, [{:timeout, 10_000}], []) do
-      {:ok, {{_, status, _}, _, _}} when status >= 200 and status < 300 ->
+    case Req.post(webhook.url, json: body, headers: headers, receive_timeout: 10_000) do
+      {:ok, %Req.Response{status: status}} when status >= 200 and status < 300 ->
         Logger.debug("[Headless.Notifier] Delivered #{body.event} to #{webhook.url} (#{status})")
 
-      {:ok, {{_, status, _}, _, _}} ->
+      {:ok, %Req.Response{status: status}} ->
         Logger.warning(
           "[Headless.Notifier] Webhook #{webhook.url} returned #{status} for #{body.event}"
         )

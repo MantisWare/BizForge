@@ -25,12 +25,35 @@ defmodule Bizforge.Application do
 
     children =
       if headless? do
+        health_port = Keyword.get(headless_config, :health_port, 9090)
+        tls_cert = Keyword.get(headless_config, :tls_cert)
+        tls_key = Keyword.get(headless_config, :tls_key)
+
+        bandit_opts =
+          if tls_cert !== nil && tls_key !== nil do
+            [
+              plug: Bizforge.Headless.HealthPlug,
+              port: health_port,
+              scheme: :https,
+              certfile: tls_cert,
+              keyfile: tls_key
+            ]
+          else
+            [plug: Bizforge.Headless.HealthPlug, port: health_port, scheme: :http]
+          end
+
         core_children ++
           [
             Bizforge.Headless.Monitor,
             Bizforge.Headless.Bootstrap,
             Bizforge.Headless.Watchdog,
-            Bizforge.Headless.Notifier
+            Bizforge.Headless.Notifier,
+            Bizforge.Headless.Notifications.EmailDigest,
+            Bizforge.Headless.Notifications.DeadManSwitch,
+            Bizforge.Headless.ResourceLimiter,
+            Bizforge.Headless.TokenRotator,
+            Bizforge.Governance.HeadlessResolver,
+            {Bandit, bandit_opts}
           ]
       else
         core_children ++ [BizforgeWeb.Endpoint]

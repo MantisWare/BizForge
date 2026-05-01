@@ -46,7 +46,7 @@
 
   const statusColor: Record<string, string> = {
     active: '#10b981',
-    completed: '#6366f1',
+    completed: '#f97316',
     failed: '#ef4444',
     cancelled: '#94a3b8',
   };
@@ -208,7 +208,7 @@
   }
 
   .sc-toggle:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline: 2px solid rgba(249, 115, 22, 0.5);
     outline-offset: -2px;
   }
 
@@ -233,7 +233,7 @@
     height: 18px;
     padding: 0 6px;
     border-radius: 9px;
-    background: var(--bg-muted, rgba(99, 102, 241, 0.12));
+    background: var(--bg-muted, rgba(249, 115, 22, 0.12));
     color: var(--text-tertiary);
     font-size: 11px;
     font-weight: 500;
@@ -268,7 +268,7 @@
   }
 
   .sc-compact-btn:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline: 2px solid rgba(249, 115, 22, 0.5);
     outline-offset: 1px;
   }
 

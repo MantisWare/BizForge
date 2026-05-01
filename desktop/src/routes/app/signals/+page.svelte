@@ -128,7 +128,7 @@
     height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px;
     background: var(--dbg2); border: 1px solid var(--dbd); color: var(--dt); min-width: 200px;
   }
-  .sig-search:focus { outline: none; border-color: #6366f1; }
+  .sig-search:focus { outline: none; border-color: #f97316; }
 
   /* Stats */
   .sig-stats, .sig-stats-skeleton {
@@ -151,7 +151,7 @@
   .sig-stat-label { font-size: 10px; color: var(--dt3); text-transform: uppercase; letter-spacing: 0.04em; }
   .sig-tier-label--haiku { color: var(--dt3); }
   .sig-tier-label--sonnet { color: #fde047; }
-  .sig-tier-label--opus { color: #c4b5fd; }
+  .sig-tier-label--opus { color: #fdba74; }
 
   /* Patterns */
   .sig-section-title {
@@ -208,7 +208,7 @@
     font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
     text-transform: uppercase; letter-spacing: 0.05em;
   }
-  .sig-tier--opus { background: color-mix(in srgb, #8b5cf6 15%, transparent); color: #c4b5fd; }
+  .sig-tier--opus { background: color-mix(in srgb, #f97316 15%, transparent); color: #fdba74; }
   .sig-tier--sonnet { background: color-mix(in srgb, #f59e0b 15%, transparent); color: #fde047; }
   .sig-tier--haiku { background: var(--dbg3); color: var(--dt3); }
   .sig-preview { font-size: 12px; color: var(--dt); margin-bottom: 8px; line-height: 1.5; }

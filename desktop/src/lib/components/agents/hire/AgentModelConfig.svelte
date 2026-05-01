@@ -54,6 +54,8 @@
     selectedProvider?.models ?? [],
   );
 
+  let fetchingModels = $state(false);
+
   function handleProviderChange(newId: string) {
     onProviderId(newId);
     const prov = providersStore.getById(newId);
@@ -64,11 +66,28 @@
       onTemperature(prov.config.temperature.toString());
     }
   }
+
+  async function handleFetchModels() {
+    if (!providerId) return;
+    fetchingModels = true;
+    const models = await providersStore.fetchModelsForProvider(providerId);
+    if (models.length > 0 && !models.includes(model)) {
+      onModel(models[0]);
+    }
+    fetchingModels = false;
+  }
 </script>
 
 <!-- Provider -->
 <section class="hmc-section">
-  <h3 class="hmc-section-title">Provider</h3>
+  <h3 class="hmc-section-title">
+    Provider
+    <span class="hmc-info" title="The AI service that powers this agent's reasoning — e.g. Anthropic, OpenAI, or a local model host. Determines which LLMs are available.">
+      <svg class="hmc-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 5a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 5Zm-1 2.25a.25.25 0 0 1 .25-.25h.5a.75.75 0 0 1 .75.75V11a.25.25 0 0 1-.25.25h-.5A.75.75 0 0 1 7 10.5V7.25Z"/>
+      </svg>
+    </span>
+  </h3>
   <div class="hmc-field">
     <label class="hmc-label" for="hmc-provider">AI Provider</label>
     {#if providersStore.providers.length > 0}
@@ -97,34 +116,59 @@
 
 <!-- Model -->
 <section class="hmc-section">
-  <h3 class="hmc-section-title">Model</h3>
+  <h3 class="hmc-section-title">
+    Model
+    <span class="hmc-info" title="The specific LLM to use — e.g. claude-sonnet-4-6. Affects quality, speed, cost, and context window. Pick from the provider's list or type a custom identifier.">
+      <svg class="hmc-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 5a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 5Zm-1 2.25a.25.25 0 0 1 .25-.25h.5a.75.75 0 0 1 .75.75V11a.25.25 0 0 1-.25.25h-.5A.75.75 0 0 1 7 10.5V7.25Z"/>
+      </svg>
+    </span>
+  </h3>
   <div class="hmc-field">
     <label class="hmc-label" for="hmc-model">Model <span class="hmc-required">*</span></label>
-    <div class="hmc-model-wrap">
-      <input
-        id="hmc-model"
-        class="hmc-input"
-        class:hmc-input--error={errors.model}
-        type="text"
-        value={model}
-        oninput={(e) => onModel((e.target as HTMLInputElement).value)}
-        placeholder="claude-sonnet-4-6"
-        list="hmc-model-presets"
-        autocomplete="off"
-        aria-describedby={errors.model ? 'hmc-model-error' : 'hmc-model-hint'}
-        aria-required="true"
-      />
-      <datalist id="hmc-model-presets">
-        {#each providerModels as pm}
-          <option value={pm}>{pm}</option>
-        {/each}
-      </datalist>
+    <div class="hmc-model-row">
+      <div class="hmc-model-wrap">
+        <input
+          id="hmc-model"
+          class="hmc-input"
+          class:hmc-input--error={errors.model}
+          type="text"
+          value={model}
+          oninput={(e) => onModel((e.target as HTMLInputElement).value)}
+          placeholder="claude-sonnet-4-6"
+          list="hmc-model-presets"
+          autocomplete="off"
+          aria-describedby={errors.model ? 'hmc-model-error' : 'hmc-model-hint'}
+          aria-required="true"
+        />
+        <datalist id="hmc-model-presets">
+          {#each providerModels as pm}
+            <option value={pm}>{pm}</option>
+          {/each}
+        </datalist>
+      </div>
+      <button
+        type="button"
+        class="hmc-fetch-btn"
+        onclick={handleFetchModels}
+        disabled={!providerId || fetchingModels}
+        title="Fetch available models from the provider"
+        aria-label="Fetch available models"
+      >
+        {#if fetchingModels}
+          <svg class="hmc-spinner" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="8"/></svg>
+        {:else}
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 8a5.5 5.5 0 0111 0z"/><path d="M8 5v3l2 1.5"/></svg>
+        {/if}
+      </button>
     </div>
     <span id="hmc-model-hint" class="hmc-hint">
       {#if providerModels.length > 0}
-        Pick from the provider's available models or type a custom one
+        {providerModels.length} model{providerModels.length !== 1 ? 's' : ''} available — pick from list or type a custom one
+      {:else if providerId}
+        Click the refresh button to fetch models from the provider
       {:else}
-        Type a model identifier
+        Select a provider first, then fetch available models
       {/if}
     </span>
     {#if errors.model}
@@ -152,7 +196,14 @@
 
 <!-- System Prompt -->
 <section class="hmc-section">
-  <h3 class="hmc-section-title">System Prompt</h3>
+  <h3 class="hmc-section-title">
+    System Prompt
+    <span class="hmc-info" title="Instructions that define the agent's personality, behavior, and constraints. This is sent at the start of every conversation to guide the model's responses.">
+      <svg class="hmc-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 5a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 5Zm-1 2.25a.25.25 0 0 1 .25-.25h.5a.75.75 0 0 1 .75.75V11a.25.25 0 0 1-.25.25h-.5A.75.75 0 0 1 7 10.5V7.25Z"/>
+      </svg>
+    </span>
+  </h3>
   <div class="hmc-field">
     <label class="hmc-label" for="hmc-system-prompt">Instructions</label>
     <textarea
@@ -169,7 +220,14 @@
 
 <!-- Skills -->
 <section class="hmc-section">
-  <h3 class="hmc-section-title">Skills</h3>
+  <h3 class="hmc-section-title">
+    Skills
+    <span class="hmc-info" title="Capabilities the agent can use when executing tasks. Enable relevant skills to give the agent specialized knowledge and tools for its role.">
+      <svg class="hmc-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 5a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 5Zm-1 2.25a.25.25 0 0 1 .25-.25h.5a.75.75 0 0 1 .75.75V11a.25.25 0 0 1-.25.25h-.5A.75.75 0 0 1 7 10.5V7.25Z"/>
+      </svg>
+    </span>
+  </h3>
   <div class="hmc-skills-grid" role="group" aria-label="Select agent skills">
     {#each SKILL_OPTIONS as skill}
       <label class="hmc-skill-item">
@@ -194,6 +252,9 @@
   }
 
   .hmc-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -202,6 +263,26 @@
     margin: 0;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-default);
+  }
+
+  .hmc-info {
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+    position: relative;
+  }
+
+  .hmc-info-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: opacity 150ms ease, color 150ms ease;
+  }
+
+  .hmc-info:hover .hmc-info-icon {
+    opacity: 1;
+    color: var(--accent-primary);
   }
 
   .hmc-field {
@@ -289,8 +370,49 @@
     border-color: var(--border-focus);
   }
 
+  .hmc-model-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
   .hmc-model-wrap {
     position: relative;
+    flex: 1;
+  }
+
+  .hmc-fetch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+  }
+
+  .hmc-fetch-btn:hover:not(:disabled) {
+    border-color: var(--border-hover);
+    color: var(--accent-primary);
+    background: var(--bg-elevated);
+  }
+
+  .hmc-fetch-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .hmc-spinner {
+    animation: hmc-spin 1s linear infinite;
+  }
+
+  @keyframes hmc-spin {
+    to { transform: rotate(360deg); }
   }
 
   .hmc-textarea {

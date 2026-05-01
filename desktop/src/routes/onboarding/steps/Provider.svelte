@@ -72,25 +72,12 @@
 
     try {
       const endpoint = setup.endpoint ?? findProvider(slug)?.defaultEndpoint ?? '';
-      const testUrl = endpoint.replace(/\/$/, '') + '/v1/models';
-      const headers: Record<string, string> = {};
-      if (setup.apiKey) {
-        if (slug === 'anthropic') {
-          headers['x-api-key'] = setup.apiKey;
-          headers['anthropic-version'] = '2023-06-01';
-        } else {
-          headers['Authorization'] = `Bearer ${setup.apiKey}`;
-        }
-      }
-      const resp = await fetch(testUrl, {
-        method: 'GET',
-        headers,
-        signal: AbortSignal.timeout(8000),
-      });
-      if (resp.ok) {
+      const { providers } = await import('$api/client');
+      const result = await providers.fetchModels(endpoint, setup.apiKey, slug);
+      if (result.models.length > 0) {
         testResults = { ...testResults, [slug]: { ok: true, msg: 'Connected' } };
       } else {
-        testResults = { ...testResults, [slug]: { ok: false, msg: `HTTP ${resp.status}` } };
+        testResults = { ...testResults, [slug]: { ok: false, msg: result.error ?? 'No models returned' } };
       }
     } catch (e) {
       testResults = { ...testResults, [slug]: { ok: false, msg: (e as Error).message } };

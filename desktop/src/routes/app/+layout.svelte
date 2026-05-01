@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
 import Sidebar from '$lib/components/layout/Sidebar.svelte';
-  import ConnectionStatusBar from '$lib/components/layout/ConnectionStatusBar.svelte';
+  import AppFooter from '$lib/components/layout/AppFooter.svelte';
   import ToastContainer from '$lib/components/layout/ToastContainer.svelte';
   import { connectionStore } from '$lib/stores/connection.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
@@ -219,11 +219,13 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
 <!-- App shell with sidebar + main content -->
 <div class="app-shell" class:has-titlebar={isTauri() && isMacOS()}>
-  <Sidebar bind:isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} {user} />
-  <main class="main-content" id="main-content">
-    {@render children()}
-    <ConnectionStatusBar alwaysShow={true} />
-  </main>
+  <div class="app-body">
+    <Sidebar bind:isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} {user} />
+    <main class="main-content" id="main-content">
+      {@render children()}
+    </main>
+  </div>
+  <AppFooter />
 </div>
 
 <!-- Global overlays -->
@@ -233,16 +235,20 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
 <style>
   .app-shell {
-    height: 100dvh; width: 100vw; display: flex; overflow: hidden;
+    width: 100vw; height: 100dvh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
     background: var(--bg-primary); position: relative;
     background-image: radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.015) 0%, transparent 60%);
   }
   .app-shell.has-titlebar {
     padding-top: 28px;
-    height: calc(100dvh - 28px);
+  }
+  .app-body {
+    flex: 1; display: flex; min-height: 0; overflow: hidden;
   }
   .main-content {
-    flex: 1; height: 100%; display: flex; flex-direction: column;
+    flex: 1; display: flex; flex-direction: column;
     min-width: 0; overflow: hidden; background: var(--bg-secondary);
     box-shadow: inset 1px 0 0 rgba(255,255,255,0.04); position: relative;
   }

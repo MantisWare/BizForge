@@ -46,7 +46,7 @@
   .status-dot--busy     { background: #3b82f6; }
   .status-dot--error    { background: #ef4444; }
   .status-dot--offline  { background: #666666; }
-  .status-dot--sleeping { background: #8b5cf6; }
+  .status-dot--sleeping { background: #f97316; }
 
   /* Pulse ring */
   .status-dot--pulse::after {
@@ -62,7 +62,7 @@
   .status-dot--pulse.status-dot--idle::after     { border: 2px solid #eab308; }
   .status-dot--pulse.status-dot--busy::after     { border: 2px solid #3b82f6; }
   .status-dot--pulse.status-dot--error::after    { border: 2px solid #ef4444; }
-  .status-dot--pulse.status-dot--sleeping::after { border: 2px solid #8b5cf6; }
+  .status-dot--pulse.status-dot--sleeping::after { border: 2px solid #f97316; }
 
   @keyframes sd-pulse {
     0%   { transform: scale(0.8); opacity: 0.8; }

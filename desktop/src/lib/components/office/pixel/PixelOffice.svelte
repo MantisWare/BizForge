@@ -55,7 +55,7 @@
   function statusToColor(status: string): string {
     switch (status) {
       case 'running': return '#6ee7b7';
-      case 'idle': return '#a78bfa';
+      case 'idle': return '#fb923c';
       case 'sleeping': return '#6b7a8d';
       case 'paused': return '#fcd34d';
       case 'terminated': case 'error': return '#fca5a5';
@@ -138,7 +138,7 @@
         });
 
         // Add spawn event
-        untrack(() => addEvent(`${agent.display_name || agent.name} joined the office`, '#a78bfa'));
+        untrack(() => addEvent(`${agent.display_name || agent.name} joined the office`, '#fb923c'));
       }
     });
 
@@ -549,7 +549,7 @@
   }
   .po-tab--active {
     background: var(--bg-elevated, rgba(148, 163, 184, 0.08));
-    color: var(--accent-primary, #a78bfa);
+    color: var(--accent-primary, #fb923c);
   }
   .po-sidebar-list {
     flex: 1;
@@ -569,7 +569,7 @@
     transition: background 100ms;
   }
   .po-agent-row:hover { background: var(--bg-elevated, rgba(148, 163, 184, 0.08)); }
-  .po-agent-row--selected { background: rgba(167, 139, 250, 0.10); }
+  .po-agent-row--selected { background: rgba(251, 146, 60, 0.10); }
   .po-agent-avatar {
     width: 28px;
     height: 28px;
@@ -670,9 +670,9 @@
     transition: all 100ms;
   }
   .po-tool-btn:hover {
-    background: rgba(167, 139, 250, 0.12);
-    color: var(--accent-primary, #a78bfa);
-    border-color: rgba(167, 139, 250, 0.20);
+    background: rgba(251, 146, 60, 0.12);
+    color: var(--accent-primary, #fb923c);
+    border-color: rgba(251, 146, 60, 0.20);
   }
   .po-stat {
     display: flex;
@@ -687,7 +687,7 @@
     border-radius: 50%;
   }
   .po-dot--active { background: #6ee7b7; }
-  .po-dot--idle { background: #a78bfa; }
+  .po-dot--idle { background: #fb923c; }
   .po-dot--away { background: #6b7a8d; }
 
   /* ─── Zoom ─── */
@@ -720,8 +720,8 @@
     justify-content: center;
   }
   .po-zoom-btn:hover {
-    background: rgba(167, 139, 250, 0.15);
-    color: var(--accent-primary, #a78bfa);
+    background: rgba(251, 146, 60, 0.15);
+    color: var(--accent-primary, #fb923c);
   }
 
   /* ─── Time of day ─── */
@@ -749,7 +749,7 @@
     letter-spacing: 0.5px;
   }
   .po-time-btn--active {
-    background: var(--accent-primary, #a78bfa);
+    background: var(--accent-primary, #fb923c);
     color: white;
   }
   .po-time-btn:hover:not(.po-time-btn--active) {

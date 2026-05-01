@@ -903,8 +903,8 @@
     color: #3fb950;
   }
   .rp-type-badge--workflow_audit {
-    background: rgba(188, 140, 255, 0.12);
-    color: #bc8cff;
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
   }
   .rp-type-badge--custom {
     background: rgba(139, 148, 158, 0.12);

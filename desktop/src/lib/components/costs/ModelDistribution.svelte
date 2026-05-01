@@ -5,7 +5,7 @@
   // Palette of distinct colors for model segments
   const PALETTE = [
     '#3b82f6', // blue  — accent-primary
-    '#a78bfa', // violet
+    '#fb923c', // orange
     '#34d399', // emerald
     '#f59e0b', // amber
     '#f472b6', // pink

@@ -47,7 +47,7 @@
     default: 'rgba(255,255,255,0.08)',
     info:    'rgba(59,130,246,0.15)',
     warning: 'rgba(245,158,11,0.15)',
-    accent:  'rgba(139,92,246,0.15)',
+    accent:  'rgba(249,115,22,0.15)',
     success: 'rgba(34,197,94,0.15)',
   };
 
@@ -55,11 +55,11 @@
     default: 'var(--text-secondary)',
     info:    '#93c5fd',
     warning: '#fde047',
-    accent:  '#c4b5fd',
+    accent:  '#fdba74',
     success: 'rgba(34, 197, 94, 0.7)',
   };
 
-  const LABEL_COLORS = ['#3b82f6','#8b5cf6','rgba(34,197,94,0.7)','#f59e0b','#ec4899','#06b6d4'];
+  const LABEL_COLORS = ['#3b82f6','#f97316','rgba(34,197,94,0.7)','#f59e0b','#ec4899','#06b6d4'];
   function labelColor(label: string): string {
     let hash = 0;
     for (let i = 0; i < label.length; i++) hash = (hash * 31 + label.charCodeAt(i)) | 0;

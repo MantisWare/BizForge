@@ -442,7 +442,7 @@
   }
 
   .med-ns--blue { background: rgba(59,130,246,0.12); color: #93c5fd; }
-  .med-ns--purple { background: rgba(192,132,252,0.12); color: #d8b4fe; }
+  .med-ns--purple { background: rgba(253,186,116,0.12); color: #fdba74; }
   .med-ns--teal { background: rgba(52,211,153,0.12); color: #6ee7b7; }
   .med-ns--default { background: var(--bg-elevated); color: var(--text-muted); }
 

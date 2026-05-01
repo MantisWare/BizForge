@@ -397,9 +397,9 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 90% 55% at 50% -5%, rgba(167, 139, 250, 0.22) 0%, transparent 65%),
-      radial-gradient(ellipse 60% 40% at 50% 10%, rgba(124, 58, 237, 0.12) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 30% at 80% 80%, rgba(167, 139, 250, 0.05) 0%, transparent 60%);
+      radial-gradient(ellipse 90% 55% at 50% -5%, rgba(251, 146, 60, 0.22) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 40% at 50% 10%, rgba(234, 88, 12, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 30% at 80% 80%, rgba(251, 146, 60, 0.05) 0%, transparent 60%);
     pointer-events: none;
   }
 
@@ -440,7 +440,7 @@
     height: auto;
     max-width: 220px;
     object-fit: contain;
-    filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.4)) drop-shadow(0 0 60px rgba(124, 58, 237, 0.2));
+    filter: drop-shadow(0 0 20px rgba(251, 146, 60, 0.4)) drop-shadow(0 0 60px rgba(234, 88, 12, 0.2));
   }
 
   .auth-header::before {
@@ -449,7 +449,7 @@
     width: 280px;
     height: 120px;
     border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(167, 139, 250, 0.18) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%);
+    background: radial-gradient(ellipse at center, rgba(251, 146, 60, 0.18) 0%, rgba(234, 88, 12, 0.08) 40%, transparent 70%);
     pointer-events: none;
     z-index: -1;
   }
@@ -544,9 +544,9 @@
   }
 
   .field-input:focus {
-    border-color: var(--accent-primary, #a78bfa);
-    background: rgba(167, 139, 250, 0.04);
-    box-shadow: 0 0 0 3px var(--accent-glow, rgba(167, 139, 250, 0.18));
+    border-color: var(--accent-primary, #fb923c);
+    background: rgba(251, 146, 60, 0.04);
+    box-shadow: 0 0 0 3px var(--accent-glow, rgba(251, 146, 60, 0.18));
   }
 
   .field-input--error {
@@ -626,8 +626,8 @@
     gap: 0.5rem;
     width: 100%;
     padding: 0.75rem 1.25rem;
-    background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
-    border: 1px solid rgba(167, 139, 250, 0.4);
+    background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);
+    border: 1px solid rgba(251, 146, 60, 0.4);
     border-radius: var(--radius-sm, 10px);
     color: #ffffff;
     font-size: 0.875rem;
@@ -636,7 +636,7 @@
     transition: opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease;
     box-shadow:
       0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-      0 4px 16px 0 rgba(109, 40, 217, 0.3);
+      0 4px 16px 0 rgba(194, 65, 12, 0.3);
     margin-top: 0.5rem;
     position: relative;
     overflow: hidden;
@@ -656,7 +656,7 @@
     transform: translateY(-1px);
     box-shadow:
       0 1px 0 0 rgba(255, 255, 255, 0.15) inset,
-      0 6px 24px 0 rgba(109, 40, 217, 0.4);
+      0 6px 24px 0 rgba(194, 65, 12, 0.4);
   }
 
   .auth-submit:not(:disabled):active {
@@ -685,7 +685,7 @@
     width: 24px;
     height: 24px;
     border: 2px solid rgba(148, 163, 184, 0.15);
-    border-top-color: var(--accent-primary, #a78bfa);
+    border-top-color: var(--accent-primary, #fb923c);
   }
 
   .btn-spinner {
@@ -713,7 +713,7 @@
     background: none;
     border: none;
     padding: 0;
-    color: var(--accent-primary, #a78bfa);
+    color: var(--accent-primary, #fb923c);
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
@@ -722,7 +722,7 @@
   }
 
   .auth-toggle-link:hover {
-    color: #c4b5fd;
+    color: #fdba74;
     text-decoration: underline;
   }
 

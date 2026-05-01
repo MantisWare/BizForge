@@ -119,7 +119,7 @@
     height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px;
     background: var(--dbg2); border: 1px solid var(--dbd); color: var(--dt); min-width: 220px;
   }
-  .usr-search:focus { outline: none; border-color: #6366f1; }
+  .usr-search:focus { outline: none; border-color: #f97316; }
 
   .usr-loading, .usr-empty {
     display: flex; flex-direction: column; align-items: center;
@@ -145,7 +145,7 @@
     transition: background 120ms ease, border-color 120ms ease;
   }
   .usr-row:hover { background: var(--dbg3); }
-  .usr-row--selected { border-color: #6366f1; background: color-mix(in srgb, #6366f1 6%, var(--dbg2)); }
+  .usr-row--selected { border-color: #f97316; background: color-mix(in srgb, #f97316 6%, var(--dbg2)); }
 
   .usr-avatar {
     width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -164,7 +164,7 @@
     text-transform: capitalize;
   }
   .usr-role--admin { background: color-mix(in srgb, #ef4444 15%, transparent); color: #fca5a5; }
-  .usr-role--member { background: color-mix(in srgb, #6366f1 15%, transparent); color: #a5b4fc; }
+  .usr-role--member { background: color-mix(in srgb, #f97316 15%, transparent); color: #fdba74; }
   .usr-role--viewer { background: var(--dbg3); color: var(--dt3); }
 
   .usr-joined { font-size: 11px; color: var(--dt4); flex-shrink: 0; }

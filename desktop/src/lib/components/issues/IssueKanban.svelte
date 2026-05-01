@@ -17,7 +17,7 @@
     backlog:     'rgba(102,102,102,0.15)',
     todo:        'rgba(59,130,246,0.12)',
     in_progress: 'rgba(245,158,11,0.12)',
-    in_review:   'rgba(139,92,246,0.12)',
+    in_review:   'rgba(249,115,22,0.12)',
     done:        'rgba(34,197,94,0.08)',
   };
 

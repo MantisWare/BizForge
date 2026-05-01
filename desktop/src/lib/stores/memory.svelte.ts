@@ -51,9 +51,9 @@ export const CATEGORY_META: Record<
   },
   preference: {
     label: "Preference",
-    color: "#a78bfa",
-    bg: "rgba(167,139,250,0.12)",
-    border: "rgba(167,139,250,0.25)",
+    color: "#fb923c",
+    bg: "rgba(251,146,60,0.12)",
+    border: "rgba(251,146,60,0.25)",
   },
   observation: {
     label: "Observation",

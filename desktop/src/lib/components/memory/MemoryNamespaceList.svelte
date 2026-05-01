@@ -366,8 +366,8 @@
   }
 
   .mnl-color--purple {
-    color: #c084fc;
-    background: rgba(192, 132, 252, 0.12);
+    color: #fb923c;
+    background: rgba(253, 186, 116, 0.12);
   }
 
   .mnl-color--teal {

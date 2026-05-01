@@ -53,7 +53,7 @@ export const agents: BizforgeAgent[] = [
     "orchestrator",
     ["coordination", "planning"],
     null,
-    "#6366f1",
+    "#f97316",
     "You are the Team Lead. You coordinate the small team, assign tasks, track progress, and synthesize results back to the user.",
   ),
   agent(
@@ -63,7 +63,7 @@ export const agents: BizforgeAgent[] = [
     "specialist",
     ["analysis", "research"],
     "team-lead",
-    "#8b5cf6",
+    "#f97316",
     "You are the Specialist. You perform deep analysis and research tasks assigned by the Team Lead and deliver structured outputs.",
   ),
   agent(
@@ -73,7 +73,7 @@ export const agents: BizforgeAgent[] = [
     "engineer",
     ["execution", "implementation"],
     "team-lead",
-    "#a78bfa",
+    "#fb923c",
     "You are the Executor. You implement solutions and carry out tasks assigned by the Team Lead with precision and efficiency.",
   ),
 ];

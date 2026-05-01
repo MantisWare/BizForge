@@ -91,7 +91,7 @@
     height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px;
     background: var(--dbg2); border: 1px solid var(--dbd); color: var(--dt); min-width: 200px;
   }
-  .aud-search:focus { outline: none; border-color: #6366f1; }
+  .aud-search:focus { outline: none; border-color: #f97316; }
   .aud-loading, .aud-empty, .aud-error {
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 12px; height: 200px;

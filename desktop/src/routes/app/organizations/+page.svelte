@@ -213,10 +213,10 @@
 <style>
   .org-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer;
+    background: #f97316; border: none; color: white; cursor: pointer;
     transition: background 120ms ease; white-space: nowrap;
   }
-  .org-create-btn:hover { background: #4f46e5; }
+  .org-create-btn:hover { background: #ea580c; }
 
   /* States */
   .org-loading, .org-empty, .org-error {
@@ -247,10 +247,10 @@
   }
   .org-card:hover { border-color: var(--dbd2); background: var(--dbg3); }
   .org-card--current {
-    border-color: rgba(99,102,241,0.5);
-    box-shadow: 0 0 0 1px rgba(99,102,241,0.25);
+    border-color: rgba(249,115,22,0.5);
+    box-shadow: 0 0 0 1px rgba(249,115,22,0.25);
   }
-  .org-card--current:hover { border-color: rgba(99,102,241,0.7); }
+  .org-card--current:hover { border-color: rgba(249,115,22,0.7); }
 
   /* Card header */
   .org-card-header {
@@ -258,11 +258,11 @@
   }
   .org-avatar {
     width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
-    background: rgba(99,102,241,0.15); display: flex; align-items: center; justify-content: center;
+    background: rgba(249,115,22,0.15); display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
   .org-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-  .org-avatar-initials { font-size: 13px; font-weight: 700; color: #a5b4fc; }
+  .org-avatar-initials { font-size: 13px; font-weight: 700; color: #fdba74; }
   .org-header-text { flex: 1; min-width: 0; }
   .org-name {
     font-size: 14px; font-weight: 600; color: var(--dt);
@@ -271,14 +271,14 @@
   }
   .org-current-badge {
     font-size: 10px; padding: 1px 6px; border-radius: 4px;
-    background: rgba(99,102,241,0.15); color: #a5b4fc; font-weight: 500; flex-shrink: 0;
+    background: rgba(249,115,22,0.15); color: #fdba74; font-weight: 500; flex-shrink: 0;
   }
   .org-slug { font-size: 11px; color: var(--dt4); margin-top: 1px; }
 
   /* Plan badges */
   .org-plan { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; flex-shrink: 0; }
   .org-plan--free       { background: var(--dbg3); color: var(--dt4); }
-  .org-plan--pro        { background: rgba(99,102,241,0.12); color: #a5b4fc; }
+  .org-plan--pro        { background: rgba(249,115,22,0.12); color: #fdba74; }
   .org-plan--enterprise { background: rgba(251,191,36,0.12); color: #fbbf24; }
 
   /* Text blocks */
@@ -322,13 +322,13 @@
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box;
   }
-  .org-input:focus { outline: none; border-color: #6366f1; }
+  .org-input:focus { outline: none; border-color: #f97316; }
   .org-textarea {
     padding: 8px 10px; border-radius: 6px; font-size: 13px;
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box; resize: vertical; line-height: 1.5;
   }
-  .org-textarea:focus { outline: none; border-color: #6366f1; }
+  .org-textarea:focus { outline: none; border-color: #f97316; }
   .org-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .org-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .org-btn-ghost, .org-btn-primary {
@@ -337,7 +337,7 @@
   }
   .org-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .org-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .org-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .org-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .org-btn-primary { background: #f97316; border: none; color: #fff; }
+  .org-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .org-btn-ghost:disabled, .org-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

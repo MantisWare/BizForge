@@ -242,9 +242,9 @@
   /* Create button */
   .dp-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .dp-create-btn:hover { background: #4f46e5; }
+  .dp-create-btn:hover { background: #ea580c; }
 
   /* Dialog */
   .dp-overlay {
@@ -264,13 +264,13 @@
     background: var(--bg-elevated, var(--dbg3)); border: 1px solid var(--border-default, var(--dbd)); color: var(--text-primary, var(--dt));
     width: 100%; box-sizing: border-box;
   }
-  .dp-input:focus { outline: none; border-color: #6366f1; }
+  .dp-input:focus { outline: none; border-color: #f97316; }
   .dp-textarea {
     padding: 8px 10px; border-radius: 6px; font-size: 13px; font-family: var(--font-mono, monospace);
     background: var(--bg-elevated, var(--dbg3)); border: 1px solid var(--border-default, var(--dbd)); color: var(--text-primary, var(--dt));
     width: 100%; box-sizing: border-box; resize: vertical; min-height: 120px; line-height: 1.5;
   }
-  .dp-textarea:focus { outline: none; border-color: #6366f1; }
+  .dp-textarea:focus { outline: none; border-color: #f97316; }
   .dp-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .dp-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .dp-btn-ghost, .dp-btn-primary {
@@ -279,7 +279,7 @@
   }
   .dp-btn-ghost { background: transparent; border: 1px solid var(--border-default, var(--dbd)); color: var(--text-tertiary, var(--dt3)); }
   .dp-btn-ghost:hover:not(:disabled) { background: var(--bg-elevated, var(--dbg3)); color: var(--text-secondary, var(--dt2)); }
-  .dp-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .dp-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .dp-btn-primary { background: #f97316; border: none; color: #fff; }
+  .dp-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .dp-btn-ghost:disabled, .dp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

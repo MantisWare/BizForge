@@ -25,7 +25,7 @@
   };
 
   const LABEL_COLORS = [
-    '#3b82f6', '#8b5cf6', 'rgba(34,197,94,0.7)', '#f59e0b', '#ec4899', '#06b6d4',
+    '#3b82f6', '#f97316', 'rgba(34,197,94,0.7)', '#f59e0b', '#ec4899', '#06b6d4',
   ];
 
   function labelColor(label: string): string {

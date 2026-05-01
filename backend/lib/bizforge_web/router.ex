@@ -228,8 +228,11 @@ defmodule BizforgeWeb.Router do
       post "/probe", GatewayController, :probe, as: :probe
     end
 
+    post "/providers/discover-models", ProviderController, :discover_models
+
     resources "/providers", ProviderController, only: [:index, :show, :create, :update, :delete] do
       post "/test", ProviderController, :test, as: :test
+      post "/discover-models", ProviderController, :discover_models, as: :discover_models
     end
 
     get "/config", ConfigController, :show

@@ -99,13 +99,13 @@
     cursor: pointer; transition: all 120ms ease; border: 1px solid var(--dbd);
     background: transparent; color: var(--dt3);
   }
-  .sk-toggle--on { background: color-mix(in srgb, #6366f1 15%, transparent); border-color: color-mix(in srgb, #6366f1 40%, transparent); color: #a5b4fc; }
-  .sk-toggle:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+  .sk-toggle--on { background: color-mix(in srgb, #f97316 15%, transparent); border-color: color-mix(in srgb, #f97316 40%, transparent); color: #fdba74; }
+  .sk-toggle:focus-visible { outline: 2px solid #f97316; outline-offset: 2px; }
   .sk-search {
     height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px;
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 180px; box-sizing: border-box;
   }
-  .sk-search:focus { outline: none; border-color: #6366f1; }
+  .sk-search:focus { outline: none; border-color: #f97316; }
   .sk-search::placeholder { color: var(--dt4); }
 </style>

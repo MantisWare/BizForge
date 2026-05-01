@@ -31,7 +31,32 @@ config :bizforge, :headless,
   pid_dir: System.get_env("BIZFORGE_PID_DIR", ".bizforge/pids"),
   log_format: System.get_env("BIZFORGE_LOG_FORMAT", "text"),
   webhook_url: System.get_env("BIZFORGE_WEBHOOK_URL"),
-  api_key: System.get_env("BIZFORGE_API_KEY")
+  api_key: System.get_env("BIZFORGE_API_KEY"),
+  max_agents:
+    (case System.get_env("BIZFORGE_MAX_AGENTS") do
+       nil -> nil
+       v -> String.to_integer(v)
+     end),
+  max_memory_mb:
+    (case System.get_env("BIZFORGE_MAX_MEMORY_MB") do
+       nil -> nil
+       v -> String.to_integer(v)
+     end),
+  max_tokens_per_hour:
+    (case System.get_env("BIZFORGE_MAX_TOKENS_PER_HOUR") do
+       nil -> nil
+       v -> String.to_integer(v)
+     end),
+  slack_webhook_url: System.get_env("BIZFORGE_SLACK_WEBHOOK_URL"),
+  email_from: System.get_env("BIZFORGE_EMAIL_FROM"),
+  email_to: System.get_env("BIZFORGE_EMAIL_TO"),
+  smtp_host: System.get_env("BIZFORGE_SMTP_HOST"),
+  smtp_port: String.to_integer(System.get_env("BIZFORGE_SMTP_PORT", "587")),
+  smtp_username: System.get_env("BIZFORGE_SMTP_USERNAME"),
+  smtp_password: System.get_env("BIZFORGE_SMTP_PASSWORD"),
+  heartbeat_url: System.get_env("BIZFORGE_HEARTBEAT_URL"),
+  tls_cert: System.get_env("BIZFORGE_TLS_CERT"),
+  tls_key: System.get_env("BIZFORGE_TLS_KEY")
 
 if System.get_env("BIZFORGE_LOG_FORMAT") == "json" do
   config :logger, :console,

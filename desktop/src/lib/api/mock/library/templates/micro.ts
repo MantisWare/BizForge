@@ -20,7 +20,7 @@ export const agents: BizforgeAgent[] = [
     config: {
       division: "core",
       reportsTo: null,
-      color: "#6366f1",
+      color: "#f97316",
       budget: 200,
       title: "Micro Agent",
       signal: "",

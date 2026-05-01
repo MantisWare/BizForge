@@ -24,7 +24,7 @@
     },
     mention: {
       path: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
-      color: '#8b5cf6',
+      color: '#f97316',
     },
     failure: {
       path: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',

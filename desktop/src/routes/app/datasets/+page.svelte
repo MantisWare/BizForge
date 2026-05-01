@@ -702,9 +702,9 @@
 }
 
 .ds-pill--active {
-  background: rgba(99,102,241,0.18);
-  border-color: rgba(99,102,241,0.4);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.18);
+  border-color: rgba(249,115,22,0.4);
+  color: #fdba74;
 }
 
 .ds-pill-count {
@@ -812,8 +812,8 @@
 }
 
 .ds-card--selected {
-  background: rgba(99,102,241,0.1);
-  border-color: rgba(99,102,241,0.35);
+  background: rgba(249,115,22,0.1);
+  border-color: rgba(249,115,22,0.35);
 }
 
 .ds-card-header {
@@ -869,10 +869,10 @@
   color: rgba(255,255,255,0.5);
 }
 
-.ds-badge--source.ds-badge--upload         { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+.ds-badge--source.ds-badge--upload         { background: rgba(249,115,22,0.15); color: #fdba74; }
 .ds-badge--source.ds-badge--api            { background: rgba(34,197,94,0.12);  color: #4ade80; }
 .ds-badge--source.ds-badge--database       { background: rgba(251,191,36,0.12); color: #fbbf24; }
-.ds-badge--source.ds-badge--agent_generated { background: rgba(168,85,247,0.15); color: #c084fc; }
+.ds-badge--source.ds-badge--agent_generated { background: rgba(249,115,22,0.15); color: #fb923c; }
 .ds-badge--source.ds-badge--stream         { background: rgba(59,130,246,0.15); color: #60a5fa; }
 
 .ds-card-desc {
@@ -933,9 +933,9 @@
 
 .ds-tag {
   font-size: 0.5625rem;
-  background: rgba(99,102,241,0.1);
-  border: 1px solid rgba(99,102,241,0.2);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.1);
+  border: 1px solid rgba(249,115,22,0.2);
+  color: #fdba74;
   border-radius: 4px;
   padding: 0.1em 0.4em;
 }
@@ -1068,7 +1068,7 @@
 .ds-kv-code {
   font-family: monospace;
   font-size: 0.6875rem;
-  color: #a5b4fc;
+  color: #fdba74;
 }
 
 .ds-detail-actions {
@@ -1152,8 +1152,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: rgba(99,102,241,0.12);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.12);
+  color: #fdba74;
   padding: 0.1em 0.4em;
   border-radius: 4px;
 }
@@ -1313,13 +1313,13 @@
 }
 
 .ds-btn--primary {
-  background: rgba(99,102,241,0.2);
-  border-color: rgba(99,102,241,0.4);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.2);
+  border-color: rgba(249,115,22,0.4);
+  color: #fdba74;
 }
 
 .ds-btn--primary:hover:not(:disabled) {
-  background: rgba(99,102,241,0.3);
+  background: rgba(249,115,22,0.3);
 }
 
 .ds-btn--danger {
@@ -1339,15 +1339,15 @@
   font-weight: 500;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid rgba(99,102,241,0.35);
-  background: rgba(99,102,241,0.12);
-  color: #a5b4fc;
+  border: 1px solid rgba(249,115,22,0.35);
+  background: rgba(249,115,22,0.12);
+  color: #fdba74;
   cursor: pointer;
   transition: background 0.12s;
 }
 
 .ds-new-btn:hover {
-  background: rgba(99,102,241,0.22);
+  background: rgba(249,115,22,0.22);
 }
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
@@ -1451,7 +1451,7 @@
 }
 
 .ds-input:focus {
-  border-color: rgba(99,102,241,0.5);
+  border-color: rgba(249,115,22,0.5);
 }
 
 .ds-textarea {

@@ -274,9 +274,9 @@
   }
 
   .gc-decompose-btn:hover:not(:disabled) {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #c4b5fd;
+    background: rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.4);
+    color: #fdba74;
   }
 
   .gc-decompose-btn:focus-visible {

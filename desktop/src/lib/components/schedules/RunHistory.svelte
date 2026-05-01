@@ -261,9 +261,9 @@
   }
 
   .rh-trigger--manual {
-    background: rgba(168, 85, 247, 0.1);
-    color: #c4b5fd;
-    border-color: rgba(168, 85, 247, 0.2);
+    background: rgba(249, 115, 22, 0.1);
+    color: #fdba74;
+    border-color: rgba(249, 115, 22, 0.2);
   }
 
   .rh-trigger--event {

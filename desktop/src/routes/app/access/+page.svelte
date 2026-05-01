@@ -289,9 +289,9 @@
 
   .ac-assign-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .ac-assign-btn:hover { background: #4f46e5; }
+  .ac-assign-btn:hover { background: #ea580c; }
 
   .ac-loading, .ac-empty {
     display: flex; flex-direction: column; align-items: center;
@@ -320,9 +320,9 @@
 
   .ac-avatar {
     width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-    background: color-mix(in srgb, #6366f1 18%, var(--dbg3));
+    background: color-mix(in srgb, #f97316 18%, var(--dbg3));
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 600; color: #a5b4fc;
+    font-size: 11px; font-weight: 600; color: #fdba74;
   }
 
   .ac-info { flex: 1; min-width: 0; }
@@ -334,7 +334,7 @@
     text-transform: capitalize; flex-shrink: 0;
   }
   .ac-role--admin { background: color-mix(in srgb, #ef4444 15%, transparent); color: #fca5a5; }
-  .ac-role--member { background: color-mix(in srgb, #6366f1 15%, transparent); color: #a5b4fc; }
+  .ac-role--member { background: color-mix(in srgb, #f97316 15%, transparent); color: #fdba74; }
   .ac-role--viewer { background: var(--dbg3); color: var(--dt3); }
 
   .ac-scope { flex-shrink: 0; }
@@ -376,7 +376,7 @@
     width: 100%; box-sizing: border-box;
   }
   .ac-select { appearance: none; cursor: pointer; }
-  .ac-input:focus { outline: none; border-color: #6366f1; }
+  .ac-input:focus { outline: none; border-color: #f97316; }
   .ac-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .ac-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .ac-btn-ghost, .ac-btn-primary {
@@ -385,7 +385,7 @@
   }
   .ac-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .ac-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .ac-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .ac-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .ac-btn-primary { background: #f97316; border: none; color: #fff; }
+  .ac-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .ac-btn-ghost:disabled, .ac-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

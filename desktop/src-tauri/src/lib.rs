@@ -1,8 +1,59 @@
 mod filesystem;
+mod mcp;
 
+use serde::{Deserialize, Serialize};
 use tauri::Manager;
 use tauri::WebviewWindowBuilder;
 use tauri::WebviewUrl;
+use tauri_plugin_store::StoreExt;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct WindowState {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    maximized: bool,
+}
+
+const WINDOW_STORE_FILE: &str = "window-state.json";
+const WINDOW_STORE_KEY: &str = "main";
+
+fn load_window_state(app: &tauri::AppHandle) -> Option<WindowState> {
+    let store = app.store(WINDOW_STORE_FILE).ok()?;
+    let val = store.get(WINDOW_STORE_KEY)?;
+    serde_json::from_value(val).ok()
+}
+
+fn save_window_state(app: &tauri::AppHandle, state: &WindowState) {
+    if let Ok(store) = app.store(WINDOW_STORE_FILE) {
+        if let Ok(val) = serde_json::to_value(state) {
+            store.set(WINDOW_STORE_KEY, val);
+        }
+    }
+}
+
+fn capture_window_state(window: &tauri::WebviewWindow) -> Option<WindowState> {
+    let pos = window.outer_position().ok()?;
+    let size = window.outer_size().ok()?;
+    let maximized = window.is_maximized().ok().unwrap_or(false);
+    Some(WindowState {
+        x: pos.x as f64,
+        y: pos.y as f64,
+        width: size.width as f64,
+        height: size.height as f64,
+        maximized,
+    })
+}
+
+fn restore_window_state(window: &tauri::WebviewWindow, state: &WindowState) {
+    use tauri::{PhysicalPosition, PhysicalSize};
+    let _ = window.set_position(PhysicalPosition::new(state.x as i32, state.y as i32));
+    let _ = window.set_size(PhysicalSize::new(state.width as u32, state.height as u32));
+    if state.maximized {
+        let _ = window.maximize();
+    }
+}
 
 #[tauri::command]
 fn close_splash(app: tauri::AppHandle) {
@@ -66,8 +117,43 @@ pub fn run() {
             filesystem::detect_adapters,
             filesystem::install_adapter,
             filesystem::setup_osa,
+            mcp::mcp_status,
+            mcp::mcp_client_config,
+            mcp::mcp_build,
         ])
-        .setup(|_app| {
+        .setup(|app| {
+            // Restore saved window position/size before the window becomes visible
+            if let Some(main) = app.get_webview_window("main") {
+                if let Some(state) = load_window_state(&app.handle().clone()) {
+                    restore_window_state(&main, &state);
+                }
+
+                // Listen for move, resize, and close events to persist window state
+                let app_handle = app.handle().clone();
+                main.on_window_event(move |event| {
+                    use tauri::WindowEvent;
+                    match event {
+                        WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
+                            if let Some(win) = app_handle.get_webview_window("main") {
+                                if win.is_visible().unwrap_or(false) {
+                                    if let Some(state) = capture_window_state(&win) {
+                                        save_window_state(&app_handle, &state);
+                                    }
+                                }
+                            }
+                        }
+                        WindowEvent::CloseRequested { .. } => {
+                            if let Some(win) = app_handle.get_webview_window("main") {
+                                if let Some(state) = capture_window_state(&win) {
+                                    save_window_state(&app_handle, &state);
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                });
+            }
+
             Ok(())
         })
         .run(tauri::generate_context!())

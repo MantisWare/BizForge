@@ -205,9 +205,9 @@
 <style>
   .wh-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .wh-create-btn:hover { background: #4f46e5; }
+  .wh-create-btn:hover { background: #ea580c; }
 
   .wh-loading, .wh-empty, .wh-error {
     display: flex; flex-direction: column; align-items: center;
@@ -260,7 +260,7 @@
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box;
   }
-  .wh-input:focus { outline: none; border-color: #6366f1; }
+  .wh-input:focus { outline: none; border-color: #f97316; }
   .wh-input--mono { font-family: var(--font-mono); font-size: 11px; }
   .wh-fieldset { border: none; padding: 0; margin: 0; }
   .wh-checkboxes { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
@@ -268,7 +268,7 @@
     display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dt);
     cursor: pointer;
   }
-  .wh-checkbox-label input[type="checkbox"] { accent-color: #6366f1; }
+  .wh-checkbox-label input[type="checkbox"] { accent-color: #f97316; }
   .wh-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .wh-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .wh-btn-ghost, .wh-btn-primary {
@@ -277,7 +277,7 @@
   }
   .wh-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .wh-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .wh-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .wh-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .wh-btn-primary { background: #f97316; border: none; color: #fff; }
+  .wh-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .wh-btn-ghost:disabled, .wh-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

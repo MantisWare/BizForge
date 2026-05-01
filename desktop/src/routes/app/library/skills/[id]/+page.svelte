@@ -27,7 +27,7 @@
 
   function categoryColor(cat: string): string {
     const map: Record<string, string> = {
-      'ai-patterns': '#a78bfa',
+      'ai-patterns': '#fb923c',
       'development': '#60a5fa',
       'communication': 'rgba(52, 211, 153, 0.6)',
       'analysis': '#fb923c',
@@ -37,9 +37,9 @@
       'media': '#facc15',
       'finance': 'rgba(34, 197, 94, 0.6)',
       'productivity': '#20d9d2',
-      'processing': '#818cf8',
+      'processing': '#fb923c',
       'search': '#fb7185',
-      'strategy': '#c084fc',
+      'strategy': '#fb923c',
       'workflow': '#22d3ee',
       'workspace': '#67e8f9',
       'governance': '#fda4af',

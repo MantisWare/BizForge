@@ -64,7 +64,7 @@
     backlog: 'Backlog', todo: 'Todo', in_progress: 'In Progress', in_review: 'In Review', done: 'Done',
   };
 
-  const LABEL_COLORS = ['#3b82f6','#8b5cf6','rgba(34,197,94,0.7)','#f59e0b','#ec4899','#06b6d4'];
+  const LABEL_COLORS = ['#3b82f6','#f97316','rgba(34,197,94,0.7)','#f59e0b','#ec4899','#06b6d4'];
   function labelColor(label: string): string {
     let hash = 0;
     for (let i = 0; i < label.length; i++) hash = (hash * 31 + label.charCodeAt(i)) | 0;

@@ -234,9 +234,9 @@
   }
 
   .lac-source-badge--official {
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: rgba(249, 115, 22, 0.15);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.25);
   }
 
   .lac-source-badge--community {

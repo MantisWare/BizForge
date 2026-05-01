@@ -78,7 +78,7 @@ export const FEATURED_PROVIDERS: readonly ProviderCatalogEntry[] = [
     description: "Strong reasoning, competitive pricing",
     category: "cloud",
     defaultEndpoint: "https://api.deepseek.com",
-    defaultModels: ["deepseek-chat", "deepseek-coder"],
+    defaultModels: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat"],
   },
 ] as const;
 
@@ -95,21 +95,21 @@ export const MORE_PROVIDERS: readonly ProviderCatalogEntry[] = [
     name: "Cohere",
     description: "Enterprise NLP and embeddings",
     category: "cloud",
-    defaultEndpoint: "https://api.cohere.ai",
+    defaultEndpoint: "https://api.cohere.com",
   },
   {
     slug: "together",
     name: "Together AI",
     description: "Open-source models at scale",
     category: "cloud",
-    defaultEndpoint: "https://api.together.xyz",
+    defaultEndpoint: "https://api.together.ai",
   },
   {
     slug: "fireworks",
     name: "Fireworks AI",
     description: "Fast open-source model inference",
     category: "cloud",
-    defaultEndpoint: "https://api.fireworks.ai",
+    defaultEndpoint: "https://api.fireworks.ai/inference",
   },
   {
     slug: "perplexity",

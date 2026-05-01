@@ -148,7 +148,7 @@
     transition: all 120ms ease;
   }
   .vo-mode-btn--active {
-    background: var(--accent-primary, #a78bfa);
+    background: var(--accent-primary, #fb923c);
     color: white;
   }
   .vo-mode-btn:hover:not(.vo-mode-btn--active) {

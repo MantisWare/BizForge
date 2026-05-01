@@ -80,11 +80,16 @@ class HierarchyStore {
   async fetchTree(organizationId: string): Promise<void> {
     this.loading = true;
     try {
-      this.tree = await hierarchyApi.get(organizationId);
+      const raw = await hierarchyApi.get(organizationId);
+      this.tree = {
+        ...raw,
+        divisions: Array.isArray(raw?.divisions) ? raw.divisions : [],
+      };
       this.error = null;
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
+      this.tree = null;
       if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
         toastStore.error("Failed to load hierarchy", msg);
       }

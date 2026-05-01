@@ -12,9 +12,10 @@
   import BudgetSettings from './tabs/BudgetSettings.svelte';
   import NotificationsSettings from './tabs/NotificationsSettings.svelte';
   import IntegrationsSettings from './tabs/IntegrationsSettings.svelte';
+  import McpSettings from './tabs/McpSettings.svelte';
   import AdvancedSettings from './tabs/AdvancedSettings.svelte';
 
-  type TabId = 'general' | 'providers' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'advanced';
+  type TabId = 'general' | 'providers' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'mcp' | 'advanced';
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'general',       label: 'General' },
@@ -24,6 +25,7 @@
     { id: 'budget',        label: 'Budget' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'integrations',  label: 'Integrations' },
+    { id: 'mcp',           label: 'MCP Server' },
     { id: 'advanced',      label: 'Advanced' },
   ];
 
@@ -76,6 +78,8 @@
         <NotificationsSettings />
       {:else if activeTab === 'integrations'}
         <IntegrationsSettings />
+      {:else if activeTab === 'mcp'}
+        <McpSettings />
       {:else if activeTab === 'advanced'}
         <AdvancedSettings />
       {/if}

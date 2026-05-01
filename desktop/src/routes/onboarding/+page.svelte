@@ -524,6 +524,20 @@
 </script>
 
 <div class="ob-root">
+  <!-- Close button -->
+  {#if typeof localStorage !== 'undefined' && localStorage.getItem('bizforge-onboarding-complete') === 'true'}
+    <button
+      class="ob-close"
+      onclick={() => goto('/app')}
+      aria-label="Close wizard and return to app"
+      title="Close"
+    >
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="16" height="16">
+        <path d="M4 4l8 8M12 4l-8 8"/>
+      </svg>
+    </button>
+  {/if}
+
   <!-- Progress dots -->
   <div class="ob-dots">
     {#each { length: 7 } as _, i}
@@ -613,6 +627,7 @@
   /* ─── Root & layout ─────────────────────────────────────────────────── */
 
   .ob-root {
+    position: relative;
     min-height: calc(100vh - 24px);
     display: flex;
     flex-direction: column;
@@ -622,6 +637,34 @@
     background: #0a0a0a;
     color: #f0f0f0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .ob-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #a1a1a6;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+    z-index: 10;
+  }
+
+  .ob-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f0f0f0;
+  }
+
+  .ob-close:active {
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .ob-footer {

@@ -92,6 +92,13 @@ defmodule Bizforge.CLI.Run do
       IO.puts("Running in foreground. Press Ctrl+C to stop.")
       IO.puts("")
 
+      if opts[:monitor] do
+        Task.start(fn ->
+          Process.sleep(5_000)
+          Bizforge.CLI.Monitor.run(["--tui"])
+        end)
+      end
+
       receive do
         :never -> :ok
       end

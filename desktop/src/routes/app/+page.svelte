@@ -6,7 +6,6 @@
   import RecentActivityFeed from '$lib/components/dashboard/RecentActivityFeed.svelte';
   import FinanceSummary from '$lib/components/dashboard/FinanceSummary.svelte';
   import QuickActions from '$lib/components/dashboard/QuickActions.svelte';
-  import SystemHealthBar from '$lib/components/dashboard/SystemHealthBar.svelte';
   import { dashboardStore } from '$lib/stores/dashboard.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
 
@@ -32,7 +31,6 @@
     <div class="dashboard-runs"><LiveRunsWidget /></div>
     <div class="dashboard-activity"><RecentActivityFeed /></div>
     <div class="dashboard-finance"><FinanceSummary /></div>
-    <div class="dashboard-health"><SystemHealthBar /></div>
   </div>
 </PageShell>
 
@@ -44,13 +42,11 @@
       "top top"
       "quick quick"
       "runs activity"
-      "finance finance"
-      "health health";
+      "finance finance";
   }
   .dashboard-top { grid-area: top; }
   .dashboard-quick { grid-area: quick; }
   .dashboard-runs { grid-area: runs; }
   .dashboard-activity { grid-area: activity; }
   .dashboard-finance { grid-area: finance; }
-  .dashboard-health { grid-area: health; }
 </style>

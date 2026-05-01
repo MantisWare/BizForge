@@ -407,27 +407,17 @@
     padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: 500;
     cursor: pointer; border: none; transition: all 150ms;
     display: inline-flex; align-items: center; gap: 4px;
-    position: relative; overflow: hidden;
   }
   .adp-btn--primary {
-    background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.1) inset, 0 4px 16px 0 rgba(0, 0, 0, 0.3);
-  }
-  .adp-btn--primary::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
-    border-radius: 9999px 9999px 0 0;
-    pointer-events: none;
   }
   .adp-btn--primary:hover {
-    transform: translateY(-1px);
-    background: linear-gradient(180deg, #2a2a2a 0%, #0a0a0a 100%);
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
   }
-  .adp-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .adp-btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .adp-btn--secondary {
     background: transparent; color: var(--dt2, #aaa);
     border: 1px solid var(--dbd, rgba(255,255,255,0.1));

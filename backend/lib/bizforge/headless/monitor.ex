@@ -53,7 +53,20 @@ defmodule Bizforge.Headless.Monitor do
     pid_file = Path.join(pid_dir, "#{workspace_name}.pid")
     File.write!(pid_file, to_string(:os.getpid()))
 
+    meta_file = Path.join(pid_dir, "#{workspace_name}.meta.json")
+
+    meta = %{
+      health_port: health_port,
+      workspace_path: workspace_path,
+      workspace_name: workspace_name,
+      started_at: DateTime.utc_now() |> DateTime.to_iso8601(),
+      pid: :os.getpid() |> to_string()
+    }
+
+    File.write!(meta_file, Jason.encode!(meta, pretty: true))
+
     Logger.info("[Headless.Monitor] PID file written: #{pid_file}")
+    Logger.info("[Headless.Monitor] Meta file written: #{meta_file}")
     Logger.info("[Headless.Monitor] Workspace: #{workspace_name}")
 
     :os.set_signal(:sigterm, :handle)
@@ -63,6 +76,7 @@ defmodule Bizforge.Headless.Monitor do
 
     state = %{
       pid_file: pid_file,
+      meta_file: meta_file,
       workspace_name: workspace_name,
       workspace_path: workspace_path,
       health_port: health_port,
@@ -150,6 +164,10 @@ defmodule Bizforge.Headless.Monitor do
     if File.exists?(state.pid_file) do
       File.rm!(state.pid_file)
       Logger.info("[Headless.Monitor] PID file removed: #{state.pid_file}")
+    end
+
+    if File.exists?(state.meta_file) do
+      File.rm!(state.meta_file)
     end
 
     Logger.info("[Headless.Monitor] Graceful shutdown complete.")

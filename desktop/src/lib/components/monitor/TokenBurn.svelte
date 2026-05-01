@@ -31,7 +31,7 @@
     <span class="burn-val">{formatCost(weekCost)}</span>
   </div>
   <div class="burn-row">
-    <span class="burn-dot" style="background: #8b5cf6;"></span>
+    <span class="burn-dot" style="background: #f97316;"></span>
     <span class="burn-metric">Cache Savings</span>
     <span class="burn-val">{formatCost(cacheSavings)}</span>
   </div>

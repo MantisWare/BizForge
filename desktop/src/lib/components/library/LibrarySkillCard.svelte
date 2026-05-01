@@ -180,11 +180,11 @@
 
   /* Category tints */
   .lsc-cat--development  { background: rgba(59, 130, 246, 0.10); color: #7ab3f8; border-color: rgba(59, 130, 246, 0.18); }
-  .lsc-cat--ai-patterns  { background: rgba(168, 85, 247, 0.10); color: #c084fc; border-color: rgba(168, 85, 247, 0.18); }
+  .lsc-cat--ai-patterns  { background: rgba(249, 115, 22, 0.10); color: #fb923c; border-color: rgba(249, 115, 22, 0.18); }
   .lsc-cat--communication{ background: rgba(34, 197, 94, 0.08);  color: rgba(34, 197, 94, 0.6); border-color: rgba(34, 197, 94, 0.15); }
   .lsc-cat--analysis     { background: rgba(6, 182, 212, 0.10);  color: #22d3ee; border-color: rgba(6, 182, 212, 0.18); }
   .lsc-cat--automation   { background: rgba(249, 115, 22, 0.10); color: #fb923c; border-color: rgba(249, 115, 22, 0.18); }
-  .lsc-cat--integration  { background: rgba(99, 102, 241, 0.10); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.18); }
+  .lsc-cat--integration  { background: rgba(249, 115, 22, 0.10); color: #fdba74; border-color: rgba(249, 115, 22, 0.18); }
   .lsc-cat--security     { background: rgba(239, 68, 68, 0.10);  color: #f87171; border-color: rgba(239, 68, 68, 0.18); }
   .lsc-cat--media        { background: rgba(236, 72, 153, 0.10); color: #f472b6; border-color: rgba(236, 72, 153, 0.18); }
   .lsc-cat--finance      { background: rgba(234, 179, 8, 0.10);  color: #facc15; border-color: rgba(234, 179, 8, 0.18); }
@@ -205,9 +205,9 @@
   }
 
   .lsc-source--official {
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: rgba(249, 115, 22, 0.15);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.25);
   }
 
   .lsc-source--community {

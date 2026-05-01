@@ -129,7 +129,7 @@
   }
 
   .dot-mock {
-    background: #a855f7;
+    background: #f97316;
     animation: csb-pulse 2s ease-in-out infinite;
   }
 

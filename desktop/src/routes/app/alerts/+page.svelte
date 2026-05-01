@@ -232,9 +232,9 @@
 <style>
   .al-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .al-create-btn:hover { background: #4f46e5; }
+  .al-create-btn:hover { background: #ea580c; }
 
   .al-loading, .al-empty, .al-error {
     display: flex; flex-direction: column; align-items: center;
@@ -280,13 +280,13 @@
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box;
   }
-  .al-input:focus, .al-select:focus { outline: none; border-color: #6366f1; }
+  .al-input:focus, .al-select:focus { outline: none; border-color: #f97316; }
   .al-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .al-checkbox-label {
     display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dt);
     cursor: pointer;
   }
-  .al-checkbox-label input[type="checkbox"] { accent-color: #6366f1; }
+  .al-checkbox-label input[type="checkbox"] { accent-color: #f97316; }
   .al-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .al-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .al-btn-ghost, .al-btn-primary {
@@ -295,7 +295,7 @@
   }
   .al-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .al-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .al-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .al-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .al-btn-primary { background: #f97316; border: none; color: #fff; }
+  .al-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .al-btn-ghost:disabled, .al-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

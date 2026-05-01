@@ -41,7 +41,7 @@ const TIME_COLORS: Record<
     ambient: "#f5dcc0",
     overlay: "#fbb98a",
     overlayAlpha: 0.05,
-    wallColor: "#5a5078",
+    wallColor: "#78583a",
     voidColor: "#e8d8c0",
   },
   day: {
@@ -285,7 +285,7 @@ export function renderOffice(
         // Selection/hover glow
         if (isSelected || isHovered) {
           c.save();
-          c.shadowColor = isSelected ? "#a78bfa" : "#c4b5fd";
+          c.shadowColor = isSelected ? "#fb923c" : "#fdba74";
           c.shadowBlur = 8 * zoom;
           c.drawImage(spriteCanvas, px + offX, py + offY);
           c.restore();
@@ -339,7 +339,7 @@ export function renderOffice(
         );
         c.fill();
 
-        c.fillStyle = isSelected ? "#c4b5fd" : "#d0d4e0";
+        c.fillStyle = isSelected ? "#fdba74" : "#d0d4e0";
         c.fillText(labelText, labelX, labelY - 1 * zoom);
         c.textAlign = "left";
 
@@ -361,7 +361,7 @@ export function renderOffice(
         if (char.state === CharacterState.SLEEP) {
           const zFontSize = Math.max(6, 7 * zoom);
           c.font = `bold ${zFontSize}px monospace`;
-          c.fillStyle = "#c4b5fd";
+          c.fillStyle = "#fdba74";
           const zOff = Math.sin(now * 0.002) * 3 * zoom;
           c.globalAlpha = 0.6 + Math.sin(now * 0.003) * 0.3;
           c.fillText("z", px + ts - 2 * zoom, py + offY - 2 * zoom + zOff);
@@ -426,7 +426,7 @@ export function renderMinimap(
       room.width * scale,
       room.height * scale,
     );
-    ctx.strokeStyle = "#5a5078";
+    ctx.strokeStyle = "#78583a";
     ctx.lineWidth = 1;
     ctx.strokeRect(
       room.x * scale,
@@ -464,7 +464,7 @@ export function renderMinimap(
   ctx.globalAlpha = 1.0;
 
   // Border
-  ctx.strokeStyle = "#5a5078";
+  ctx.strokeStyle = "#78583a";
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, minimapWidth, minimapHeight);
 }
@@ -495,7 +495,7 @@ function drawSpeechBubble(
   ctx.fill();
 
   // Bubble border
-  ctx.strokeStyle = "rgba(167, 139, 250, 0.3)";
+  ctx.strokeStyle = "rgba(251, 146, 60, 0.3)";
   ctx.lineWidth = zoom;
   ctx.beginPath();
   ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 4 * zoom);

@@ -470,11 +470,11 @@
     background: rgba(255,255,255,0.04);
   }
   .ch-conv-item--active {
-    background: rgba(99,102,241,0.12);
-    border-left: 2px solid var(--accent, #6366f1);
+    background: rgba(249,115,22,0.12);
+    border-left: 2px solid var(--accent, #f97316);
   }
   .ch-conv-item--active:hover {
-    background: rgba(99,102,241,0.16);
+    background: rgba(249,115,22,0.16);
   }
   .ch-conv-item--archived {
     opacity: 0.55;
@@ -685,7 +685,7 @@
   }
 
   .ch-msg-bubble--user {
-    background: var(--accent, #6366f1);
+    background: var(--accent, #f97316);
     color: #fff;
     border-bottom-right-radius: 4px;
   }
@@ -779,7 +779,7 @@
     transition: border-color 0.15s;
   }
   .ch-input-wrap:focus-within {
-    border-color: var(--accent, #6366f1);
+    border-color: var(--accent, #f97316);
   }
 
   .ch-textarea {
@@ -813,7 +813,7 @@
     justify-content: center;
     border-radius: 8px;
     border: none;
-    background: var(--accent, #6366f1);
+    background: var(--accent, #f97316);
     color: #fff;
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
@@ -849,9 +849,9 @@
   }
 
   .ch-btn--primary {
-    background: var(--accent, #6366f1);
+    background: var(--accent, #f97316);
     color: #fff;
-    border-color: var(--accent, #6366f1);
+    border-color: var(--accent, #f97316);
   }
   .ch-btn--primary:hover:not(:disabled) { background: #5558e8; }
   .ch-btn--primary:disabled { opacity: 0.45; cursor: not-allowed; }

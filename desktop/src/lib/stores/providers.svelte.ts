@@ -148,6 +148,52 @@ class ProvidersStore {
   getById(id: string): AIProvider | null {
     return this.providers.find((p) => p.id === id) ?? null;
   }
+
+  /**
+   * Fetch available models from a provider endpoint via the backend proxy.
+   * Avoids CORS issues with cloud providers.
+   */
+  async fetchModelsFromEndpoint(
+    endpoint: string,
+    apiKey?: string,
+    slug?: string,
+  ): Promise<{ models: string[]; error?: string }> {
+    const result = await providersApi.fetchModels(endpoint, apiKey, slug);
+    if (result.error !== undefined) {
+      toastStore.error("Failed to fetch models", result.error);
+    } else if (result.models.length > 0) {
+      toastStore.success(
+        "Models retrieved",
+        `${result.models.length} model${result.models.length !== 1 ? "s" : ""} available`,
+      );
+    } else {
+      toastStore.error("No models found", "The provider returned an empty model list");
+    }
+    return result;
+  }
+
+  /**
+   * Fetch models for an already-saved provider (by id). The backend reads the
+   * stored API key from the database. Updates the provider model list in-place.
+   */
+  async fetchModelsForProvider(id: string): Promise<string[]> {
+    const result = await providersApi.fetchModelsById(id);
+    if (result.error !== undefined) {
+      toastStore.error("Failed to fetch models", result.error);
+    } else if (result.models.length > 0) {
+      toastStore.success(
+        "Models retrieved",
+        `${result.models.length} model${result.models.length !== 1 ? "s" : ""} available`,
+      );
+      this.providers = this.providers.map((p) =>
+        p.id === id ? { ...p, models: result.models } : p,
+      );
+    } else {
+      toastStore.error("No models found", "The provider returned an empty model list");
+    }
+
+    return result.models;
+  }
 }
 
 export const providersStore = new ProvidersStore();

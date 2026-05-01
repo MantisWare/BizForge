@@ -301,8 +301,8 @@
   }
 
   .mel-ns--purple {
-    background: rgba(192, 132, 252, 0.15);
-    color: #d8b4fe;
+    background: rgba(253, 186, 116, 0.15);
+    color: #fdba74;
   }
 
   .mel-ns--teal {

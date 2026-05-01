@@ -57,20 +57,20 @@
 <style>
   .tb-wrap {
     border-radius: var(--radius-md);
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.2);
     overflow: hidden;
     margin: 4px 0 8px;
   }
 
   .tb-wrap--streaming {
-    border-color: rgba(139, 92, 246, 0.35);
+    border-color: rgba(249, 115, 22, 0.35);
     animation: tb-pulse 2s ease-in-out infinite;
   }
 
   @keyframes tb-pulse {
-    0%, 100% { border-color: rgba(139, 92, 246, 0.2); }
-    50%       { border-color: rgba(139, 92, 246, 0.45); }
+    0%, 100% { border-color: rgba(249, 115, 22, 0.2); }
+    50%       { border-color: rgba(249, 115, 22, 0.45); }
   }
 
   .tb-toggle {
@@ -83,23 +83,23 @@
     border: none;
     cursor: pointer;
     text-align: left;
-    color: #a78bfa;
+    color: #fb923c;
   }
 
   .tb-toggle:hover {
-    background: rgba(139, 92, 246, 0.06);
+    background: rgba(249, 115, 22, 0.06);
   }
 
   .tb-icon {
     flex-shrink: 0;
-    color: #a78bfa;
+    color: #fb923c;
   }
 
   .tb-label {
     font-family: var(--font-sans);
     font-size: 12px;
     font-weight: 500;
-    color: #a78bfa;
+    color: #fb923c;
     letter-spacing: 0.02em;
     flex: 1;
   }
@@ -107,7 +107,7 @@
   .tb-chevron {
     flex-shrink: 0;
     transition: transform 0.2s ease;
-    color: #a78bfa;
+    color: #fb923c;
     opacity: 0.7;
   }
 
@@ -124,7 +124,7 @@
     font-family: var(--font-sans);
     font-size: 12px;
     line-height: 1.65;
-    color: rgba(167, 139, 250, 0.85);
+    color: rgba(251, 146, 60, 0.85);
     white-space: pre-wrap;
     word-break: break-word;
   }
@@ -135,7 +135,7 @@
     font-family: var(--font-sans);
     font-size: 12px;
     line-height: 1.5;
-    color: rgba(167, 139, 250, 0.6);
+    color: rgba(251, 146, 60, 0.6);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

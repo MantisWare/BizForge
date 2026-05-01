@@ -232,9 +232,9 @@
 <style>
   .ew-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .ew-create-btn:hover { background: #4f46e5; }
+  .ew-create-btn:hover { background: #ea580c; }
 
   .ew-loading, .ew-empty {
     display: flex; flex-direction: column; align-items: center;
@@ -272,8 +272,8 @@
   }
   .ew-card-icon {
     width: 28px; height: 28px; border-radius: 6px;
-    background: color-mix(in srgb, #6366f1 12%, var(--dbg3));
-    display: flex; align-items: center; justify-content: center; color: #a5b4fc;
+    background: color-mix(in srgb, #f97316 12%, var(--dbg3));
+    display: flex; align-items: center; justify-content: center; color: #fdba74;
   }
 
   .ew-status {
@@ -339,7 +339,7 @@
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box;
   }
-  .ew-input:focus { outline: none; border-color: #6366f1; }
+  .ew-input:focus { outline: none; border-color: #f97316; }
   .ew-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .ew-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .ew-btn-ghost, .ew-btn-primary {
@@ -348,7 +348,7 @@
   }
   .ew-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .ew-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .ew-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .ew-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .ew-btn-primary { background: #f97316; border: none; color: #fff; }
+  .ew-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .ew-btn-ghost:disabled, .ew-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

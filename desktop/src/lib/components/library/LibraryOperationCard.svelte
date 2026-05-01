@@ -181,7 +181,7 @@
   .loc-cat--engineering  { background: rgba(59, 130, 246, 0.12); color: #7ab3f8; border-color: rgba(59, 130, 246, 0.2); }
   .loc-cat--sales        { background: rgba(34, 197, 94, 0.08);  color: rgba(34, 197, 94, 0.6); border-color: rgba(34, 197, 94, 0.15); }
   .loc-cat--marketing    { background: rgba(249, 115, 22, 0.12); color: #fb923c; border-color: rgba(249, 115, 22, 0.2); }
-  .loc-cat--productivity { background: rgba(168, 85, 247, 0.12); color: #c084fc; border-color: rgba(168, 85, 247, 0.2); }
+  .loc-cat--productivity { background: rgba(249, 115, 22, 0.12); color: #fb923c; border-color: rgba(249, 115, 22, 0.2); }
   .loc-cat--executive    { background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border-color: rgba(255, 255, 255, 0.15); }
 
   .loc-source-badge {
@@ -195,9 +195,9 @@
   }
 
   .loc-source--official {
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: rgba(249, 115, 22, 0.15);
+    color: #fdba74;
+    border: 1px solid rgba(249, 115, 22, 0.25);
   }
 
   .loc-source--community {

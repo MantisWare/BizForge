@@ -4,11 +4,11 @@
   import { themeStore, type ThemeMode } from '$lib/stores/theme.svelte';
 
   const THEMES: { id: ThemeMode; label: string; bg: string; accent: string; surface: string }[] = [
-    { id: 'dark',   label: 'Dark',   bg: '#0f1117',              accent: '#a78bfa', surface: '#1e2433' },
-    { id: 'glass',  label: 'Glass',  bg: 'rgba(15,17,23,0.55)',  accent: '#a78bfa', surface: 'rgba(167,139,250,0.08)' },
-    { id: 'color',  label: 'Color',  bg: '#0c0a1a',              accent: '#a78bfa', surface: 'rgba(167,139,250,0.10)' },
-    { id: 'light',  label: 'Light',  bg: '#fefdfb',              accent: '#8b5cf6', surface: '#f8f7f4' },
-    { id: 'system', label: 'System', bg: 'linear-gradient(135deg,#0f1117 50%,#fefdfb 50%)', accent: '#a78bfa', surface: '#8a94a8' },
+    { id: 'dark',   label: 'Dark',   bg: '#0f1117',              accent: '#fb923c', surface: '#1e2433' },
+    { id: 'glass',  label: 'Glass',  bg: 'rgba(15,17,23,0.55)',  accent: '#fb923c', surface: 'rgba(251,146,60,0.08)' },
+    { id: 'color',  label: 'Color',  bg: '#0c0a1a',              accent: '#fb923c', surface: 'rgba(251,146,60,0.10)' },
+    { id: 'light',  label: 'Light',  bg: '#fefdfb',              accent: '#f97316', surface: '#f8f7f4' },
+    { id: 'system', label: 'System', bg: 'linear-gradient(135deg,#0f1117 50%,#fefdfb 50%)', accent: '#fb923c', surface: '#8a94a8' },
   ];
 
   function handleThemeSelect(mode: ThemeMode) {

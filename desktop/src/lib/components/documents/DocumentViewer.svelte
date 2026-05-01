@@ -249,7 +249,7 @@
   :global(.dv-markdown p) { margin: 0 0 12px; }
   :global(.dv-markdown strong) { color: var(--text-primary); font-weight: 600; }
   :global(.dv-markdown em) { font-style: italic; }
-  :global(.dv-markdown code) { font-family: var(--font-mono, monospace); font-size: 12px; background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 3px; color: #c4b5fd; }
+  :global(.dv-markdown code) { font-family: var(--font-mono, monospace); font-size: 12px; background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 3px; color: #fdba74; }
   :global(.dv-markdown blockquote) { border-left: 3px solid var(--accent-primary); padding-left: 12px; color: var(--text-tertiary); margin: 12px 0; }
   :global(.dv-markdown hr) { border: none; border-top: 1px solid var(--border-default); margin: 20px 0; }
   :global(.dv-markdown li) { list-style: disc; margin-left: 20px; margin-bottom: 4px; }

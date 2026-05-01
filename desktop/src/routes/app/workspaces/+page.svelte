@@ -102,7 +102,7 @@
     background: var(--dbg2); border: 1px solid var(--dbd); border-radius: 10px;
     transition: border-color 120ms ease;
   }
-  .ws-card--active { border-color: #6366f1; background: rgba(99, 102, 241, 0.06); }
+  .ws-card--active { border-color: #f97316; background: rgba(249, 115, 22, 0.06); }
   .ws-card:hover { border-color: var(--dbd2); }
   .ws-card { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
   .ws-header { display: flex; flex-direction: column; gap: 4px; }
@@ -110,7 +110,7 @@
   .ws-name { font-size: 15px; font-weight: 600; color: var(--dt); }
   .ws-active-badge {
     font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
-    background: rgba(99, 102, 241, 0.2); color: #a5b4fc;
+    background: rgba(249, 115, 22, 0.2); color: #fdba74;
   }
   .ws-status {
     font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px;
@@ -133,7 +133,7 @@
     border: 1px solid var(--dbd); background: var(--dbg3); color: var(--dt2);
     cursor: pointer; transition: all 120ms ease;
   }
-  .ws-activate-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+  .ws-activate-btn:hover { border-color: #f97316; color: #fdba74; }
   .ws-delete-btn {
     padding: 5px 12px; border-radius: 6px; font-size: 12px;
     border: 1px solid rgba(239, 68, 68, 0.2); background: transparent; color: var(--dt4);

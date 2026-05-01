@@ -23,7 +23,14 @@
 </script>
 
 <section class="hap-section">
-  <h3 class="hap-section-title">Adapter</h3>
+  <h3 class="hap-section-title">
+    Adapter
+    <span class="hap-info" title="The execution runtime that runs the agent on your system. The Provider gives the brain (LLM), the Adapter gives the body (how it actually executes tasks, writes files, runs commands).">
+      <svg class="hap-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 5a.75.75 0 1 1 0-1.5A.75.75 0 0 1 8 5Zm-1 2.25a.25.25 0 0 1 .25-.25h.5a.75.75 0 0 1 .75.75V11a.25.25 0 0 1-.25.25h-.5A.75.75 0 0 1 7 10.5V7.25Z"/>
+      </svg>
+    </span>
+  </h3>
   <div class="hap-grid" role="radiogroup" aria-label="Select adapter">
     {#each ADAPTERS as a}
       <label
@@ -55,6 +62,9 @@
   }
 
   .hap-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -63,6 +73,25 @@
     margin: 0;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-default);
+  }
+
+  .hap-info {
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+  }
+
+  .hap-info-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: opacity 150ms ease, color 150ms ease;
+  }
+
+  .hap-info:hover .hap-info-icon {
+    opacity: 1;
+    color: var(--accent-primary);
   }
 
   .hap-grid {

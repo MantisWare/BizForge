@@ -423,7 +423,7 @@
   }
 
   .so-token-dot--input  { background: #60a5fa; }
-  .so-token-dot--output { background: #a78bfa; }
+  .so-token-dot--output { background: #fb923c; }
   .so-token-dot--cache  { background: rgba(34, 197, 94, 0.6); }
 
   .so-token-key {
@@ -453,7 +453,7 @@
   }
 
   .so-token-seg--input  { background: #60a5fa; }
-  .so-token-seg--output { background: #a78bfa; }
+  .so-token-seg--output { background: #fb923c; }
   .so-token-seg--cache  { background: rgba(34, 197, 94, 0.6); }
 
   .so-token-bar-legend {
@@ -477,7 +477,7 @@
   }
 
   .so-legend-dot--input  { background: #60a5fa; }
-  .so-legend-dot--output { background: #a78bfa; }
+  .so-legend-dot--output { background: #fb923c; }
   .so-legend-dot--cache  { background: rgba(34, 197, 94, 0.6); }
 
   /* Actions */

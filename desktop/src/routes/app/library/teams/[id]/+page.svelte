@@ -49,7 +49,7 @@
     switch (size.toLowerCase()) {
       case 'small':  return 'rgba(34, 197, 94, 0.6)';
       case 'medium': return '#60a5fa';
-      case 'large':  return '#a78bfa';
+      case 'large':  return '#fb923c';
       case 'xl':
       case 'enterprise': return '#f472b6';
       default: return '#94a3b8';

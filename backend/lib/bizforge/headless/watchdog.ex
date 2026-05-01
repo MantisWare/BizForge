@@ -57,6 +57,13 @@ defmodule Bizforge.Headless.Watchdog do
       )
 
       agent |> change(status: "idle") |> Repo.update()
+
+      Bizforge.Headless.Notifier.notify("agent.stuck_recovered", %{
+        agent_id: agent.id,
+        agent_name: agent.name,
+        stuck_seconds: @stuck_threshold_seconds,
+        action: "reset_to_idle"
+      })
     end)
 
     state
@@ -80,8 +87,24 @@ defmodule Bizforge.Headless.Watchdog do
           )
 
           agent |> change(status: "idle") |> Repo.update()
+
+          Bizforge.Headless.Notifier.notify("agent.recovery_attempt", %{
+            agent_id: agent.id,
+            agent_name: agent.name,
+            attempt: count,
+            backoff_seconds: backoff
+          })
+
           Map.put(counts, agent.id, count)
         else
+          if count > 10 do
+            Bizforge.Headless.Notifier.notify("agent.recovery_exhausted", %{
+              agent_id: agent.id,
+              agent_name: agent.name,
+              attempts: count
+            })
+          end
+
           Logger.debug(
             "[Headless.Watchdog] Agent '#{agent.name}' in backoff (attempt #{count}, #{backoff}s)"
           )

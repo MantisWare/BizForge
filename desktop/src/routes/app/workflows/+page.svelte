@@ -553,8 +553,8 @@
 }
 
 .wf-card--selected {
-  background: var(--color-surface-active, rgba(99,102,241,0.12));
-  border-color: rgba(99,102,241,0.4);
+  background: var(--color-surface-active, rgba(249,115,22,0.12));
+  border-color: rgba(249,115,22,0.4);
 }
 
 .wf-card-header {
@@ -714,13 +714,13 @@
 }
 
 .wf-btn--primary {
-  background: rgba(99,102,241,0.2);
-  border-color: rgba(99,102,241,0.4);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.2);
+  border-color: rgba(249,115,22,0.4);
+  color: #fdba74;
 }
 
 .wf-btn--primary:hover:not(:disabled) {
-  background: rgba(99,102,241,0.3);
+  background: rgba(249,115,22,0.3);
 }
 
 .wf-btn--danger {
@@ -740,15 +740,15 @@
   font-weight: 500;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid rgba(99,102,241,0.35);
-  background: rgba(99,102,241,0.12);
-  color: #a5b4fc;
+  border: 1px solid rgba(249,115,22,0.35);
+  background: rgba(249,115,22,0.12);
+  color: #fdba74;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .wf-new-btn:hover {
-  background: rgba(99,102,241,0.22);
+  background: rgba(249,115,22,0.22);
 }
 
 /* ── Pipeline ───────────────────────────────────────────────────────────── */
@@ -782,9 +782,9 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(99,102,241,0.18);
-  border: 1px solid rgba(99,102,241,0.35);
-  color: #a5b4fc;
+  background: rgba(249,115,22,0.18);
+  border: 1px solid rgba(249,115,22,0.35);
+  color: #fdba74;
   font-size: 0.6875rem;
   font-weight: 700;
   display: flex;
@@ -1057,7 +1057,7 @@
 }
 
 .wf-input:focus {
-  border-color: rgba(99,102,241,0.5);
+  border-color: rgba(249,115,22,0.5);
 }
 
 .wf-textarea {

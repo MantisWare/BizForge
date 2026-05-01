@@ -37,6 +37,11 @@
 
   // Per-provider test-in-progress
   let testingId = $state<string | null>(null);
+  let fetchingModelsId = $state<string | null>(null);
+
+  // Pre-add connection test state
+  let preTestLoading = $state(false);
+  let preTestResult = $state<{ status: 'idle' | 'success' | 'error'; models: string[]; error?: string }>({ status: 'idle', models: [] });
 
   // Edit state
   let editingId = $state<string | null>(null);
@@ -72,6 +77,8 @@
     addTopK = '';
     addFreqPenalty = '';
     addPresPenalty = '';
+    preTestResult = { status: 'idle', models: [] };
+    preTestLoading = false;
   }
 
   function onCategoryChange() {
@@ -107,9 +114,29 @@
     return cfg;
   }
 
+  async function handlePreTest() {
+    const entry = findProvider(addSlug);
+    const endpoint = addEndpoint || entry?.defaultEndpoint || getDefaultEndpoint(addSlug, addLocalRuntime);
+    if (!endpoint) return;
+
+    preTestLoading = true;
+    preTestResult = { status: 'idle', models: [] };
+
+    const result = await providersStore.fetchModelsFromEndpoint(endpoint, addApiKey || undefined, addSlug);
+    if (result.error !== undefined) {
+      preTestResult = { status: 'error', models: [], error: result.error };
+    } else if (result.models.length > 0) {
+      preTestResult = { status: 'success', models: result.models };
+    } else {
+      preTestResult = { status: 'error', models: [], error: 'No models returned' };
+    }
+    preTestLoading = false;
+  }
+
   async function handleAdd() {
     if (!addSlug) return;
     const entry = findProvider(addSlug);
+    const fetchedModels = preTestResult.models.length > 0 ? preTestResult.models : (entry?.defaultModels ?? []);
     const req: AIProviderCreateRequest = {
       slug: addSlug,
       name: entry?.name ?? addSlug,
@@ -117,7 +144,7 @@
       api_key: addApiKey || undefined,
       endpoint: addEndpoint || entry?.defaultEndpoint || undefined,
       config: buildConfig(),
-      models: entry?.defaultModels ?? [],
+      models: fetchedModels,
       is_default: addIsDefault,
     };
     const created = await providersStore.create(req);
@@ -128,6 +155,12 @@
     testingId = id;
     await providersStore.test(id);
     testingId = null;
+  }
+
+  async function handleFetchModels(id: string) {
+    fetchingModelsId = id;
+    await providersStore.fetchModelsForProvider(id);
+    fetchingModelsId = null;
   }
 
   async function handleRemove(id: string) {
@@ -320,8 +353,49 @@
         <span>Set as default provider</span>
       </label>
 
+      <!-- Pre-add test results -->
+      {#if preTestResult.status === 'success'}
+        <div class="pst-pretest pst-pretest--success">
+          <div class="pst-pretest-header">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="14" height="14"><path d="M13.5 4.5l-7 7L3 8"/></svg>
+            <span>Connection successful — {preTestResult.models.length} model{preTestResult.models.length !== 1 ? 's' : ''} available</span>
+          </div>
+          <div class="pst-pretest-models">
+            {#each preTestResult.models.slice(0, 12) as m}
+              <span class="pst-model-tag">{m}</span>
+            {/each}
+            {#if preTestResult.models.length > 12}
+              <span class="pst-model-tag pst-model-tag--more">+{preTestResult.models.length - 12}</span>
+            {/if}
+          </div>
+        </div>
+      {:else if preTestResult.status === 'error'}
+        <div class="pst-pretest pst-pretest--error">
+          <div class="pst-pretest-header">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="14" height="14"><path d="M8 5v3M8 10.5v.5"/><circle cx="8" cy="8" r="6"/></svg>
+            <span>Connection failed</span>
+          </div>
+          {#if preTestResult.error}
+            <span class="pst-pretest-error">{preTestResult.error}</span>
+          {/if}
+        </div>
+      {/if}
+
       <div class="pst-form-actions">
         <button class="pst-btn pst-btn--secondary" onclick={resetAddForm}>Cancel</button>
+        <button
+          class="pst-btn pst-btn--test"
+          onclick={handlePreTest}
+          disabled={!addSlug || preTestLoading}
+        >
+          {#if preTestLoading}
+            <svg class="pst-spinner" viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="8"/></svg>
+            Testing...
+          {:else}
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="13" height="13"><path d="M13.5 8A5.5 5.5 0 112.5 8a5.5 5.5 0 0111 0z"/><path d="M8 5v3l2 1.5"/></svg>
+            Test Connection
+          {/if}
+        </button>
         <button class="pst-btn pst-btn--primary" onclick={handleAdd} disabled={!addSlug}>Add Provider</button>
       </div>
     </div>
@@ -424,6 +498,19 @@
               {:else}
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="13" height="13"><path d="M13.5 8A5.5 5.5 0 112.5 8a5.5 5.5 0 0111 0z"/><path d="M8 5v3l2 1.5"/></svg>
                 Test
+              {/if}
+            </button>
+            <button
+              class="pst-action-btn"
+              onclick={() => handleFetchModels(prov.id)}
+              disabled={fetchingModelsId === prov.id}
+            >
+              {#if fetchingModelsId === prov.id}
+                <svg class="pst-spinner" viewBox="0 0 16 16" width="13" height="13"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="28" stroke-dashoffset="8"/></svg>
+                Fetching...
+              {:else}
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="13" height="13"><path d="M3 8h10M10 5l3 3-3 3"/></svg>
+                Fetch Models
               {/if}
             </button>
             <button class="pst-action-btn" onclick={() => startEdit(prov)} disabled={editingId === prov.id}>
@@ -760,9 +847,9 @@
   }
 
   .pst-badge--local {
-    background: rgba(168, 85, 247, 0.12);
-    color: #a855f7;
-    border-color: rgba(168, 85, 247, 0.25);
+    background: rgba(249, 115, 22, 0.12);
+    color: #f97316;
+    border-color: rgba(249, 115, 22, 0.25);
   }
 
   .pst-provider-meta {
@@ -868,5 +955,65 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
+  }
+
+  .pst-btn--test {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+  }
+
+  .pst-btn--test:hover:not(:disabled) {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .pst-pretest {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+  }
+
+  .pst-pretest--success {
+    background: rgba(34, 197, 94, 0.06);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+  }
+
+  .pst-pretest--error {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+  }
+
+  .pst-pretest-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+
+  .pst-pretest--success .pst-pretest-header {
+    color: #22c55e;
+  }
+
+  .pst-pretest--error .pst-pretest-header {
+    color: #ef4444;
+  }
+
+  .pst-pretest-models {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .pst-pretest-error {
+    font-size: 11px;
+    color: var(--text-tertiary);
   }
 </style>

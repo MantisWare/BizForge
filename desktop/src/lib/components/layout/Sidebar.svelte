@@ -166,7 +166,7 @@
           <div class="sb-empty">No agents deployed</div>
         {:else}
           <!-- Full hierarchy tree: Division > Department > Team > Agent -->
-          {#if hierarchyStore.tree && hierarchyStore.tree.divisions.length > 0}
+          {#if hierarchyStore.tree && Array.isArray(hierarchyStore.tree.divisions) && hierarchyStore.tree.divisions.length > 0}
             {@const tree = hierarchyStore.tree}
             {@const assignedAgentIds = new Set(
               tree.divisions
@@ -367,7 +367,7 @@
     display: flex;
     flex-direction: column;
     width: var(--sidebar-expanded-width);
-    height: 100dvh;
+    height: 100%;
     background: var(--bg-primary);
     border-right: 1px solid var(--border-default);
     flex-shrink: 0;

@@ -15,7 +15,7 @@ const ROOMS: OfficeRoom[] = [
     name: "Engineering",
     label: "ENGINEERING",
     color: "#2e2b50",
-    labelColor: "#c4b5fd",
+    labelColor: "#fdba74",
     x: 1,
     y: 1,
     width: 8,

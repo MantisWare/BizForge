@@ -430,8 +430,8 @@
     width: 30px;
     height: 30px;
     border-radius: 7px;
-    background: color-mix(in srgb, #8b5cf6 15%, transparent);
-    color: #8b5cf6;
+    background: color-mix(in srgb, #f97316 15%, transparent);
+    color: #f97316;
     flex-shrink: 0;
   }
 

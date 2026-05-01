@@ -48,7 +48,7 @@
   function categoryColor(cat: string): string {
     const map: Record<string, string> = {
       'saas':        '#60a5fa',
-      'agency':      '#a78bfa',
+      'agency':      '#fb923c',
       'startup':     'rgba(52, 211, 153, 0.6)',
       'enterprise':  '#f472b6',
       'research':    '#fb923c',

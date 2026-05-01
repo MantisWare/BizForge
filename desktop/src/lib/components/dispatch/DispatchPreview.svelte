@@ -26,12 +26,12 @@
   };
 
   const ADAPTER_COLORS: Record<string, string> = {
-    osa: '#6366f1',
+    osa: '#f97316',
     claude_code: '#f59e0b',
     'claude-code': '#f59e0b',
     codex: '#10b981',
     hermes: '#3b82f6',
-    bash: '#8b5cf6',
+    bash: '#f97316',
     http: '#64748b',
     cursor: '#0ea5e9',
     gemini: '#ec4899',
@@ -209,7 +209,7 @@
   }
 
   .dp-input:focus {
-    border-color: var(--border-focus, rgba(99, 102, 241, 0.6));
+    border-color: var(--border-focus, rgba(249, 115, 22, 0.6));
   }
 
   .dp-input:disabled {
@@ -243,7 +243,7 @@
   }
 
   .dp-btn:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline: 2px solid rgba(249, 115, 22, 0.5);
     outline-offset: 1px;
   }
 

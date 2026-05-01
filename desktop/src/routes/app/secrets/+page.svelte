@@ -281,9 +281,9 @@
 <style>
   .sc-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .sc-create-btn:hover { background: #4f46e5; }
+  .sc-create-btn:hover { background: #ea580c; }
 
   .sc-loading, .sc-empty {
     display: flex; flex-direction: column; align-items: center;
@@ -313,9 +313,9 @@
 
   .sc-icon-col {
     width: 28px; height: 28px; border-radius: 6px;
-    background: color-mix(in srgb, #6366f1 12%, var(--dbg3));
+    background: color-mix(in srgb, #f97316 12%, var(--dbg3));
     display: flex; align-items: center; justify-content: center;
-    color: #a5b4fc; flex-shrink: 0;
+    color: #fdba74; flex-shrink: 0;
   }
 
   .sc-info { flex: 1; min-width: 0; }
@@ -342,7 +342,7 @@
     color: var(--dt3); transition: all 120ms ease; white-space: nowrap;
   }
   .sc-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .sc-rotate-btn:hover:not(:disabled) { border-color: rgba(99,102,241,0.4); color: #a5b4fc; background: rgba(99,102,241,0.08); }
+  .sc-rotate-btn:hover:not(:disabled) { border-color: rgba(249, 115, 22, 0.4); color: #fdba74; background: rgba(249, 115, 22, 0.08); }
   .sc-rotate-btn.sc-action-btn--confirm { border-color: rgba(251,191,36,0.4); color: #fbbf24; background: rgba(251,191,36,0.08); }
   .sc-delete-btn:hover:not(:disabled) { border-color: rgba(239,68,68,0.4); color: #fca5a5; background: rgba(239,68,68,0.08); }
   .sc-delete-btn.sc-action-btn--confirm { border-color: rgba(239,68,68,0.6); color: #fca5a5; background: rgba(239,68,68,0.12); }
@@ -367,7 +367,7 @@
     width: 100%; box-sizing: border-box;
   }
   .sc-select { appearance: none; cursor: pointer; }
-  .sc-input:focus { outline: none; border-color: #6366f1; }
+  .sc-input:focus { outline: none; border-color: #f97316; }
   .sc-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .sc-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .sc-btn-ghost, .sc-btn-primary {
@@ -376,7 +376,7 @@
   }
   .sc-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .sc-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .sc-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .sc-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .sc-btn-primary { background: #f97316; border: none; color: #fff; }
+  .sc-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .sc-btn-ghost:disabled, .sc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

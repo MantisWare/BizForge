@@ -37,7 +37,7 @@
   function statusEmissive(status: string): string {
     switch (status) {
       case 'running': return 'rgba(34, 197, 94, 0.7)';
-      case 'idle': return '#6366f1';
+      case 'idle': return '#f97316';
       case 'sleeping': return '#334155';
       case 'paused': return '#f59e0b';
       case 'terminated': return '#ef4444';
@@ -61,8 +61,8 @@
 <!-- Lighting -->
 <T.AmbientLight intensity={0.3} color="#a0a0ff" />
 <T.DirectionalLight position={[8, 12, 6]} intensity={0.7} color="#ffffff" castShadow />
-<T.DirectionalLight position={[-6, 8, -4]} intensity={0.3} color="#6366f1" />
-<T.PointLight position={[0, 6, 0]} intensity={0.5} color="#818cf8" distance={20} decay={2} />
+<T.DirectionalLight position={[-6, 8, -4]} intensity={0.3} color="#f97316" />
+<T.PointLight position={[0, 6, 0]} intensity={0.5} color="#fb923c" distance={20} decay={2} />
 
 <!-- Floor -->
 <T.Mesh rotation.x={-Math.PI / 2} position.y={-0.01} receiveShadow>

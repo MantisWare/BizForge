@@ -190,9 +190,9 @@
 <style>
   .gw-create-btn {
     height: 28px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    background: #6366f1; border: none; color: white; cursor: pointer; transition: background 120ms ease;
+    background: #f97316; border: none; color: white; cursor: pointer; transition: background 120ms ease;
   }
-  .gw-create-btn:hover { background: #4f46e5; }
+  .gw-create-btn:hover { background: #ea580c; }
 
   .gw-loading, .gw-empty, .gw-error {
     display: flex; flex-direction: column; align-items: center;
@@ -209,7 +209,7 @@
   .gw-card { background: var(--dbg2); border: 1px solid var(--dbd); border-radius: 10px; padding: 16px; }
   .gw-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .gw-name { font-size: 15px; font-weight: 600; color: var(--dt); display: flex; align-items: center; gap: 8px; }
-  .gw-primary { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; font-weight: 500; }
+  .gw-primary { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(249, 115, 22, 0.15); color: #fdba74; font-weight: 500; }
   .gw-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
   .gw-status--healthy { background: rgba(34, 197, 94, 0.12); color: rgba(134, 239, 172, 0.8); }
   .gw-status--degraded { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
@@ -247,7 +247,7 @@
     background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt);
     width: 100%; box-sizing: border-box;
   }
-  .gw-input:focus { outline: none; border-color: #6366f1; }
+  .gw-input:focus { outline: none; border-color: #f97316; }
   .gw-form-error { font-size: 12px; color: #fca5a5; margin: 0; }
   .gw-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
   .gw-btn-ghost, .gw-btn-primary {
@@ -256,7 +256,7 @@
   }
   .gw-btn-ghost { background: transparent; border: 1px solid var(--dbd); color: var(--dt3); }
   .gw-btn-ghost:hover:not(:disabled) { background: var(--dbg3); color: var(--dt2); }
-  .gw-btn-primary { background: #6366f1; border: none; color: #fff; }
-  .gw-btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .gw-btn-primary { background: #f97316; border: none; color: #fff; }
+  .gw-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .gw-btn-ghost:disabled, .gw-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

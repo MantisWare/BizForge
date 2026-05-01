@@ -129,6 +129,59 @@ defmodule BizforgeWeb.ProviderController do
     end
   end
 
+  def discover_models(conn, %{"provider_id" => id}) do
+    case Repo.get(Provider, id) do
+      nil ->
+        conn |> put_status(404) |> json(%{error: "not_found"})
+
+      provider ->
+        endpoint = resolve_endpoint(provider)
+        do_discover(conn, endpoint, provider.slug, provider.api_key)
+    end
+  end
+
+  def discover_models(conn, params) do
+    endpoint = params["endpoint"] || ""
+    slug = params["slug"] || ""
+    api_key = params["api_key"] || ""
+
+    if endpoint == "" do
+      conn |> put_status(422) |> json(%{error: "endpoint is required"})
+    else
+      do_discover(conn, endpoint, slug, if(api_key == "", do: nil, else: api_key))
+    end
+  end
+
+  defp do_discover(conn, endpoint, slug, api_key) do
+    category = if slug in ["local", "ollama", "lmstudio"], do: "local", else: "cloud"
+    start_ms = System.monotonic_time(:millisecond)
+
+    result =
+      case category do
+        "local" -> test_local(endpoint, api_key)
+        _ -> test_cloud(endpoint, slug, api_key)
+      end
+
+    elapsed_ms = System.monotonic_time(:millisecond) - start_ms
+
+    case result do
+      {:ok, models} ->
+        json(conn, %{
+          status: "connected",
+          models: models,
+          latency_ms: elapsed_ms
+        })
+
+      {:error, reason} ->
+        json(conn, %{
+          status: "error",
+          models: [],
+          latency_ms: elapsed_ms,
+          error: reason
+        })
+    end
+  end
+
   defp perform_test(%Provider{} = provider) do
     endpoint = resolve_endpoint(provider)
     start_ms = System.monotonic_time(:millisecond)
@@ -164,6 +217,9 @@ defmodule BizforgeWeb.ProviderController do
 
       {:error, %{reason: reason}} ->
         {:error, "Connection failed: #{inspect(reason)}"}
+
+      {:error, exception} ->
+        {:error, "Connection failed: #{inspect(exception)}"}
     end
   end
 
@@ -181,11 +237,18 @@ defmodule BizforgeWeb.ProviderController do
       {:ok, %{status: 403}} ->
         {:error, "Access denied — verify API key permissions"}
 
+      {:ok, %{status: code, body: body}} when is_map(body) ->
+        msg = body["error"]["message"] || body["message"] || "HTTP #{code}"
+        {:error, msg}
+
       {:ok, %{status: code}} ->
         {:error, "Endpoint returned HTTP #{code}"}
 
       {:error, %{reason: reason}} ->
         {:error, "Connection failed: #{inspect(reason)}"}
+
+      {:error, exception} ->
+        {:error, "Connection failed: #{inspect(exception)}"}
     end
   end
 
@@ -194,7 +257,18 @@ defmodule BizforgeWeb.ProviderController do
 
     case slug do
       "anthropic" ->
-        {base <> "/v1/models", [{"x-api-key", api_key || ""}, {"anthropic-version", "2023-06-01"}]}
+        {base <> "/v1/models",
+         [{"x-api-key", api_key || ""}, {"anthropic-version", "2023-06-01"}]}
+
+      "google" ->
+        key_param = if api_key && api_key != "", do: "?key=#{api_key}", else: ""
+        {base <> "/v1beta/models" <> key_param, []}
+
+      "groq" ->
+        {base <> "/openai/v1/models", build_bearer_headers(api_key)}
+
+      "deepseek" ->
+        {base <> "/models", build_bearer_headers(api_key)}
 
       _ ->
         {base <> "/v1/models", build_bearer_headers(api_key)}
@@ -220,7 +294,10 @@ defmodule BizforgeWeb.ProviderController do
         |> Enum.filter(&(&1 != ""))
 
       %{"models" => models} when is_list(models) ->
-        Enum.map(models, fn m -> m["name"] || m["model"] || m["id"] || "" end)
+        Enum.map(models, fn m ->
+          raw = m["name"] || m["model"] || m["id"] || ""
+          String.replace_prefix(raw, "models/", "")
+        end)
         |> Enum.filter(&(&1 != ""))
 
       _ ->

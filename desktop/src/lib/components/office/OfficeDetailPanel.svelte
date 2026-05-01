@@ -17,7 +17,7 @@
     running:    'rgba(34, 197, 94, 0.7)',
     active:     'rgba(34, 197, 94, 0.7)',
     working:    'rgba(34, 197, 94, 0.7)',
-    idle:       '#6366f1',
+    idle:       '#f97316',
     sleeping:   '#64748b',
     paused:     '#f59e0b',
     error:      '#ef4444',
@@ -44,13 +44,13 @@
   }
 
   const AVATAR_COLORS = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
+    '#f97316', '#f97316', '#ec4899', '#f43f5e',
     '#f97316', '#eab308', '#22c55e', '#14b8a6',
-    '#06b6d4', '#3b82f6', '#a855f7', '#d946ef',
+    '#06b6d4', '#3b82f6', '#f97316', '#d946ef',
   ];
 
   const avatarColor = $derived(
-    agent ? AVATAR_COLORS[djb2(agent.id) % AVATAR_COLORS.length] : '#6366f1'
+    agent ? AVATAR_COLORS[djb2(agent.id) % AVATAR_COLORS.length] : '#f97316'
   );
   const statusColor = $derived(
     agent ? (STATUS_COLORS[agent.status] ?? '#64748b') : '#64748b'

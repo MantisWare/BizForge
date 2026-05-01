@@ -5,26 +5,47 @@ defmodule Bizforge.Snapshots do
   A snapshot serializes the full state of a workspace — agents, teams,
   budgets, workflows, governance rules, org hierarchy, and markdown files —
   into a portable JSON file with an SHA-256 integrity manifest.
+
+  Supports versioned history and rollback to any previous snapshot.
   """
 
-  alias Bizforge.Snapshots.{Exporter, Importer}
+  alias Bizforge.Snapshots.{Exporter, Importer, Versioning}
 
   @snapshot_dir ".bizforge/snapshots"
   @lock_file ".bizforge/lock"
 
   def snapshot_dir, do: Path.expand(@snapshot_dir)
 
-  def create(name, workspace_path) do
-    Exporter.export(name, workspace_path, snapshot_dir())
+  def create(name, workspace_path, opts \\ []) do
+    dir = snapshot_dir()
+
+    case Exporter.export(name, workspace_path, dir) do
+      {:ok, file, summary} ->
+        description = Keyword.get(opts, :description, "")
+
+        {:ok, version, _entry} =
+          Versioning.record_version(dir, %{
+            name: name,
+            integrity_hash: summary.integrity,
+            description: description
+          })
+
+        {:ok, file, Map.put(summary, :version, version)}
+
+      error ->
+        error
+    end
   end
 
   def list do
     dir = snapshot_dir()
 
     if File.dir?(dir) do
+      manifest = Versioning.load_manifest(dir)
+
       dir
       |> File.ls!()
-      |> Enum.filter(&String.ends_with?(&1, ".json"))
+      |> Enum.filter(fn f -> String.ends_with?(f, ".json") && f !== "versions.json" end)
       |> Enum.sort()
       |> Enum.map(fn file ->
         path = Path.join(dir, file)
@@ -33,9 +54,13 @@ defmodule Bizforge.Snapshots do
           {:ok, content} ->
             case Jason.decode(content) do
               {:ok, data} ->
+                name = String.replace_suffix(file, ".json", "")
+                version_entry = Enum.find(manifest, fn e -> e["name"] === name end)
+
                 %{
-                  name: String.replace_suffix(file, ".json", ""),
+                  name: name,
                   file: file,
+                  version: if(version_entry, do: version_entry["version"], else: nil),
                   created_at: Map.get(data, "created_at"),
                   workspace_path: Map.get(data, "workspace_path"),
                   agent_count: length(Map.get(data, "agents", [])),
@@ -58,6 +83,27 @@ defmodule Bizforge.Snapshots do
   def restore(name) do
     snapshot_file = Path.join(snapshot_dir(), "#{name}.json")
     Importer.import(snapshot_file)
+  end
+
+  def rollback(version) when is_integer(version) do
+    dir = snapshot_dir()
+
+    case Versioning.get_version(dir, version) do
+      nil ->
+        {:error, :version_not_found}
+
+      entry ->
+        snapshot_file = Path.join(dir, entry["snapshot_file"])
+        Importer.import(snapshot_file)
+    end
+  end
+
+  def diff(v1, v2) when is_integer(v1) and is_integer(v2) do
+    Versioning.diff(snapshot_dir(), v1, v2)
+  end
+
+  def versions do
+    Versioning.load_manifest(snapshot_dir())
   end
 
   def lock(workspace_path) do

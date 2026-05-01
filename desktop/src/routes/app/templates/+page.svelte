@@ -164,7 +164,7 @@
     height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px;
     background: var(--dbg2); border: 1px solid var(--dbd); color: var(--dt); min-width: 200px;
   }
-  .tpl-search:focus { outline: none; border-color: #6366f1; }
+  .tpl-search:focus { outline: none; border-color: #f97316; }
   .tpl-loading, .tpl-empty, .tpl-error {
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 12px; height: 200px;
@@ -183,14 +183,14 @@
     transition: all 120ms ease;
   }
   .tpl-cat-btn:hover { color: var(--dt2); background: var(--dbg3); }
-  .tpl-cat-btn--active { background: color-mix(in srgb, #6366f1 15%, transparent); border-color: color-mix(in srgb, #6366f1 40%, transparent); color: #a5b4fc; }
+  .tpl-cat-btn--active { background: color-mix(in srgb, #f97316 15%, transparent); border-color: color-mix(in srgb, #f97316 40%, transparent); color: #fdba74; }
   .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; padding: 16px 24px 24px; }
   .tpl-card {
     background: var(--dbg2); border: 1px solid var(--dbd); border-radius: 10px;
     transition: border-color 120ms ease;
   }
   .tpl-card:hover { border-color: var(--dbd2); }
-  .tpl-card--selected { border-color: #6366f1; background: color-mix(in srgb, #6366f1 6%, var(--dbg2)); }
+  .tpl-card--selected { border-color: #f97316; background: color-mix(in srgb, #f97316 6%, var(--dbg2)); }
   .tpl-card-btn { width: 100%; padding: 16px; text-align: left; background: none; border: none; cursor: pointer; }
   .tpl-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .tpl-name { font-size: 14px; font-weight: 600; color: var(--dt); }
@@ -206,20 +206,20 @@
     height: 28px; padding: 0 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
     font-family: var(--font-sans); cursor: pointer; white-space: nowrap;
     display: flex; align-items: center; gap: 6px;
-    background: color-mix(in srgb, #6366f1 20%, transparent);
-    border: 1px solid color-mix(in srgb, #6366f1 45%, transparent);
-    color: #a5b4fc;
+    background: color-mix(in srgb, #f97316 20%, transparent);
+    border: 1px solid color-mix(in srgb, #f97316 45%, transparent);
+    color: #fdba74;
     transition: all 120ms ease;
   }
   .tpl-deploy-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, #6366f1 30%, transparent);
-    border-color: color-mix(in srgb, #6366f1 60%, transparent);
-    color: #c7d2fe;
+    background: color-mix(in srgb, #f97316 30%, transparent);
+    border-color: color-mix(in srgb, #f97316 60%, transparent);
+    color: #fdba74;
   }
   .tpl-deploy-btn:disabled { opacity: 0.65; cursor: not-allowed; }
   .tpl-deploy-spinner {
     width: 12px; height: 12px; border-radius: 50%;
-    border: 1.5px solid rgba(165, 180, 252, 0.3); border-top-color: #a5b4fc;
+    border: 1.5px solid rgba(253, 186, 116, 0.3); border-top-color: #fdba74;
     animation: spin 0.7s linear infinite; flex-shrink: 0;
   }
 </style>
