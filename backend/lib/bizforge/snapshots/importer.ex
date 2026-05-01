@@ -33,9 +33,9 @@ defmodule Bizforge.Snapshots.Importer do
 
     restore_files(workspace_path, data)
 
-    agents_map = restore_agents(workspace, data["agents"] ?? [])
+    agents_map = restore_agents(workspace, data["agents"] || [])
 
-    restore_schedules(agents_map, data["schedules"] ?? [])
+    restore_schedules(agents_map, data["schedules"] || [])
 
     summary = %{
       workspace: workspace_path,
@@ -65,7 +65,7 @@ defmodule Bizforge.Snapshots.Importer do
   end
 
   defp restore_files(workspace_path, data) do
-    files = data["files"] ?? %{}
+    files = data["files"] || %{}
 
     if files["system_md"] do
       path = Path.join(workspace_path, "SYSTEM.md")
@@ -80,7 +80,7 @@ defmodule Bizforge.Snapshots.Importer do
       Logger.info("[Snapshots.Importer] Restored company.yaml")
     end
 
-    agent_files = data["agent_files"] ?? []
+    agent_files = data["agent_files"] || []
     agents_dir = Path.join(workspace_path, "agents")
     File.mkdir_p!(agents_dir)
 
@@ -93,7 +93,7 @@ defmodule Bizforge.Snapshots.Importer do
       Logger.info("[Snapshots.Importer] Restored #{length(agent_files)} agent file(s)")
     end
 
-    skill_files = data["skill_files"] ?? []
+    skill_files = data["skill_files"] || []
     skills_dir = Path.join(workspace_path, "skills")
 
     Enum.each(skill_files, fn sf ->
@@ -126,13 +126,13 @@ defmodule Bizforge.Snapshots.Importer do
             %Agent{}
             |> Agent.changeset(%{
               name: agent_data["name"],
-              display_name: agent_data["display_name"] ?? agent_data["name"],
-              role: agent_data["role"] ?? "worker",
+              display_name: agent_data["display_name"] || agent_data["name"],
+              role: agent_data["role"] || "worker",
               status: "idle",
               adapter: agent_data["adapter"],
               model: agent_data["model"],
               system_prompt: agent_data["system_prompt"],
-              config: agent_data["config"] ?? %{},
+              config: agent_data["config"] || %{},
               workspace_id: workspace.id
             })
             |> Repo.insert!()
@@ -143,7 +143,7 @@ defmodule Bizforge.Snapshots.Importer do
               adapter: agent_data["adapter"],
               model: agent_data["model"],
               system_prompt: agent_data["system_prompt"],
-              config: agent_data["config"] ?? %{}
+              config: agent_data["config"] || %{}
             })
             |> Repo.update!()
         end
@@ -169,9 +169,9 @@ defmodule Bizforge.Snapshots.Importer do
           |> Schedule.changeset(%{
             name: sched_data["name"],
             cron_expression: sched_data["cron_expression"],
-            timezone: sched_data["timezone"] ?? "UTC",
+            timezone: sched_data["timezone"] || "UTC",
             context: sched_data["context"],
-            enabled: sched_data["enabled"] ?? true,
+            enabled: sched_data["enabled"] || true,
             agent_id: new_agent_id
           })
           |> Repo.insert()
@@ -194,8 +194,8 @@ defmodule Bizforge.Snapshots.Importer do
   defp count_files(data) do
     system = if data["files"]["system_md"], do: 1, else: 0
     company = if data["files"]["company_yaml"], do: 1, else: 0
-    agents = length(data["agent_files"] ?? [])
-    skills = length(data["skill_files"] ?? [])
+    agents = length(data["agent_files"] || [])
+    skills = length(data["skill_files"] || [])
     system + company + agents + skills
   end
 end

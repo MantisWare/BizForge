@@ -2,19 +2,13 @@
 <script lang="ts">
   import { monitorStore } from '$lib/stores/monitor.svelte';
 
-  const totalCost = $derived(monitorStore.costSummary?.total_cost ?? 0);
-  const inputTokens = $derived(monitorStore.costSummary?.total_input_tokens ?? 0);
-  const outputTokens = $derived(monitorStore.costSummary?.total_output_tokens ?? 0);
-  const cacheTokens = $derived(monitorStore.costSummary?.total_cache_tokens ?? 0);
+  const totalCost = $derived(monitorStore.costSummary?.month_cents ?? 0);
+  const todayCost = $derived(monitorStore.costSummary?.today_cents ?? 0);
+  const weekCost = $derived(monitorStore.costSummary?.week_cents ?? 0);
+  const cacheSavings = $derived(monitorStore.costSummary?.cache_savings_cents ?? 0);
 
   function formatCost(cents: number): string {
     return `$${(cents / 100).toFixed(2)}`;
-  }
-
-  function formatTokens(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return n.toString();
   }
 </script>
 
@@ -28,18 +22,18 @@
 <div class="burn-breakdown">
   <div class="burn-row">
     <span class="burn-dot" style="background: #3b82f6;"></span>
-    <span class="burn-metric">Input</span>
-    <span class="burn-val">{formatTokens(inputTokens)}</span>
+    <span class="burn-metric">Today</span>
+    <span class="burn-val">{formatCost(todayCost)}</span>
   </div>
   <div class="burn-row">
     <span class="burn-dot" style="background: #22c55e;"></span>
-    <span class="burn-metric">Output</span>
-    <span class="burn-val">{formatTokens(outputTokens)}</span>
+    <span class="burn-metric">This Week</span>
+    <span class="burn-val">{formatCost(weekCost)}</span>
   </div>
   <div class="burn-row">
     <span class="burn-dot" style="background: #8b5cf6;"></span>
-    <span class="burn-metric">Cache</span>
-    <span class="burn-val">{formatTokens(cacheTokens)}</span>
+    <span class="burn-metric">Cache Savings</span>
+    <span class="burn-val">{formatCost(cacheSavings)}</span>
   </div>
 </div>
 

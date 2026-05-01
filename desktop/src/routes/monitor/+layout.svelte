@@ -4,7 +4,6 @@
   import type { Snippet } from 'svelte';
   import { onMount, onDestroy } from 'svelte';
   import { monitorStore } from '$lib/stores/monitor.svelte';
-  import { browser } from '$app/environment';
 
   interface Props {
     children: Snippet;

@@ -162,19 +162,19 @@ class MonitorStore {
 
     try {
       const [healthData, agentsData, costData, issuesData, alertsData] = await Promise.allSettled([
-        healthApi.check(),
+        healthApi.get(),
         agentsApi.list(wsId),
         costsApi.summary(),
         issuesApi.list(),
-        alertsApi.listRules(),
+        alertsApi.list(wsId),
       ]);
 
       if (healthData.status === 'fulfilled') {
         const h = healthData.value as HealthResponse;
         this.health = {
           status: h.status ?? 'ok',
-          uptime: h.uptime ?? 0,
-          activeAgents: h.active_agents ?? 0,
+          uptime: h.uptime_seconds ?? 0,
+          activeAgents: h.agents_active ?? 0,
           version: h.version ?? '0.1.0',
         };
       }
@@ -186,13 +186,13 @@ class MonitorStore {
       if (costData.status === 'fulfilled') {
         const c = costData.value as CostSummary;
         this.costSummary = c;
+        const spent = c.month_cents ?? 0;
+        const limit = c.monthly_budget_cents ?? 0;
         this.budget = {
-          ...this.budget,
-          totalSpent: c.total_cost ?? 0,
-          utilizationPercent:
-            this.budget.monthlyLimit > 0
-              ? Math.round(((c.total_cost ?? 0) / this.budget.monthlyLimit) * 100)
-              : 0,
+          totalSpent: spent,
+          dailyLimit: c.daily_budget_cents ?? 0,
+          monthlyLimit: limit,
+          utilizationPercent: limit > 0 ? Math.round((spent / limit) * 100) : 0,
         };
       }
 

@@ -177,7 +177,7 @@ defmodule Bizforge.Snapshots.Exporter do
       |> Enum.filter(&File.dir?(Path.join(skills_dir, &1)))
       |> Enum.sort()
       |> Enum.map(fn dir ->
-        skill_file = Path.join([skills_dir, dir, "SKILL.md"])
+        _skill_file = Path.join([skills_dir, dir, "SKILL.md"])
 
         %{
           name: dir,

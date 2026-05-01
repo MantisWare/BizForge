@@ -26,13 +26,14 @@
     </div>
   {:else}
     {#each recentAlerts as alert (alert.id)}
-      {@const color = severityColor[alert.severity ?? 'info'] ?? '#3b82f6'}
+      {@const severity = (alert as Record<string, unknown>).severity as string | undefined}
+      {@const color = severityColor[severity ?? 'info'] ?? '#3b82f6'}
       <div class="alert-card">
         <div class="alert-bar" style="background: {color};"></div>
         <div class="alert-body">
           <span class="alert-name">{alert.name}</span>
           <span class="alert-desc">
-            {alert.entity_type} &middot; {alert.field} {alert.operator} {alert.threshold}
+            {alert.entity_type} &middot; {alert.field} {alert.operator} {alert.value}
           </span>
         </div>
       </div>
