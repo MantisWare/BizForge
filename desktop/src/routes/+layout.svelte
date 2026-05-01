@@ -7,6 +7,9 @@
   onMount(() => {
     if (!isTauri()) return;
 
+    const isMonitorWindow = window.location.pathname.startsWith('/monitor');
+    if (isMonitorWindow) return;
+
     const dismissSplash = async () => {
       const { invoke } = await import('@tauri-apps/api/core');
       try {

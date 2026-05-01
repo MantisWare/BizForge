@@ -19,7 +19,7 @@ export const TEMPLATE_REGISTRY: TemplateManifest[] = [
   {
     id: "growth-os",
     name: "Growth OS",
-    emoji: "🚀",
+    emoji: "rocket",
     description:
       "Creator business growth operating system — 36 agents across 6 modes.",
     category: "growth",

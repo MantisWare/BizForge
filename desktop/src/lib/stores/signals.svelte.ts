@@ -47,7 +47,9 @@ class SignalsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load signals", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load signals", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -58,7 +60,10 @@ class SignalsStore {
     try {
       this.patterns = await signalsApi.patterns();
     } catch (e) {
-      toastStore.error("Failed to load signal patterns", (e as Error).message);
+      const msg = (e as Error).message;
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load signal patterns", msg);
+      }
     } finally {
       this.patternsLoading = false;
     }
@@ -69,7 +74,10 @@ class SignalsStore {
     try {
       this.stats = await signalsApi.stats();
     } catch (e) {
-      toastStore.error("Failed to load signal stats", (e as Error).message);
+      const msg = (e as Error).message;
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load signal stats", msg);
+      }
     } finally {
       this.statsLoading = false;
     }

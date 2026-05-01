@@ -1,8 +1,13 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { onboardingStore } from '$lib/stores/onboarding.svelte';
   import type { AdapterType, TeamTemplate, AgentTemplateData } from '$lib/stores/onboarding.svelte';
+  import { initializeAuth, getToken, isMockEnabled } from '$api/client';
   import { isTauri } from '$lib/utils/platform';
+  import { workspaceStore, type LocalWorkspace } from '$lib/stores/workspace.svelte';
+  import { connectionStore } from '$lib/stores/connection.svelte';
+  import ConnectionStatusBar from '$lib/components/layout/ConnectionStatusBar.svelte';
   import Welcome from './steps/Welcome.svelte';
   import Provider from './steps/Provider.svelte';
   import Adapter from './steps/Adapter.svelte';
@@ -10,6 +15,16 @@
   import Team from './steps/Team.svelte';
   import MiosaCloud from './steps/MiosaCloud.svelte';
   import Review from './steps/Review.svelte';
+
+  onMount(() => {
+    console.log('[bizforge:onboarding] Mounted — initializing auth and connection check');
+    initializeAuth().then(() => {
+      console.log(`[bizforge:onboarding] Auth initialized — mock=${isMockEnabled()}, token=${getToken() !== null}`);
+      void connectionStore.check();
+    });
+    const stopPolling = connectionStore.startPolling(30_000);
+    return () => stopPolling();
+  });
 
   // ─── Registration data (pre-filled from /auth if the user just registered) ──
   //
@@ -49,6 +64,11 @@
   );
   let selectedProviderSlug = $state(onboardingStore.data.provider?.slug ?? '');
   let providerKeys       = $state<Record<string, string>>({});
+  let selectedProviders  = $state<import('./steps/Provider.svelte').ProviderSetup[]>(
+    onboardingStore.data.provider
+      ? [{ slug: onboardingStore.data.provider.slug, apiKey: onboardingStore.data.provider.apiKey }]
+      : [],
+  );
   let selectedAdapter    = $state<AdapterType>(onboardingStore.data.adapter);
   let workspacePath      = $state(onboardingStore.data.workspace?.path ?? '~/.bizforge');
   // Pre-fill workspace name from registration response when available.
@@ -62,10 +82,16 @@
   let miosaCloud         = $state(onboardingStore.data.miosaCloud);
   let isLaunching        = $state(false);
 
-  // Initialize API key from stored provider
+  // Sync selectedProviders back to legacy single-provider fields for review/launch
   $effect(() => {
     if (onboardingStore.data.provider) {
       providerKeys[onboardingStore.data.provider.slug] = onboardingStore.data.provider.apiKey;
+    }
+    if (selectedProviders.length > 0) {
+      selectedProviderSlug = selectedProviders[0].slug;
+      for (const sp of selectedProviders) {
+        if (sp.apiKey) providerKeys[sp.slug] = sp.apiKey;
+      }
     }
   });
 
@@ -73,18 +99,38 @@
 
   const TEMPLATE_AGENTS: Record<TeamTemplate, AgentTemplateData[]> = {
     solo: [
-      { id: 'main-agent', name: 'Main Agent', emoji: 'bot', role: 'engineer', adapter: 'osa', skills: ['code', 'debug', 'test'], system_prompt: 'You are a skilled software engineer...' },
+      { id: 'main-agent', name: 'Main Agent', emoji: 'robot', role: 'engineer', adapter: 'osa', skills: ['code', 'debug', 'test'], system_prompt: 'You are a skilled software engineer...' },
     ],
     'dev-team': [
-      { id: 'orchestrator',    name: 'Orchestrator',    emoji: 'brain',  role: 'orchestrator', adapter: 'osa', skills: ['delegate', 'plan'],      system_prompt: 'You coordinate a development team...' },
-      { id: 'code-worker',     name: 'Code Worker',     emoji: 'code',   role: 'developer',    adapter: 'osa', skills: ['code', 'debug'],          system_prompt: 'You are a focused code implementation specialist...' },
-      { id: 'research-worker', name: 'Research Worker', emoji: 'search', role: 'researcher',   adapter: 'osa', skills: ['web_search', 'analyze'],  system_prompt: 'You research solutions, APIs, and best practices...' },
-      { id: 'qa-agent',        name: 'QA Agent',        emoji: 'shield', role: 'engineer',     adapter: 'osa', skills: ['test', 'validate'],       system_prompt: 'You ensure code quality through testing...' },
+      { id: 'orchestrator',    name: 'Orchestrator',    emoji: 'light-bulb', role: 'orchestrator', adapter: 'osa', skills: ['delegate', 'plan'],      system_prompt: 'You coordinate a development team...' },
+      { id: 'code-worker',     name: 'Code Worker',     emoji: 'code-bracket', role: 'developer',    adapter: 'osa', skills: ['code', 'debug'],          system_prompt: 'You are a focused code implementation specialist...' },
+      { id: 'research-worker', name: 'Research Worker', emoji: 'magnifying', role: 'researcher',   adapter: 'osa', skills: ['web_search', 'analyze'],  system_prompt: 'You research solutions, APIs, and best practices...' },
+      { id: 'qa-agent',        name: 'QA Agent',        emoji: 'shield-check', role: 'engineer',     adapter: 'osa', skills: ['test', 'validate'],       system_prompt: 'You ensure code quality through testing...' },
     ],
     research: [
-      { id: 'lead-researcher', name: 'Lead Researcher', emoji: 'search', role: 'researcher', adapter: 'osa', skills: ['web_search', 'analyze', 'summarize'], system_prompt: 'You lead research investigations...' },
-      { id: 'data-analyst',    name: 'Data Analyst',    emoji: 'chart',  role: 'researcher', adapter: 'osa', skills: ['analyze', 'visualize'],              system_prompt: 'You analyze data and produce insights...' },
-      { id: 'writer',          name: 'Writer',          emoji: 'pen',    role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'format'],            system_prompt: 'You produce clear, well-structured written content...' },
+      { id: 'lead-researcher', name: 'Lead Researcher', emoji: 'magnifying', role: 'researcher', adapter: 'osa', skills: ['web_search', 'analyze', 'summarize'], system_prompt: 'You lead research investigations...' },
+      { id: 'data-analyst',    name: 'Data Analyst',    emoji: 'chart-bar',  role: 'researcher', adapter: 'osa', skills: ['analyze', 'visualize'],              system_prompt: 'You analyze data and produce insights...' },
+      { id: 'writer',          name: 'Writer',          emoji: 'document-text', role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'format'],            system_prompt: 'You produce clear, well-structured written content...' },
+    ],
+    'content-studio': [
+      { id: 'content-strategist', name: 'Content Strategist', emoji: 'flag', role: 'strategist', adapter: 'osa', skills: ['plan', 'analyze', 'schedule'],     system_prompt: 'You develop content strategies, editorial calendars, and campaign plans...' },
+      { id: 'copywriter',         name: 'Copywriter',         emoji: 'document-text', role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'seo'],            system_prompt: 'You write compelling copy for blogs, emails, landing pages, and social media...' },
+      { id: 'designer',           name: 'Visual Designer',    emoji: 'paint-brush', role: 'designer',  adapter: 'osa', skills: ['design', 'brand', 'format'],       system_prompt: 'You create visual assets, design briefs, and brand-consistent materials...' },
+    ],
+    'ops-center': [
+      { id: 'infra-engineer',  name: 'Infra Engineer',  emoji: 'cog',  role: 'engineer',    adapter: 'osa', skills: ['deploy', 'monitor', 'provision'], system_prompt: 'You manage infrastructure, CI/CD pipelines, and cloud resources...' },
+      { id: 'sre-agent',       name: 'SRE Agent',       emoji: 'shield-check',  role: 'engineer',    adapter: 'osa', skills: ['monitor', 'alert', 'diagnose'],   system_prompt: 'You ensure reliability, respond to incidents, and manage SLOs...' },
+      { id: 'security-agent',  name: 'Security Agent',  emoji: 'lock-closed',    role: 'engineer',    adapter: 'osa', skills: ['audit', 'scan', 'remediate'],     system_prompt: 'You perform security audits, vulnerability scanning, and compliance checks...' },
+    ],
+    'sales-engine': [
+      { id: 'prospector',      name: 'Prospector',      emoji: 'magnifying',  role: 'researcher',  adapter: 'osa', skills: ['web_search', 'analyze', 'enrich'], system_prompt: 'You find and qualify potential leads, enrich contact data, and score prospects...' },
+      { id: 'outreach-agent',  name: 'Outreach Agent',  emoji: 'envelope',    role: 'writer',      adapter: 'osa', skills: ['write', 'personalize', 'sequence'], system_prompt: 'You craft personalized outreach emails, follow-up sequences, and messaging...' },
+      { id: 'deal-analyst',    name: 'Deal Analyst',    emoji: 'chart-bar',   role: 'analyst',     adapter: 'osa', skills: ['analyze', 'forecast', 'report'],   system_prompt: 'You analyze pipeline health, forecast revenue, and identify deal risks...' },
+    ],
+    'data-science': [
+      { id: 'ml-engineer',     name: 'ML Engineer',     emoji: 'light-bulb',   role: 'engineer',    adapter: 'osa', skills: ['code', 'train', 'evaluate'],       system_prompt: 'You build, train, and evaluate machine learning models...' },
+      { id: 'data-engineer',   name: 'Data Engineer',   emoji: 'circle-stack', role: 'engineer',   adapter: 'osa', skills: ['pipeline', 'transform', 'query'],  system_prompt: 'You build data pipelines, ETL processes, and manage data infrastructure...' },
+      { id: 'analyst',         name: 'Analyst',         emoji: 'chart-bar',   role: 'analyst',     adapter: 'osa', skills: ['analyze', 'visualize', 'report'],  system_prompt: 'You perform exploratory data analysis, create visualizations, and generate reports...' },
     ],
     custom: [],
   };
@@ -98,18 +144,13 @@
   // recomputes whenever any of them change.
   const canContinue = $derived((() => {
     if (step === 1) {
-      if (!selectedProviderSlug) return false;
-      const allProviders = [
-        { slug: 'anthropic' }, { slug: 'ollama-cloud' }, { slug: 'ollama-local', noKey: true },
-        { slug: 'google' }, { slug: 'groq' }, { slug: 'deepseek' }, { slug: 'mistral' },
-        { slug: 'cohere' }, { slug: 'together' }, { slug: 'fireworks' }, { slug: 'perplexity' },
-        { slug: 'cerebras' }, { slug: 'sambanova' }, { slug: 'openrouter' }, { slug: 'openai' },
-        { slug: 'replicate' }, { slug: 'xai' }, { slug: 'lambda' }, { slug: 'lepton' },
-      ];
-      const prov = allProviders.find(p => p.slug === selectedProviderSlug);
-      if (!prov) return false;
-      if ((prov as { noKey?: boolean }).noKey) return true;
-      return (providerKeys[selectedProviderSlug] ?? '').trim().length > 0;
+      if (selectedProviders.length === 0) return false;
+      return selectedProviders.every((sp) => {
+        if (sp.slug === 'local') return true;
+        const noKeySlugs = ['local'];
+        if (noKeySlugs.includes(sp.slug)) return true;
+        return (sp.apiKey ?? '').trim().length > 0;
+      });
     }
     if (step === 3) return workspacePath.trim().length > 0;
     return true;
@@ -130,10 +171,14 @@
   }
 
   function syncToStore() {
+    const primarySlug = selectedProviders.length > 0 ? selectedProviders[0].slug : selectedProviderSlug;
+    const primaryKey = selectedProviders.length > 0
+      ? selectedProviders[0].apiKey
+      : (providerKeys[selectedProviderSlug] ?? '');
     onboardingStore.updateData({
       displayName,
-      provider: selectedProviderSlug
-        ? { slug: selectedProviderSlug, apiKey: providerKeys[selectedProviderSlug] ?? '', verified: false }
+      provider: primarySlug
+        ? { slug: primarySlug, apiKey: primaryKey, verified: false }
         : null,
       adapter: selectedAdapter,
       workspace: { path: workspacePath, name: workspaceName, description: workspaceDesc },
@@ -170,12 +215,48 @@
     onboardingStore.goToStep(result.jumpToStep);
   }
 
+  // ─── Open recent workspace ──────────────────────────────────────────
+
+  async function handleOpenRecent(ws: LocalWorkspace) {
+    workspaceStore.fetchWorkspaces();
+    await workspaceStore.setActiveWorkspace(ws.id);
+
+    if (displayName) {
+      localStorage.setItem('bizforge-display-name', displayName);
+    }
+
+    onboardingStore.complete();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('bizforge-onboarding-complete', 'true');
+      localStorage.setItem('bizforge-onboarding', JSON.stringify({ completed: true }));
+    }
+
+    const needsLogin = !isMockEnabled() && getToken() === null;
+    goto(needsLogin ? '/auth' : '/app');
+  }
+
   // ─── Launch ───────────────────────────────────────────────────────────────
+
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms),
+      ),
+    ]);
+  }
 
   async function launch() {
     if (isLaunching) return;
     isLaunching = true;
     syncToStore();
+
+    try {
+      // Ensure auth gate is open before any API calls
+      await withTimeout(initializeAuth(), 5000);
+    } catch {
+      console.warn('Auth init timed out — proceeding with launch');
+    }
 
     try {
       if (isTauri() && workspacePath.trim()) {
@@ -192,22 +273,39 @@
         }));
 
         try {
-          await invoke('scaffold_bizforge_dir', {
+          await withTimeout(invoke('scaffold_bizforge_dir', {
             path: workspacePath,
             name: workspaceName,
             description: workspaceDesc || null,
             agents,
-          });
+          }), 10000);
         } catch (e) {
           console.warn('Scaffold warning:', e);
         }
 
         const { workspaceStore } = await import('$lib/stores/workspace.svelte');
 
-        // If registration already created a backend workspace, reuse its ID so
-        // the frontend store entry matches what the backend knows about.  Fall
-        // back to a new UUID only for offline / mock installs.
-        const wsId = registeredWorkspaceId || crypto.randomUUID();
+        const hasAuth = getToken() !== null || isMockEnabled();
+        let wsId = registeredWorkspaceId || '';
+
+        if (!wsId && hasAuth) {
+          try {
+            const { workspaces: workspacesApi } = await import('$api/client');
+            const created = await withTimeout(
+              workspacesApi.create({
+                name: workspaceName,
+                path: workspacePath,
+              }),
+              5000,
+            );
+            if (created?.id) wsId = created.id;
+          } catch (e) {
+            console.warn('Backend workspace creation failed:', e);
+          }
+        }
+
+        if (!wsId) wsId = crypto.randomUUID();
+
         const wsEntry = {
           id: wsId,
           path: workspacePath,
@@ -216,36 +314,83 @@
           addedAt: new Date().toISOString(),
         };
         workspaceStore.addWorkspace(wsEntry);
-        await workspaceStore.setActiveWorkspace(wsEntry.id);
 
-        // Best-effort: update the workspace record in the backend so the path
-        // and description (set during onboarding) are persisted server-side.
-        if (registeredWorkspaceId) {
+        if (hasAuth) {
           try {
-            const { workspaces } = await import('$api/client');
-            await workspaces.update(registeredWorkspaceId, {
+            await withTimeout(workspaceStore.setActiveWorkspace(wsEntry.id), 8000);
+          } catch (e) {
+            console.warn('Workspace activation timed out:', e);
+          }
+        } else {
+          workspaceStore.activeWorkspaceId = wsEntry.id;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('bizforge-active-workspace', wsEntry.id);
+          }
+        }
+
+        if (registeredWorkspaceId && hasAuth) {
+          try {
+            const { workspaces: workspacesApi } = await import('$api/client');
+            await withTimeout(workspacesApi.update(registeredWorkspaceId, {
               name: workspaceName,
               path: workspacePath,
               description: workspaceDesc || undefined,
-            });
+            }), 5000);
           } catch {
-            // Non-fatal: the backend workspace was created during registration;
-            // failing to update it just means the path/desc won't sync.
+            // Non-fatal
           }
         }
       }
 
-      // Create a default Organization for the hierarchy system
-      try {
-        const { organizations } = await import('$api/client');
-        const { organizationsStore } = await import('$lib/stores/organizations.svelte');
-        const org = await organizations.create({ name: workspaceName || 'My Organization' });
-        if (org) organizationsStore.setCurrent(org);
-      } catch (e) {
-        console.warn('Org creation skipped:', e);
+      const hasAuth = getToken() !== null || isMockEnabled();
+      if (hasAuth) {
+        try {
+          const { organizations } = await import('$api/client');
+          const { organizationsStore } = await import('$lib/stores/organizations.svelte');
+          const orgName = workspaceName || 'My Organization';
+          const orgSlug = orgName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+          const org = await withTimeout(
+            organizations.create({ name: orgName, slug: orgSlug }),
+            5000,
+          );
+          if (org) organizationsStore.setCurrent(org);
+        } catch (e) {
+          console.warn('Org creation skipped:', e);
+        }
       }
 
       onboardingStore.complete();
+
+      // Persist providers via API
+      if (selectedProviders.length > 0) {
+        const hasAuth = getToken() !== null || isMockEnabled();
+        if (hasAuth) {
+          try {
+            const { providers: providersApi } = await import('$api/client');
+            for (let i = 0; i < selectedProviders.length; i++) {
+              const sp = selectedProviders[i];
+              const { findProvider } = await import('$lib/data/provider-catalog');
+              const catalogEntry = findProvider(sp.slug);
+              await withTimeout(providersApi.create({
+                slug: sp.slug,
+                name: catalogEntry?.name ?? sp.slug,
+                category: sp.slug === 'local' ? 'local' : 'cloud',
+                api_key: sp.apiKey || undefined,
+                endpoint: sp.endpoint ?? catalogEntry?.defaultEndpoint ?? undefined,
+                config: sp.localRuntime ? { local_runtime: sp.localRuntime, local_endpoint: sp.endpoint } : {},
+                models: catalogEntry?.defaultModels ?? [],
+                is_default: i === 0,
+              }), 5000);
+            }
+          } catch (e) {
+            console.warn('Provider persistence failed:', e);
+          }
+        }
+      }
+
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('bizforge-onboarding-complete', 'true');
         localStorage.setItem(
@@ -259,31 +404,39 @@
           const key = providerKeys[selectedProviderSlug];
           if (key) localStorage.setItem(`bizforge-provider-${selectedProviderSlug}`, key);
         }
-        // Clean up registration scratch keys — no longer needed.
         localStorage.removeItem('bizforge-registered-name');
         localStorage.removeItem('bizforge-registered-workspace-id');
         localStorage.removeItem('bizforge-registered-workspace-name');
       }
 
       if (isTauri() && selectedProviderSlug) {
-        const { Store } = await import('@tauri-apps/plugin-store');
-        const credStore = await Store.load('credentials.json');
-        await credStore.set('provider', {
-          slug: selectedProviderSlug,
-          apiKey: providerKeys[selectedProviderSlug] ?? '',
-        });
-        await credStore.save();
+        try {
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const credStore = await Store.load('credentials.json');
+          await credStore.set('provider', {
+            slug: selectedProviderSlug,
+            apiKey: providerKeys[selectedProviderSlug] ?? '',
+          });
+          await credStore.save();
+        } catch (e) {
+          console.warn('Credential save failed:', e);
+        }
       }
 
       if (isTauri()) {
-        const { Store } = await import('@tauri-apps/plugin-store');
-        const settStore = await Store.load('settings.json');
-        await settStore.set('default_adapter', selectedAdapter);
-        await settStore.set('miosa_cloud', miosaCloud);
-        await settStore.save();
+        try {
+          const { Store } = await import('@tauri-apps/plugin-store');
+          const settStore = await Store.load('settings.json');
+          await settStore.set('default_adapter', selectedAdapter);
+          await settStore.set('miosa_cloud', miosaCloud);
+          await settStore.save();
+        } catch (e) {
+          console.warn('Settings save failed:', e);
+        }
       }
 
-      goto('/app');
+      const needsLogin = !isMockEnabled() && getToken() === null;
+      goto(needsLogin ? '/auth' : '/app');
     } catch (e) {
       console.error('Launch failed:', e);
       isLaunching = false;
@@ -293,6 +446,33 @@
   async function skip() {
     syncToStore();
     onboardingStore.complete();
+
+    // Persist providers via API (same as launch)
+    if (selectedProviders.length > 0) {
+      const hasAuth = getToken() !== null || isMockEnabled();
+      if (hasAuth) {
+        try {
+          const { providers: providersApi } = await import('$api/client');
+          for (let i = 0; i < selectedProviders.length; i++) {
+            const sp = selectedProviders[i];
+            const { findProvider } = await import('$lib/data/provider-catalog');
+            const catalogEntry = findProvider(sp.slug);
+            await providersApi.create({
+              slug: sp.slug,
+              name: catalogEntry?.name ?? sp.slug,
+              category: sp.slug === 'local' ? 'local' : 'cloud',
+              api_key: sp.apiKey || undefined,
+              endpoint: sp.endpoint ?? catalogEntry?.defaultEndpoint ?? undefined,
+              config: sp.localRuntime ? { local_runtime: sp.localRuntime, local_endpoint: sp.endpoint } : {},
+              models: catalogEntry?.defaultModels ?? [],
+              is_default: i === 0,
+            });
+          }
+        } catch (e) {
+          console.warn('Skip: provider persistence failed:', e);
+        }
+      }
+    }
 
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('bizforge-onboarding-complete', 'true');
@@ -307,7 +487,6 @@
         const key = providerKeys[selectedProviderSlug];
         if (key) localStorage.setItem(`bizforge-provider-${selectedProviderSlug}`, key);
       }
-      // Clean up registration scratch keys.
       localStorage.removeItem('bizforge-registered-name');
       localStorage.removeItem('bizforge-registered-workspace-id');
       localStorage.removeItem('bizforge-registered-workspace-name');
@@ -339,7 +518,8 @@
       }
     }
 
-    goto('/app');
+    const needsLogin = !isMockEnabled() && getToken() === null;
+    goto(needsLogin ? '/auth' : '/app');
   }
 </script>
 
@@ -360,9 +540,9 @@
   <!-- Step content card -->
   <div class="ob-card">
     {#if step === 0}
-      <Welcome bind:displayName onImport={handleImport} />
+      <Welcome bind:displayName onImport={handleImport} onOpenRecent={handleOpenRecent} />
     {:else if step === 1}
-      <Provider bind:selectedProviderSlug bind:providerKeys />
+      <Provider bind:selectedProviders />
     {:else if step === 2}
       <Adapter bind:selectedAdapter />
     {:else if step === 3}
@@ -375,6 +555,7 @@
       <Review
         {displayName}
         {selectedProviderSlug}
+        {selectedProviders}
         {selectedAdapter}
         {workspacePath}
         {teamTemplate}
@@ -424,11 +605,15 @@
   {/if}
 </div>
 
+<div class="ob-footer">
+  <ConnectionStatusBar alwaysShow={true} />
+</div>
+
 <style>
   /* ─── Root & layout ─────────────────────────────────────────────────── */
 
   .ob-root {
-    min-height: 100vh;
+    min-height: calc(100vh - 24px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -437,6 +622,18 @@
     background: #0a0a0a;
     color: #f0f0f0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .ob-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 10, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 50;
   }
 
   /* ─── Progress dots ──────────────────────────────────────────────────── */

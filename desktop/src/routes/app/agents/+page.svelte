@@ -6,6 +6,7 @@
   import AgentTable from '$lib/components/agents/AgentTable.svelte';
   import HireAgentDialog from '$lib/components/agents/HireAgentDialog.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { goto } from '$app/navigation';
@@ -42,7 +43,7 @@
       {#if agentsStore.viewMode === 'grid'}
         {#if agentsStore.filteredAgents.length === 0}
           <div class="ar-empty" role="status" aria-live="polite">
-            <span class="ar-empty-icon" aria-hidden="true">🤖</span>
+            <span class="ar-empty-icon" aria-hidden="true"><AgentIcon value="robot" size={32} /></span>
             <p class="ar-empty-text">
               {agentsStore.searchQuery || agentsStore.filterStatus !== 'all'
                 ? 'No agents match the current filter.'
@@ -64,7 +65,7 @@
 
       {:else}
         <div class="ar-org-placeholder" role="status">
-          <span class="ar-empty-icon" aria-hidden="true">🌐</span>
+          <span class="ar-empty-icon" aria-hidden="true"><AgentIcon value="globe" size={32} /></span>
           <p class="ar-empty-text">Redirecting to hierarchy view…</p>
         </div>
       {/if}
@@ -104,7 +105,9 @@
   }
 
   .ar-empty-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 

@@ -2,6 +2,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import PageShell from '$lib/components/layout/PageShell.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { environmentStore } from '$lib/stores/environment.svelte';
 
   // Expanded card tracking
@@ -15,14 +16,14 @@
     expandedAppId = expandedAppId === id ? null : id;
   }
 
-  const categoryEmoji: Record<string, string> = {
-    development: '\u{1F4BB}',
-    database: '\u{1F5C4}',
-    automation: '\u{2699}',
-    browser: '\u{1F310}',
-    design: '\u{1F3A8}',
-    communication: '\u{1F4AC}',
-    other: '\u{1F4E6}',
+  const categoryIconId: Record<string, string> = {
+    development: 'cpu',
+    database: 'circle-stack',
+    automation: 'cog',
+    browser: 'globe',
+    design: 'paint-brush',
+    communication: 'chat-bubble',
+    other: 'package',
   };
 
   const agentStatusColors: Record<string, string> = {
@@ -72,7 +73,7 @@
               role="listitem"
             >
               <div class="env-app-main">
-                <span class="env-app-emoji" aria-hidden="true">{categoryEmoji[app.category] ?? '\u{1F4E6}'}</span>
+                <span class="env-app-emoji" aria-hidden="true"><AgentIcon value={categoryIconId[app.category] ?? 'package'} size={16} /></span>
                 <div class="env-app-info">
                   <div class="env-app-name-row">
                     <div
@@ -357,9 +358,10 @@
     padding: 14px;
   }
   .env-app-emoji {
-    font-size: 20px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
+    color: #f26522;
   }
   .env-app-info {
     flex: 1;

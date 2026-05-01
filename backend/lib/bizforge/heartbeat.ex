@@ -393,23 +393,26 @@ defmodule Bizforge.Heartbeat do
   defp execute_and_stream(adapter_mod, params, session, agent) do
     try do
       adapter_mod.execute_heartbeat(params)
-      |> Enum.reduce(%{input: 0, output: 0, cache: 0, cost: 0}, fn event, acc ->
-        persist_event!(event, session)
+      |> Enum.reduce(%{input: 0, output: 0, cache: 0, cost: 0}, fn raw_event, acc ->
+        event = normalize_event(raw_event)
+        event_type = event["event_type"] || "run.output"
+        data = event["data"] || %{}
+
+        persist_event!(event_type, data, raw_event, session)
 
         Bizforge.EventBus.broadcast(
           Bizforge.EventBus.session_topic(session.id),
           %{
-            event: event.event_type,
-            data: event.data,
+            event: event_type,
+            data: data,
             session_id: session.id,
             agent_id: agent.id
           }
         )
 
-        # Adapters emit tokens_input, tokens_output, tokens_cache (or legacy :tokens)
-        input_tokens = event[:tokens_input] || event[:tokens] || 0
-        output_tokens = event[:tokens_output] || 0
-        cache_tokens = event[:tokens_cache] || 0
+        input_tokens = raw_event[:tokens_input] || raw_event["tokens_input"] || raw_event[:tokens] || raw_event["tokens"] || 0
+        output_tokens = raw_event[:tokens_output] || raw_event["tokens_output"] || 0
+        cache_tokens = raw_event[:tokens_cache] || raw_event["tokens_cache"] || 0
 
         new_input = acc.input + input_tokens
         new_output = acc.output + output_tokens
@@ -429,15 +432,29 @@ defmodule Bizforge.Heartbeat do
     end
   end
 
-  defp persist_event!(event, session) do
+  defp normalize_event(event) when is_map(event) do
+    cond do
+      is_binary(Map.get(event, "event_type")) -> event
+      is_binary(Map.get(event, :event_type)) ->
+        %{
+          "event_type" => Map.get(event, :event_type),
+          "data" => Map.get(event, :data, %{})
+        }
+      true -> %{"event_type" => "run.output", "data" => event}
+    end
+  end
+
+  defp persist_event!(event_type, data, raw_event, session) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+    tokens = (raw_event[:tokens_input] || raw_event["tokens_input"] || raw_event[:tokens] || raw_event["tokens"] || 0) +
+             (raw_event[:tokens_output] || raw_event["tokens_output"] || 0)
 
     %SessionEvent{}
     |> SessionEvent.changeset(%{
       session_id: session.id,
-      event_type: event.event_type,
-      data: event.data,
-      tokens: (event[:tokens_input] || event[:tokens] || 0) + (event[:tokens_output] || 0),
+      event_type: event_type,
+      data: data,
+      tokens: tokens,
       inserted_at: now
     })
     |> Repo.insert!()

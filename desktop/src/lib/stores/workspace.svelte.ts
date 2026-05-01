@@ -77,8 +77,9 @@ class WorkspaceStore {
       } else if (this.workspaces.length > 0) {
         this.activeWorkspaceId = this.workspaces[0].id;
       }
+      console.log(`[bizforge:workspace] Loaded ${this.workspaces.length} workspace(s) from localStorage, active: ${this.activeWorkspaceId ?? "none"}`);
     } catch {
-      // Corrupted storage — leave state empty
+      console.warn("[bizforge:workspace] Could not parse stored workspaces — starting fresh");
     }
   }
 
@@ -94,6 +95,7 @@ class WorkspaceStore {
   /** Scan a directory via Tauri IPC — returns null if .bizforge/ doesn't exist */
   async scanWorkspace(path: string): Promise<BizforgeWorkspaceScan | null> {
     if (!isTauri()) return null;
+    console.log(`[bizforge:workspace] Scanning ${path}...`);
     try {
       const { invoke } = await import("@tauri-apps/api/core");
       const bizforgePath = path.endsWith(".bizforge") ? path : path + "/.bizforge";
@@ -101,8 +103,10 @@ class WorkspaceStore {
         path: bizforgePath,
       });
       this.lastScan = result;
+      console.log(`[bizforge:workspace] Scan OK: ${result.agents.length} agents, ${result.projects.length} projects, ${result.skills.length} skills`);
       return result;
-    } catch {
+    } catch (e) {
+      console.warn(`[bizforge:workspace] Scan failed for ${path}:`, e);
       toastStore.warning(
         "Workspace scan failed",
         `.bizforge directory not found at ${path}`,
@@ -114,12 +118,15 @@ class WorkspaceStore {
   /** Add a workspace entry — no-ops on duplicate path */
   addWorkspace(ws: LocalWorkspace): void {
     if (this.workspaces.some((w) => w.path === ws.path)) return;
+    console.log(`[bizforge:workspace] Added workspace "${ws.name}" at ${ws.path}`);
     this.workspaces = [...this.workspaces, ws];
     this.#persist();
   }
 
   /** Set active workspace — page $effects are the single source of data refresh */
   async setActiveWorkspace(id: string): Promise<void> {
+    const ws = this.workspaces.find((w) => w.id === id);
+    console.log(`[bizforge:workspace] Switching active workspace → "${ws?.name ?? id}" (${id})`);
     this.activeWorkspaceId = id;
     this.#persist();
 
@@ -142,7 +149,6 @@ class WorkspaceStore {
     //    has a $effect watching activeWorkspaceId that triggers the appropriate
     //    fetch. Calling fetches here as well would cause a double-fetch on every
     //    workspace switch.
-    const ws = this.workspaces.find((w) => w.id === id);
     if (ws) {
       await this.scanAndLoadAgents(ws.path);
     }

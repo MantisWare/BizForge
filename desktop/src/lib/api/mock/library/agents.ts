@@ -1,4 +1,4 @@
-// Agent data — 153 agents across 16 categories
+// Agent data — 157 agents across 17 categories
 
 import type { LibraryAgent } from "./types";
 import type { RawAgent } from "./enrichment";
@@ -9,7 +9,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "anthropologist",
     name: "Anthropologist",
-    emoji: "🌍",
+    emoji: "globe",
     category: "academic",
     role: "",
     adapter: "osa",
@@ -20,7 +20,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "geographer",
     name: "Geographer",
-    emoji: "🗺️",
+    emoji: "compass",
     category: "academic",
     role: "",
     adapter: "osa",
@@ -31,7 +31,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "historian",
     name: "Historian",
-    emoji: "📚",
+    emoji: "academic-cap",
     category: "academic",
     role: "",
     adapter: "osa",
@@ -42,7 +42,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "narratologist",
     name: "Narratologist",
-    emoji: "📜",
+    emoji: "document-text",
     category: "academic",
     role: "",
     adapter: "osa",
@@ -53,7 +53,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "psychologist",
     name: "Psychologist",
-    emoji: "🧠",
+    emoji: "light-bulb",
     category: "academic",
     role: "",
     adapter: "osa",
@@ -66,7 +66,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "brand-guardian",
     name: "Brand Guardian",
-    emoji: "🛡",
+    emoji: "shield-check",
     category: "design",
     role: "",
     adapter: "osa",
@@ -77,7 +77,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "image-prompt-engineer",
     name: "Image Prompt Engineer",
-    emoji: "📷",
+    emoji: "camera",
     category: "design",
     role: "",
     adapter: "osa",
@@ -88,7 +88,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "inclusive-visuals-specialist",
     name: "Inclusive Visuals Specialist",
-    emoji: "🌈",
+    emoji: "sparkles",
     category: "design",
     role: "",
     adapter: "osa",
@@ -99,7 +99,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ui-designer",
     name: "UI Designer",
-    emoji: "🎨",
+    emoji: "paint-brush",
     category: "design",
     role: "",
     adapter: "osa",
@@ -110,7 +110,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ux-architect",
     name: "UX Architect",
-    emoji: "📐",
+    emoji: "academic-cap",
     category: "design",
     role: "",
     adapter: "osa",
@@ -121,7 +121,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ux-researcher",
     name: "UX Researcher",
-    emoji: "🔬",
+    emoji: "beaker",
     category: "design",
     role: "",
     adapter: "osa",
@@ -132,7 +132,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "visual-storyteller",
     name: "Visual Storyteller",
-    emoji: "🎬",
+    emoji: "camera",
     category: "design",
     role: "",
     adapter: "osa",
@@ -143,7 +143,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "whimsy-injector",
     name: "Whimsy Injector",
-    emoji: "✨",
+    emoji: "sparkles",
     category: "design",
     role: "",
     adapter: "osa",
@@ -156,7 +156,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ai-data-remediation-engineer",
     name: "AI Data Remediation Engineer",
-    emoji: "🧬",
+    emoji: "beaker",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -167,7 +167,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ai-engineer",
     name: "AI Engineer",
-    emoji: "🤖",
+    emoji: "robot",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -178,7 +178,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "autonomous-optimization-architect",
     name: "Autonomous Optimization Architect",
-    emoji: "⚡",
+    emoji: "bolt",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -189,7 +189,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "backend-architect",
     name: "Backend Architect",
-    emoji: "🏗",
+    emoji: "building",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -200,7 +200,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "code-reviewer",
     name: "Code Reviewer",
-    emoji: "👁",
+    emoji: "eye",
     category: "engineering",
     role: "reviewer",
     adapter: "osa",
@@ -211,7 +211,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "data-engineer",
     name: "Data Engineer",
-    emoji: "🔧",
+    emoji: "wrench",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -222,7 +222,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "database-optimizer",
     name: "Database Optimizer",
-    emoji: "🗄",
+    emoji: "circle-stack",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -233,7 +233,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "devops-automator",
     name: "DevOps Automator",
-    emoji: "⚙",
+    emoji: "cog",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -244,7 +244,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "embedded-firmware-engineer",
     name: "Embedded Firmware Engineer",
-    emoji: "🔩",
+    emoji: "wrench",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -255,7 +255,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "feishu-integration-developer",
     name: "Feishu Integration Developer",
-    emoji: "🔗",
+    emoji: "cube-transparent",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -266,7 +266,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "frontend-developer",
     name: "Frontend Developer",
-    emoji: "🖥",
+    emoji: "command-line",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -277,7 +277,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "git-workflow-master",
     name: "Git Workflow Master",
-    emoji: "🌿",
+    emoji: "heart",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -288,7 +288,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "incident-response-commander",
     name: "Incident Response Commander",
-    emoji: "🚨",
+    emoji: "warning",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -299,7 +299,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "mobile-app-builder",
     name: "Mobile App Builder",
-    emoji: "📲",
+    emoji: "chat-bubble",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -310,7 +310,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "rapid-prototyper",
     name: "Rapid Prototyper",
-    emoji: "⚡",
+    emoji: "bolt",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -321,7 +321,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "security-engineer",
     name: "Security Engineer",
-    emoji: "🔒",
+    emoji: "lock-closed",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -332,7 +332,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "senior-developer",
     name: "Senior Developer",
-    emoji: "💎",
+    emoji: "star",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -343,7 +343,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "software-architect",
     name: "Software Architect",
-    emoji: "🏛",
+    emoji: "office-building",
     category: "engineering",
     role: "architect",
     adapter: "osa",
@@ -354,7 +354,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "solidity-smart-contract-engineer",
     name: "Solidity Smart Contract Engineer",
-    emoji: "⛓️",
+    emoji: "lock-closed",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -365,7 +365,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "sre",
     name: "SRE",
-    emoji: "🛡",
+    emoji: "shield-check",
     category: "engineering",
     role: "engineer",
     adapter: "osa",
@@ -376,7 +376,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "technical-writer",
     name: "Technical Writer",
-    emoji: "📚",
+    emoji: "academic-cap",
     category: "engineering",
     role: "writer",
     adapter: "osa",
@@ -387,7 +387,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "threat-detection-engineer",
     name: "Threat Detection Engineer",
-    emoji: "🎯",
+    emoji: "flag",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -398,7 +398,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "wechat-mini-program-developer",
     name: "WeChat Mini Program Developer",
-    emoji: "💬",
+    emoji: "chat-bubble",
     category: "engineering",
     role: "",
     adapter: "osa",
@@ -411,7 +411,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "game-audio-engineer",
     name: "Game Audio Engineer",
-    emoji: "🎵",
+    emoji: "musical-note",
     category: "game-development",
     role: "",
     adapter: "osa",
@@ -422,7 +422,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "game-designer",
     name: "Game Designer",
-    emoji: "🎮",
+    emoji: "cpu",
     category: "game-development",
     role: "",
     adapter: "osa",
@@ -433,7 +433,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "level-designer",
     name: "Level Designer",
-    emoji: "🗺️",
+    emoji: "compass",
     category: "game-development",
     role: "",
     adapter: "osa",
@@ -444,7 +444,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "narrative-designer",
     name: "Narrative Designer",
-    emoji: "📖",
+    emoji: "academic-cap",
     category: "game-development",
     role: "",
     adapter: "osa",
@@ -455,7 +455,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "technical-artist",
     name: "Technical Artist",
-    emoji: "🎨",
+    emoji: "paint-brush",
     category: "game-development",
     role: "",
     adapter: "osa",
@@ -468,7 +468,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ai-citation-strategist",
     name: "AI Citation Strategist",
-    emoji: "🔮",
+    emoji: "sparkles",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -479,7 +479,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "app-store-optimizer",
     name: "App Store Optimizer",
-    emoji: "📱",
+    emoji: "chat-bubble",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -490,7 +490,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "baidu-seo-specialist",
     name: "Baidu SEO Specialist",
-    emoji: "🇨🇳",
+    emoji: "globe",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -501,7 +501,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "bilibili-content-strategist",
     name: "Bilibili Content Strategist",
-    emoji: "🎬",
+    emoji: "camera",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -512,7 +512,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "book-co-author",
     name: "Book Co-Author",
-    emoji: "📘",
+    emoji: "academic-cap",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -523,7 +523,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "carousel-growth-engine",
     name: "Carousel Growth Engine",
-    emoji: "🎠",
+    emoji: "star",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -534,7 +534,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "china-ecommerce-operator",
     name: "China E-Commerce Operator",
-    emoji: "🛒",
+    emoji: "package",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -545,7 +545,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "content-creator",
     name: "Content Creator",
-    emoji: "✍️",
+    emoji: "document-text",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -556,7 +556,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "cross-border-ecommerce",
     name: "Cross-Border E-Commerce Specialist",
-    emoji: "🌏",
+    emoji: "globe",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -567,7 +567,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "douyin-strategist",
     name: "Douyin Strategist",
-    emoji: "🎵",
+    emoji: "musical-note",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -578,7 +578,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "growth-hacker",
     name: "Growth Hacker",
-    emoji: "📈",
+    emoji: "scale-up",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -589,7 +589,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "instagram-curator",
     name: "Instagram Curator",
-    emoji: "📸",
+    emoji: "camera",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -600,7 +600,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "kuaishou-strategist",
     name: "Kuaishou Strategist",
-    emoji: "🎥",
+    emoji: "presentation",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -611,7 +611,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "linkedin-content-creator",
     name: "LinkedIn Content Creator",
-    emoji: "💼",
+    emoji: "briefcase",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -622,7 +622,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "livestream-commerce-coach",
     name: "Livestream Commerce Coach",
-    emoji: "🎙️",
+    emoji: "megaphone",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -633,7 +633,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "podcast-strategist",
     name: "Podcast Strategist",
-    emoji: "🎧",
+    emoji: "musical-note",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -644,7 +644,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "private-domain-operator",
     name: "Private Domain Operator",
-    emoji: "🔒",
+    emoji: "lock-closed",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -655,7 +655,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "reddit-community-builder",
     name: "Reddit Community Builder",
-    emoji: "💬",
+    emoji: "chat-bubble",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -666,7 +666,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "seo-specialist",
     name: "SEO Specialist",
-    emoji: "🔍",
+    emoji: "magnifying",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -677,7 +677,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "short-video-editing-coach",
     name: "Short-Video Editing Coach",
-    emoji: "🎬",
+    emoji: "camera",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -688,7 +688,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "social-media-strategist",
     name: "Social Media Strategist",
-    emoji: "📣",
+    emoji: "megaphone",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -699,7 +699,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "tiktok-strategist",
     name: "TikTok Strategist",
-    emoji: "🎵",
+    emoji: "musical-note",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -710,7 +710,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "twitter-engager",
     name: "Twitter Engager",
-    emoji: "🐦",
+    emoji: "megaphone",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -721,7 +721,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "wechat-official-account",
     name: "WeChat Official Account Manager",
-    emoji: "📱",
+    emoji: "chat-bubble",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -732,7 +732,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "weibo-strategist",
     name: "Weibo Strategist",
-    emoji: "🔥",
+    emoji: "fire",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -743,7 +743,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "xiaohongshu-specialist",
     name: "Xiaohongshu Specialist",
-    emoji: "🌸",
+    emoji: "heart",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -754,7 +754,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "zhihu-strategist",
     name: "Zhihu Strategist",
-    emoji: "🧠",
+    emoji: "light-bulb",
     category: "marketing",
     role: "",
     adapter: "osa",
@@ -767,7 +767,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-budget",
     name: "Audit Budget Specialist",
-    emoji: "💰",
+    emoji: "banknotes",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -778,7 +778,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-compliance",
     name: "Audit Compliance Specialist",
-    emoji: "⚖️",
+    emoji: "cog",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -789,7 +789,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-creative",
     name: "Audit Creative Specialist",
-    emoji: "🖼️",
+    emoji: "camera",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -800,7 +800,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-google",
     name: "Audit Google Specialist",
-    emoji: "🔍",
+    emoji: "magnifying",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -811,7 +811,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-meta",
     name: "Audit Meta Specialist",
-    emoji: "📘",
+    emoji: "academic-cap",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -822,7 +822,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "audit-tracking",
     name: "Audit Tracking Specialist",
-    emoji: "📡",
+    emoji: "cog",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -833,7 +833,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "auditor",
     name: "Paid Media Auditor",
-    emoji: "📋",
+    emoji: "document-text",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -844,7 +844,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "copy-writer",
     name: "Ad Copy Writer",
-    emoji: "📝",
+    emoji: "document-text",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -855,7 +855,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "creative-strategist",
     name: "Ad Creative Strategist",
-    emoji: "✍️",
+    emoji: "document-text",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -866,7 +866,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "format-adapter",
     name: "Ad Format Adapter",
-    emoji: "📐",
+    emoji: "academic-cap",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -877,7 +877,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "paid-social-strategist",
     name: "Paid Social Strategist",
-    emoji: "📱",
+    emoji: "chat-bubble",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -888,7 +888,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "ppc-strategist",
     name: "PPC Campaign Strategist",
-    emoji: "💰",
+    emoji: "banknotes",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -899,7 +899,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "programmatic-buyer",
     name: "Programmatic & Display Buyer",
-    emoji: "📺",
+    emoji: "presentation",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -910,7 +910,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "search-query-analyst",
     name: "Search Query Analyst",
-    emoji: "🔍",
+    emoji: "magnifying",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -921,7 +921,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "tracking-specialist",
     name: "Tracking & Measurement Specialist",
-    emoji: "📡",
+    emoji: "cog",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -932,7 +932,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "visual-designer",
     name: "Ad Visual Designer",
-    emoji: "🎨",
+    emoji: "paint-brush",
     category: "paid-media",
     role: "",
     adapter: "osa",
@@ -945,7 +945,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "behavioral-nudge-engine",
     name: "Behavioral Nudge Engine",
-    emoji: "🧠",
+    emoji: "light-bulb",
     category: "product",
     role: "",
     adapter: "osa",
@@ -956,7 +956,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "feedback-synthesizer",
     name: "Feedback Synthesizer",
-    emoji: "📊",
+    emoji: "chart-bar",
     category: "product",
     role: "",
     adapter: "osa",
@@ -967,7 +967,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "product-manager",
     name: "Product Manager",
-    emoji: "📋",
+    emoji: "document-text",
     category: "product",
     role: "",
     adapter: "osa",
@@ -978,7 +978,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "sprint-prioritizer",
     name: "Sprint Prioritizer",
-    emoji: "🏃",
+    emoji: "running",
     category: "product",
     role: "",
     adapter: "osa",
@@ -989,7 +989,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "trend-researcher",
     name: "Trend Researcher",
-    emoji: "🔭",
+    emoji: "beaker",
     category: "product",
     role: "",
     adapter: "osa",
@@ -1002,7 +1002,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "experiment-tracker",
     name: "Experiment Tracker",
-    emoji: "🧪",
+    emoji: "beaker",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1013,7 +1013,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "jira-workflow-steward",
     name: "Jira Workflow Steward",
-    emoji: "📋",
+    emoji: "document-text",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1024,7 +1024,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "project-shepherd",
     name: "Project Shepherd",
-    emoji: "🐑",
+    emoji: "robot",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1035,7 +1035,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "senior-project-manager",
     name: "Senior Project Manager",
-    emoji: "📝",
+    emoji: "document-text",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1046,7 +1046,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "studio-operations",
     name: "Studio Operations",
-    emoji: "🏭",
+    emoji: "building",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1057,7 +1057,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "studio-producer",
     name: "Studio Producer",
-    emoji: "🎬",
+    emoji: "camera",
     category: "project-management",
     role: "",
     adapter: "osa",
@@ -1070,7 +1070,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "account-strategist",
     name: "Account Strategist",
-    emoji: "🗺",
+    emoji: "compass",
     category: "sales",
     role: "strategist",
     adapter: "osa",
@@ -1081,7 +1081,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "deal-strategist",
     name: "Deal Strategist",
-    emoji: "♟",
+    emoji: "flag",
     category: "sales",
     role: "closer",
     adapter: "osa",
@@ -1092,7 +1092,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "discovery-coach",
     name: "Discovery Coach",
-    emoji: "🔍",
+    emoji: "magnifying",
     category: "sales",
     role: "coach",
     adapter: "osa",
@@ -1103,7 +1103,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "outbound-prospector",
     name: "Outbound Prospector",
-    emoji: "🎯",
+    emoji: "flag",
     category: "sales",
     role: "prospector",
     adapter: "osa",
@@ -1114,7 +1114,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "outbound-strategist",
     name: "Outbound Strategist",
-    emoji: "🎯",
+    emoji: "flag",
     category: "sales",
     role: "",
     adapter: "osa",
@@ -1125,7 +1125,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "pipeline-analyst",
     name: "Pipeline Analyst",
-    emoji: "📊",
+    emoji: "chart-bar",
     category: "sales",
     role: "analyst",
     adapter: "osa",
@@ -1136,7 +1136,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "proposal-strategist",
     name: "Proposal Strategist",
-    emoji: "🏹",
+    emoji: "flag",
     category: "sales",
     role: "",
     adapter: "osa",
@@ -1147,7 +1147,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "proposal-writer",
     name: "Proposal Writer",
-    emoji: "🏹",
+    emoji: "flag",
     category: "sales",
     role: "writer",
     adapter: "osa",
@@ -1158,7 +1158,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "sales-coach",
     name: "Sales Coach",
-    emoji: "🏆",
+    emoji: "star",
     category: "sales",
     role: "coach",
     adapter: "osa",
@@ -1169,7 +1169,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "sales-engineer",
     name: "Sales Engineer",
-    emoji: "🔧",
+    emoji: "wrench",
     category: "sales",
     role: "engineer",
     adapter: "osa",
@@ -1182,7 +1182,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "macos-spatial-metal-engineer",
     name: "macOS Spatial/Metal Engineer",
-    emoji: "🍎",
+    emoji: "academic-cap",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1193,7 +1193,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "terminal-integration-specialist",
     name: "Terminal Integration Specialist",
-    emoji: "🖥️",
+    emoji: "command-line",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1204,7 +1204,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "visionos-spatial-engineer",
     name: "visionOS Spatial Engineer",
-    emoji: "🥽",
+    emoji: "beaker",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1215,7 +1215,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "xr-cockpit-interaction-specialist",
     name: "XR Cockpit Interaction Specialist",
-    emoji: "🕹️",
+    emoji: "cpu",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1226,7 +1226,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "xr-immersive-developer",
     name: "XR Immersive Developer",
-    emoji: "🌐",
+    emoji: "globe",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1237,7 +1237,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "xr-interface-architect",
     name: "XR Interface Architect",
-    emoji: "🫧",
+    emoji: "sparkles",
     category: "spatial-computing",
     role: "",
     adapter: "osa",
@@ -1250,7 +1250,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "accounts-payable-agent",
     name: "Accounts Payable Agent",
-    emoji: "💸",
+    emoji: "banknotes",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1261,7 +1261,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "agentic-identity-trust",
     name: "Agentic Identity & Trust Architect",
-    emoji: "🔐",
+    emoji: "lock-closed",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1272,7 +1272,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "agents-orchestrator",
     name: "Agents Orchestrator",
-    emoji: "🎛️",
+    emoji: "cog",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1283,7 +1283,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "automation-governance-architect",
     name: "Automation Governance Architect",
-    emoji: "⚙️",
+    emoji: "cog",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1294,7 +1294,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "blockchain-security-auditor",
     name: "Blockchain Security Auditor",
-    emoji: "🛡️",
+    emoji: "shield-check",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1305,7 +1305,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "compliance-auditor",
     name: "Compliance Auditor",
-    emoji: "📋",
+    emoji: "document-text",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1316,7 +1316,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "corporate-training-designer",
     name: "Corporate Training Designer",
-    emoji: "📚",
+    emoji: "academic-cap",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1327,7 +1327,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "cultural-intelligence-strategist",
     name: "Cultural Intelligence Strategist",
-    emoji: "🌍",
+    emoji: "globe",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1338,7 +1338,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "data-consolidation-agent",
     name: "Data Consolidation Agent",
-    emoji: "🗄️",
+    emoji: "circle-stack",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1349,7 +1349,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "developer-advocate",
     name: "Developer Advocate",
-    emoji: "🗣️",
+    emoji: "megaphone",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1360,7 +1360,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "document-generator",
     name: "Document Generator",
-    emoji: "📄",
+    emoji: "document-text",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1371,7 +1371,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "french-consulting-market",
     name: "French Consulting Market Navigator",
-    emoji: "🇫🇷",
+    emoji: "globe",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1382,7 +1382,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "government-digital-presales-consultant",
     name: "Government Digital Presales Consultant",
-    emoji: "🏛️",
+    emoji: "office-building",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1393,7 +1393,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "healthcare-marketing-compliance",
     name: "Healthcare Marketing Compliance Specialist",
-    emoji: "⚕️",
+    emoji: "cog",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1404,7 +1404,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "identity-graph-operator",
     name: "Identity Graph Operator",
-    emoji: "🕸️",
+    emoji: "globe",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1415,7 +1415,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "korean-business-navigator",
     name: "Korean Business Navigator",
-    emoji: "🇰🇷",
+    emoji: "globe",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1426,7 +1426,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "lsp-index-engineer",
     name: "LSP/Index Engineer",
-    emoji: "🔎",
+    emoji: "magnifying",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1437,7 +1437,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "mcp-builder",
     name: "MCP Builder",
-    emoji: "🔌",
+    emoji: "cog",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1448,7 +1448,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "model-qa",
     name: "Model QA Specialist",
-    emoji: "🔬",
+    emoji: "beaker",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1459,7 +1459,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "recruitment-specialist",
     name: "Recruitment Specialist",
-    emoji: "🎯",
+    emoji: "flag",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1470,7 +1470,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "report-distribution-agent",
     name: "Report Distribution Agent",
-    emoji: "📤",
+    emoji: "envelope",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1481,7 +1481,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "sales-data-extraction-agent",
     name: "Sales Data Extraction Agent",
-    emoji: "📊",
+    emoji: "chart-bar",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1492,7 +1492,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "salesforce-architect",
     name: "Salesforce Architect",
-    emoji: "☁️",
+    emoji: "cube-transparent",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1503,7 +1503,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "study-abroad-advisor",
     name: "Study Abroad Advisor",
-    emoji: "🎓",
+    emoji: "academic-cap",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1514,7 +1514,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "supply-chain-strategist",
     name: "Supply Chain Strategist",
-    emoji: "🔗",
+    emoji: "cube-transparent",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1525,7 +1525,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "workflow-architect",
     name: "Workflow Architect",
-    emoji: "🗺️",
+    emoji: "compass",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1536,7 +1536,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "zk-steward",
     name: "ZK Steward",
-    emoji: "🗃️",
+    emoji: "folder",
     category: "specialized",
     role: "",
     adapter: "osa",
@@ -1549,7 +1549,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "analytics-reporter",
     name: "Analytics Reporter",
-    emoji: "📊",
+    emoji: "chart-bar",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1560,7 +1560,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "executive-summary-generator",
     name: "Executive Summary Generator",
-    emoji: "📝",
+    emoji: "document-text",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1571,7 +1571,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "executive-summary",
     name: "Executive Summary Generator",
-    emoji: "📊",
+    emoji: "chart-bar",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1582,7 +1582,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "finance-tracker",
     name: "Finance Tracker",
-    emoji: "💰",
+    emoji: "banknotes",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1593,7 +1593,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "infrastructure-maintainer",
     name: "Infrastructure Maintainer",
-    emoji: "🏢",
+    emoji: "building",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1604,7 +1604,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "legal-compliance-checker",
     name: "Legal Compliance Checker",
-    emoji: "⚖️",
+    emoji: "cog",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1615,7 +1615,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "support-responder",
     name: "Support Responder",
-    emoji: "💬",
+    emoji: "chat-bubble",
     category: "support",
     role: "",
     adapter: "osa",
@@ -1628,7 +1628,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "accessibility-auditor",
     name: "Accessibility Auditor",
-    emoji: "♿",
+    emoji: "heart",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1639,7 +1639,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "api-tester",
     name: "API Tester",
-    emoji: "🔌",
+    emoji: "cog",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1650,7 +1650,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "evidence-collector",
     name: "Evidence Collector",
-    emoji: "📋",
+    emoji: "document-text",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1661,7 +1661,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "performance-benchmarker",
     name: "Performance Benchmarker",
-    emoji: "⏱️",
+    emoji: "clock",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1672,7 +1672,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "reality-checker",
     name: "Reality Checker",
-    emoji: "✅",
+    emoji: "check",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1683,7 +1683,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "test-results-analyzer",
     name: "Test Results Analyzer",
-    emoji: "📋",
+    emoji: "document-text",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1694,7 +1694,7 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "tool-evaluator",
     name: "Tool Evaluator",
-    emoji: "🔧",
+    emoji: "wrench",
     category: "testing",
     role: "",
     adapter: "osa",
@@ -1705,13 +1705,59 @@ const RAW_AGENTS: RawAgent[] = [
   {
     id: "workflow-optimizer",
     name: "Workflow Optimizer",
-    emoji: "⚡",
+    emoji: "bolt",
     category: "testing",
     role: "",
     adapter: "osa",
     budget: 500,
     description:
       "Analyzes and improves workflow efficiency by identifying bottlenecks and waste.",
+  },
+
+  // domo (4)
+  {
+    id: "domo-platform-developer",
+    name: "Domo Platform Developer",
+    emoji: "🔷",
+    category: "domo",
+    role: "platform developer",
+    adapter: "osa",
+    budget: 600,
+    description:
+      "Full-stack Domo platform developer — apps, data pipelines, Code Engine, connectors, embedded analytics, and governance.",
+  },
+  {
+    id: "domo-app-engineer",
+    name: "Domo App Engineer",
+    emoji: "📱",
+    category: "domo",
+    role: "app engineer",
+    adapter: "osa",
+    budget: 400,
+    description:
+      "Specialist in Domo custom apps — App Framework, DDX Bricks, AppDB, domo.js, toolkit, and publishing.",
+  },
+  {
+    id: "domo-data-engineer",
+    name: "Domo Data Engineer",
+    emoji: "🔬",
+    category: "domo",
+    role: "data engineer",
+    adapter: "osa",
+    budget: 450,
+    description:
+      "Specialist in Domo data pipelines — connectors, datasets, Stream API, Magic ETL, Jupyter, and data science.",
+  },
+  {
+    id: "domo-automation-engineer",
+    name: "Domo Automation Engineer",
+    emoji: "⚡",
+    category: "domo",
+    role: "automation engineer",
+    adapter: "osa",
+    budget: 400,
+    description:
+      "Specialist in Domo automation — Workflows, Code Engine functions, governance automation, and API integration.",
   },
 ];
 

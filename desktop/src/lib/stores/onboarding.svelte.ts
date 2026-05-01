@@ -12,7 +12,15 @@ export interface WorkspaceConfig {
   description: string;
 }
 
-export type TeamTemplate = "solo" | "dev-team" | "research" | "custom";
+export type TeamTemplate =
+  | "solo"
+  | "dev-team"
+  | "research"
+  | "content-studio"
+  | "ops-center"
+  | "sales-engine"
+  | "data-science"
+  | "custom";
 
 export type AdapterType =
   | "osa"

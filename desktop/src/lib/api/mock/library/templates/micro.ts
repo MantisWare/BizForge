@@ -10,7 +10,7 @@ export const agents: BizforgeAgent[] = [
     id: "tpl-micro-agent",
     name: "micro-agent",
     display_name: "Micro Agent",
-    avatar_emoji: "⚡",
+    avatar_emoji: "bolt",
     role: "agent",
     status: "idle",
     adapter: "claude-code",

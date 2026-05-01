@@ -8,7 +8,7 @@ const RAW_TEMPLATES: RawTemplate[] = [
   {
     id: "growth-os",
     name: "Growth OS",
-    emoji: "🚀",
+    emoji: "rocket",
     description:
       "Creator business growth operating system — 36 agents across 6 modes covering research, content, outreach, sales, and analytics.",
     size: "enterprise",
@@ -17,7 +17,7 @@ const RAW_TEMPLATES: RawTemplate[] = [
   {
     id: "micro",
     name: "Micro Agent",
-    emoji: "⚡",
+    emoji: "bolt",
     description: "Single-purpose agent for focused tasks",
     size: "micro",
     agent_count: 1,
@@ -25,7 +25,7 @@ const RAW_TEMPLATES: RawTemplate[] = [
   {
     id: "small",
     name: "Small Team",
-    emoji: "👥",
+    emoji: "briefcase",
     description: "Focused team with specialized roles",
     size: "small",
     agent_count: 3,
@@ -33,7 +33,7 @@ const RAW_TEMPLATES: RawTemplate[] = [
   {
     id: "full",
     name: "Full Operation",
-    emoji: "🏢",
+    emoji: "building",
     description: "Complete department with workflows and governance",
     size: "full",
     agent_count: 6,
@@ -41,7 +41,7 @@ const RAW_TEMPLATES: RawTemplate[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    emoji: "🌐",
+    emoji: "globe",
     description: "Multi-team organization with compliance and budgets",
     size: "enterprise",
     agent_count: 15,

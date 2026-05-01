@@ -70,6 +70,14 @@ import {
   updateGateway,
   deleteGateway,
 } from "./gateways";
+import {
+  mockProviders,
+  addProvider,
+  updateProvider as updateMockProvider,
+  deleteProvider as deleteMockProvider,
+  testProvider as testMockProvider,
+  setProviderDefault,
+} from "./providers";
 import { mockUsers } from "./users";
 import { mockConfig } from "./config";
 import { mockTemplates } from "./templates";
@@ -151,6 +159,7 @@ import type {
   AlertRule,
   Document,
   Gateway,
+  AIProvider,
   Workflow,
   WorkflowStep,
   WorkflowRun,
@@ -240,7 +249,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
             id: body.id ?? `agent-new-${Date.now()}`,
             name: body.name ?? "new-agent",
             display_name: body.display_name ?? body.name ?? "New Agent",
-            avatar_emoji: body.avatar_emoji ?? "🤖",
+            avatar_emoji: body.avatar_emoji ?? "robot",
             role: body.role ?? "General",
             adapter: body.adapter ?? "osa",
             model: body.model ?? "claude-sonnet-4-6",
@@ -1096,7 +1105,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           title: (body.title as string) ?? null,
           agent_id: (body.agent_id as string) ?? "agent-1",
           agent_name: "Agent",
-          agent_avatar: "🤖",
+          agent_avatar: "robot",
           workspace_id: (body.workspace_id as string) ?? null,
           user_id: null,
           status: "active" as const,
@@ -1465,6 +1474,83 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         return newGateway;
       }
       return { gateways: mockGateways() };
+    },
+  },
+
+  // ── Providers ──────────────────────────────────────────────────────────────────
+  {
+    pattern: /^\/providers\/([^/]+)\/test$/,
+    handler: (path) => {
+      const id = path.split("/")[2];
+      const result = testMockProvider(id);
+      const provider = mockProviders().find((p) => p.id === id);
+      if (provider) {
+        updateMockProvider(id, {
+          status: result.status,
+          last_tested_at: new Date().toISOString(),
+          models: result.models,
+        });
+      }
+      return {
+        provider: updateMockProvider(id, {}) ?? provider,
+        test_result: result,
+      };
+    },
+  },
+  {
+    pattern: /^\/providers\/([^/]+)$/,
+    handler: (path, options) => {
+      const id = path.split("/")[2];
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "DELETE") {
+        deleteMockProvider(id);
+        return { ok: true };
+      }
+      if ((method === "PUT" || method === "PATCH") && options.body) {
+        try {
+          const body = JSON.parse(
+            typeof options.body === "string"
+              ? options.body
+              : JSON.stringify(options.body),
+          ) as Partial<AIProvider>;
+          if (body.is_default) setProviderDefault(id);
+          return { provider: updateMockProvider(id, body) ?? { error: "not_found" } };
+        } catch {
+          return { provider: mockProviders().find((p) => p.id === id) ?? { error: "not_found" } };
+        }
+      }
+      return { provider: mockProviders().find((p) => p.id === id) ?? { error: "not_found" } };
+    },
+  },
+  {
+    pattern: /^\/providers$/,
+    handler: (_path, options) => {
+      if ((options.method ?? "GET").toUpperCase() === "POST") {
+        let body: Record<string, unknown> = {};
+        try {
+          body = JSON.parse(options.body as string);
+        } catch {
+          /* ignore */
+        }
+        const newProvider: AIProvider = {
+          id: `prov-new-${Date.now()}`,
+          slug: (body.slug as string) ?? "custom",
+          name: (body.name as string) ?? "New Provider",
+          category: (body.category as AIProvider["category"]) ?? "cloud",
+          api_key_set: (body.api_key as string | undefined) !== undefined && (body.api_key as string) !== "",
+          endpoint: (body.endpoint as string) ?? undefined,
+          config: (body.config as AIProvider["config"]) ?? {},
+          models: (body.models as string[]) ?? [],
+          is_default: (body.is_default as boolean) ?? false,
+          status: "untested",
+          workspace_id: (body.workspace_id as string) ?? undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        addProvider(newProvider);
+        return { provider: newProvider };
+      }
+      return { providers: mockProviders() };
     },
   },
 

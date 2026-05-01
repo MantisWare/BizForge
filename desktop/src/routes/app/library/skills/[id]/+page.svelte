@@ -7,6 +7,7 @@
     getLibrarySkillDetail,
     type LibrarySkill,
   } from '$lib/api/mock/library';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   const id = $derived(page.params.id ?? '');
   const skill = $derived<LibrarySkill | null>(id ? getLibrarySkillDetail(id) : null);
@@ -56,7 +57,7 @@
 <PageShell title={skill?.name ?? 'Skill'} subtitle={skill ? skill.category : undefined}>
   {#if !skill}
     <div class="lds-not-found" role="main">
-      <span class="lds-not-found-icon" aria-hidden="true">🔍</span>
+      <span class="lds-not-found-icon" aria-hidden="true"><AgentIcon value="magnifying" size={36} /></span>
       <p class="lds-not-found-text">Skill not found.</p>
       <button
         class="lds-back-btn"
@@ -93,7 +94,7 @@
 
           <!-- Hero -->
           <div class="lds-hero">
-            <div class="lds-hero-icon" aria-hidden="true" style="color: {categoryColor(skill.category)}">⚡</div>
+            <div class="lds-hero-icon" aria-hidden="true" style="color: {categoryColor(skill.category)}"><AgentIcon value="bolt" size={36} /></div>
             <div class="lds-hero-meta">
               <div class="lds-hero-badges">
                 {#if skill.isOfficial}
@@ -125,17 +126,17 @@
             <h2 class="lds-card-title">Stats</h2>
             <div class="lds-stats-grid" role="list">
               <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true">⬇</span>
+                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
                 <span class="lds-stat-value">{formatNumber(skill.downloads)}</span>
                 <span class="lds-stat-label">Downloads</span>
               </div>
               <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true">★</span>
+                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
                 <span class="lds-stat-value">{formatNumber(skill.favorites)}</span>
                 <span class="lds-stat-label">Favorites</span>
               </div>
               <div class="lds-stat" role="listitem">
-                <span class="lds-stat-icon" aria-hidden="true">⑂</span>
+                <span class="lds-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
                 <span class="lds-stat-value">{formatNumber(skill.forks)}</span>
                 <span class="lds-stat-label">Forks</span>
               </div>
@@ -228,7 +229,9 @@
   }
 
   .lds-not-found-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 
@@ -326,8 +329,9 @@
   }
 
   .lds-hero-icon {
-    font-size: 52px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
   }
 
@@ -428,7 +432,9 @@
   }
 
   .lds-stat-icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
   }
 

@@ -4,6 +4,7 @@
   import StatusDot from '$lib/components/shared/StatusDot.svelte';
   import TimeAgo from '$lib/components/shared/TimeAgo.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import type { BizforgeAgent, AgentStatus, AgentLifecycleAction } from '$api/types';
 
   interface Props {
@@ -73,7 +74,7 @@
   onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToDetail(); } }}
 >
   <div class="ac-top">
-    <span class="ac-emoji" aria-hidden="true">{agent.avatar_emoji}</span>
+    <span class="ac-emoji" aria-hidden="true"><AgentIcon value={agent.avatar_emoji} size={28} /></span>
     <div class="ac-identity">
       <span class="ac-name">{agent.display_name}</span>
       <span class="ac-role">{agent.role}</span>
@@ -201,9 +202,15 @@
   }
 
   .ac-emoji {
-    font-size: 32px;
-    line-height: 1;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: rgba(242, 101, 34, 0.12);
+    color: #f26522;
   }
 
   .ac-identity {

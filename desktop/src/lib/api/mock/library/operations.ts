@@ -8,7 +8,7 @@ const RAW_OPERATIONS: RawOperation[] = [
   {
     id: "growth-os",
     name: "Growth OS",
-    emoji: "🚀",
+    emoji: "rocket",
     description:
       "Creator business growth operating system — 36 agents across 6 modes covering research, content, outreach, sales, and analytics.",
     agent_count: 36,
@@ -18,7 +18,7 @@ const RAW_OPERATIONS: RawOperation[] = [
   {
     id: "sales-engine",
     name: "Sales Engine",
-    emoji: "💼",
+    emoji: "briefcase",
     description:
       "B2B SaaS sales operation — full-cycle pipeline from prospect to closed-won.",
     agent_count: 5,
@@ -28,7 +28,7 @@ const RAW_OPERATIONS: RawOperation[] = [
   {
     id: "dev-shop",
     name: "Dev Shop",
-    emoji: "🏗",
+    emoji: "building",
     description:
       "Software development operation — spec to production with quality-first engineering.",
     agent_count: 6,
@@ -38,7 +38,7 @@ const RAW_OPERATIONS: RawOperation[] = [
   {
     id: "content-factory",
     name: "Content Factory",
-    emoji: "✍️",
+    emoji: "document-text",
     description:
       "Content production operation — ideation to published, optimized, multi-platform content.",
     agent_count: 5,
@@ -48,7 +48,7 @@ const RAW_OPERATIONS: RawOperation[] = [
   {
     id: "cognitive-os",
     name: "Cognitive OS",
-    emoji: "🧠",
+    emoji: "light-bulb",
     description:
       "Personal knowledge management system — capture, organize, retrieve, and synthesize information.",
     agent_count: 4,

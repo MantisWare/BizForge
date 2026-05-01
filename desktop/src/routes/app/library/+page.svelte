@@ -5,6 +5,7 @@
   import LibrarySkillCard from '$lib/components/library/LibrarySkillCard.svelte';
   import LibraryOperationCard from '$lib/components/library/LibraryOperationCard.svelte';
   import LibraryTemplateCard from '$lib/components/library/LibraryTemplateCard.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { goto } from '$app/navigation';
   import { deployTemplate } from '$lib/services/template-deploy';
   import { toastStore } from '$lib/stores/toasts.svelte';
@@ -209,7 +210,7 @@
   }
 
   function handleAgentAdd(agent: LibraryAgent) {
-    notify(`${agent.emoji} ${agent.name} added to workspace`);
+    notify(`${agent.name} added to workspace`);
   }
 
   function handleSkillToggle(skill: LibrarySkill) {
@@ -223,7 +224,7 @@
       const warn = result.warnings && result.warnings.length > 0
         ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
         : '';
-      notify(`${op.emoji} ${op.name} deployed — ${result.agentCount} agents${warn}`);
+      notify(`${op.name} deployed — ${result.agentCount} agents${warn}`);
       if (result.warnings) {
         for (const w of result.warnings) {
           toastStore.warning('Deploy warning', w);
@@ -242,7 +243,7 @@
       const warn = result.warnings && result.warnings.length > 0
         ? ` (${result.warnings.length} warning${result.warnings.length === 1 ? '' : 's'})`
         : '';
-      notify(`${tmpl.emoji} ${tmpl.name} deployed — ${result.agentCount} agents${warn}`);
+      notify(`${tmpl.name} deployed — ${result.agentCount} agents${warn}`);
       if (result.warnings) {
         for (const w of result.warnings) {
           toastStore.warning('Deploy warning', w);
@@ -356,7 +357,7 @@
       <div class="lib-agent-list" role="list" aria-label="Agents">
         {#each filteredAgents as agent (agent.id)}
           <div role="button" tabindex="0" class="lib-list-row" onclick={() => goto(`/app/library/agents/${agent.id}`)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/app/library/agents/${agent.id}`); } }} aria-label="View {agent.name}">
-            <span class="lib-list-emoji" aria-hidden="true">{agent.emoji}</span>
+            <span class="lib-list-emoji" aria-hidden="true"><AgentIcon value={agent.emoji} size={20} /></span>
             <div class="lib-list-info">
               <span class="lib-list-name">{agent.name}</span>
               <span class="lib-list-desc">{agent.description}</span>
@@ -803,10 +804,12 @@
   }
 
   .lib-list-emoji {
-    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f26522;
     flex-shrink: 0;
     width: 28px;
-    text-align: center;
   }
 
   .lib-list-info {

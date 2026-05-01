@@ -2,6 +2,7 @@
 <!-- SVG avatar component for a single agent in the 2D office view -->
 <script lang="ts">
   import type { BizforgeAgent, AgentStatus } from '$api/types';
+  import { getIconPaths, DEFAULT_ICON } from '$lib/utils/agent-icons';
 
   interface Props {
     agent: BizforgeAgent;
@@ -48,14 +49,10 @@
     agent.status === 'running' || agent.status === 'paused'
   );
 
-  // Avatar label: emoji or first letter
-  const avatarLabel = $derived(
-    agent.avatar_emoji?.trim() ||
-    (agent.display_name?.[0] ?? agent.name?.[0] ?? '?').toUpperCase()
-  );
+  const iconPaths = $derived(getIconPaths(agent.avatar_emoji) ?? getIconPaths(DEFAULT_ICON)!);
 
-  const isEmoji = $derived(
-    !!agent.avatar_emoji?.trim() && agent.avatar_emoji.trim().length <= 4
+  const avatarInitial = $derived(
+    (agent.display_name?.[0] ?? agent.name?.[0] ?? '?').toUpperCase()
   );
 
   // Truncate task text for speech bubble
@@ -198,15 +195,13 @@
   <!-- Inner shadow overlay -->
   <circle cx="0" cy="-14" r="15" fill="url(#oa-avatar-inner)" opacity="0.3" />
 
-  <!-- Avatar label: emoji or letter -->
-  {#if isEmoji}
-    <text
-      x="0"
-      y="-9"
-      text-anchor="middle"
-      dominant-baseline="middle"
-      font-size="13"
-    >{avatarLabel}</text>
+  <!-- Avatar icon -->
+  {#if iconPaths.length > 0}
+    <g transform="translate(-8, -22) scale(0.667)">
+      {#each iconPaths as d}
+        <path {d} fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      {/each}
+    </g>
   {:else}
     <text
       x="0"
@@ -217,7 +212,7 @@
       font-weight="700"
       fill="white"
       font-family="system-ui, sans-serif"
-    >{avatarLabel}</text>
+    >{avatarInitial}</text>
   {/if}
 
   <!-- Status indicator dot -->

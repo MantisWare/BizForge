@@ -74,7 +74,9 @@ class EnvironmentStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load environment", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load environment", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -87,7 +89,9 @@ class EnvironmentStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load detected apps", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load detected apps", msg);
+      }
     }
   }
 
@@ -98,7 +102,9 @@ class EnvironmentStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load agent apps", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load agent apps", msg);
+      }
     }
   }
 
@@ -110,7 +116,9 @@ class EnvironmentStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load system resources", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load system resources", msg);
+      }
     }
   }
 
@@ -121,7 +129,9 @@ class EnvironmentStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load capabilities", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load capabilities", msg);
+      }
     }
   }
 

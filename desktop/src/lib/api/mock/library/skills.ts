@@ -1,4 +1,4 @@
-// Skill data — 109 skills across 18 categories
+// Skill data — 121 skills across 19 categories
 
 import type { LibrarySkill } from "./types";
 import type { RawSkill } from "./enrichment";
@@ -784,6 +784,92 @@ const RAW_SKILLS: RawSkill[] = [
     category: "agent",
     description:
       "Moves an agent to a different team, operation, or reporting structure.",
+  },
+
+  // domo (12)
+  {
+    id: "domo-app-scaffold",
+    name: "Domo App Scaffold",
+    category: "domo",
+    description:
+      "Initialize and scaffold a new Domo custom app or DDX Brick with manifest, dataset wiring, and local dev configuration.",
+  },
+  {
+    id: "domo-appdb-manage",
+    name: "Domo AppDB Manage",
+    category: "domo",
+    description:
+      "Create, configure, and manage AppDB collections with document CRUD, security filters, and permissions.",
+  },
+  {
+    id: "domo-app-publish",
+    name: "Domo App Publish",
+    category: "domo",
+    description:
+      "Build, validate, and publish a Domo app to an instance or the Appstore marketplace.",
+  },
+  {
+    id: "domo-code-engine",
+    name: "Domo Code Engine",
+    category: "domo",
+    description:
+      "Write and deploy server-side Code Engine functions (JavaScript/Python) inside Domo.",
+  },
+  {
+    id: "domo-connector-build",
+    name: "Domo Connector Build",
+    category: "domo",
+    description:
+      "Design and build custom Domo connectors for data ingestion, writeback, and federated queries.",
+  },
+  {
+    id: "domo-dataset-manage",
+    name: "Domo Dataset Manage",
+    category: "domo",
+    description:
+      "Create, import, stream, and manage Domo DataSets with schema definitions and PDP policies.",
+  },
+  {
+    id: "domo-magic-etl",
+    name: "Domo Magic ETL",
+    category: "domo",
+    description:
+      "Design Magic ETL dataflows with transformations, scripting tiles, JSON Expand, and scheduling.",
+  },
+  {
+    id: "domo-workflow-automate",
+    name: "Domo Workflow Automate",
+    category: "domo",
+    description:
+      "Create, trigger, and manage Domo Workflows via API for process automation.",
+  },
+  {
+    id: "domo-embed-analytics",
+    name: "Domo Embed Analytics",
+    category: "domo",
+    description:
+      "Embed Domo cards, dashboards, and apps into external websites with token auth and filters.",
+  },
+  {
+    id: "domo-api-integrate",
+    name: "Domo API Integrate",
+    category: "domo",
+    description:
+      "Authenticate and interact with Domo's three API tiers for external integration.",
+  },
+  {
+    id: "domo-governance",
+    name: "Domo Governance",
+    category: "domo",
+    description:
+      "Manage Domo governance — users, groups, SSO, PDP, activity logs, and security controls.",
+  },
+  {
+    id: "domo-data-science",
+    name: "Domo Data Science",
+    category: "domo",
+    description:
+      "Leverage Domo's data science stack — Jupyter, AutoML, AI services, and scripting tiles.",
   },
 ];
 

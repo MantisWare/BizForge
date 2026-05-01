@@ -1,0 +1,153 @@
+// src/lib/stores/providers.svelte.ts
+import type {
+  AIProvider,
+  AIProviderCreateRequest,
+  AIProviderTestResult,
+} from "$api/types";
+import { providers as providersApi } from "$api/client";
+import { toastStore } from "./toasts.svelte";
+
+class ProvidersStore {
+  providers = $state<AIProvider[]>([]);
+  loading = $state(false);
+  error = $state<string | null>(null);
+
+  totalCount = $derived(this.providers.length);
+  configuredCount = $derived(
+    this.providers.filter((p) => p.status === "connected").length,
+  );
+  configured = $derived(
+    this.providers.filter((p) => p.status === "connected"),
+  );
+  defaultProvider = $derived(
+    this.providers.find((p) => p.is_default) ?? null,
+  );
+
+  async fetch(workspaceId?: string): Promise<void> {
+    this.loading = true;
+    try {
+      this.providers = await providersApi.list(workspaceId);
+      this.error = null;
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.error = msg;
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load providers", msg);
+      }
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async create(
+    req: AIProviderCreateRequest,
+  ): Promise<AIProvider | null> {
+    this.loading = true;
+    try {
+      const created = await providersApi.create(req);
+      this.providers = [created, ...this.providers];
+      this.error = null;
+      toastStore.success("Provider added", created.name);
+      return created;
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Failed to add provider", msg);
+      return null;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async update(
+    id: string,
+    data: Partial<AIProviderCreateRequest>,
+  ): Promise<AIProvider | null> {
+    const previous = this.providers;
+    this.providers = this.providers.map((p) =>
+      p.id === id ? { ...p, ...data } : p,
+    );
+    try {
+      const updated = await providersApi.update(id, data);
+      this.providers = this.providers.map((p) =>
+        p.id === id ? updated : p,
+      );
+      this.error = null;
+      toastStore.success("Provider updated", updated.name);
+      return updated;
+    } catch (e) {
+      this.providers = previous;
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Failed to update provider", msg);
+      return null;
+    }
+  }
+
+  async remove(id: string): Promise<void> {
+    const previous = this.providers;
+    this.providers = this.providers.filter((p) => p.id !== id);
+    try {
+      await providersApi.delete(id);
+      this.error = null;
+      toastStore.success("Provider removed");
+    } catch (e) {
+      this.providers = previous;
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Failed to remove provider", msg);
+    }
+  }
+
+  async test(
+    id: string,
+  ): Promise<AIProviderTestResult | null> {
+    try {
+      const { provider, test_result } = await providersApi.test(id);
+      this.providers = this.providers.map((p) =>
+        p.id === id ? provider : p,
+      );
+      this.error = null;
+      if (test_result.status === "connected") {
+        toastStore.success(
+          "Connection successful",
+          `Latency: ${test_result.latency_ms ?? "—"}ms`,
+        );
+      } else {
+        toastStore.error(
+          "Connection failed",
+          test_result.error_message ?? "Unknown error",
+        );
+      }
+      return test_result;
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Test failed", msg);
+      return null;
+    }
+  }
+
+  async setDefault(id: string): Promise<void> {
+    const previous = this.providers;
+    this.providers = this.providers.map((p) => ({
+      ...p,
+      is_default: p.id === id,
+    }));
+    try {
+      await providersApi.update(id, { is_default: true });
+      this.error = null;
+    } catch (e) {
+      this.providers = previous;
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Failed to set default provider", msg);
+    }
+  }
+
+  getById(id: string): AIProvider | null {
+    return this.providers.find((p) => p.id === id) ?? null;
+  }
+}
+
+export const providersStore = new ProvidersStore();

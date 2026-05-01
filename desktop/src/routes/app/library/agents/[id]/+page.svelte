@@ -7,6 +7,7 @@
     getLibraryAgentDetail,
     type LibraryAgent,
   } from '$lib/api/mock/library';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   const id = $derived(page.params.id ?? '');
   const agent = $derived<LibraryAgent | null>(id ? getLibraryAgentDetail(id) : null);
@@ -49,7 +50,7 @@
 <PageShell title={agent?.name ?? 'Agent'} subtitle={agent ? agent.category : undefined}>
   {#if !agent}
     <div class="lda-not-found" role="main">
-      <span class="lda-not-found-icon" aria-hidden="true">🔍</span>
+      <span class="lda-not-found-icon" aria-hidden="true"><AgentIcon value="magnifying" size={36} /></span>
       <p class="lda-not-found-text">Agent not found.</p>
       <button
         class="lda-back-btn"
@@ -86,7 +87,7 @@
 
           <!-- Hero -->
           <div class="lda-hero">
-            <span class="lda-hero-emoji" aria-hidden="true">{agent.emoji}</span>
+            <span class="lda-hero-emoji" aria-hidden="true"><AgentIcon value={agent.emoji} size={36} /></span>
             <div class="lda-hero-meta">
               <div class="lda-hero-badges">
                 {#if agent.isOfficial}
@@ -111,22 +112,22 @@
             <h2 class="lda-card-title">Stats</h2>
             <div class="lda-stats-grid" role="list">
               <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true">⬇</span>
+                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
                 <span class="lda-stat-value">{formatNumber(agent.downloads)}</span>
                 <span class="lda-stat-label">Downloads</span>
               </div>
               <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true">★</span>
+                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
                 <span class="lda-stat-value">{formatNumber(agent.favorites)}</span>
                 <span class="lda-stat-label">Favorites</span>
               </div>
               <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true">⑂</span>
+                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
                 <span class="lda-stat-value">{formatNumber(agent.forks)}</span>
                 <span class="lda-stat-label">Forks</span>
               </div>
               <div class="lda-stat" role="listitem">
-                <span class="lda-stat-icon" aria-hidden="true">◆</span>
+                <span class="lda-stat-icon" aria-hidden="true"><AgentIcon value="sparkles" size={16} /></span>
                 <span class="lda-stat-value">{agent.rating.toFixed(1)}</span>
                 <span class="lda-stat-label">Rating</span>
               </div>
@@ -135,7 +136,7 @@
                   class="lda-stat-icon"
                   aria-hidden="true"
                   style="color: {potencyColor(agent.potency)}"
-                >⚡</span>
+                ><AgentIcon value="bolt" size={16} /></span>
                 <span class="lda-stat-value" style="color: {potencyColor(agent.potency)}">
                   {agent.potency}
                 </span>
@@ -239,7 +240,9 @@
   }
 
   .lda-not-found-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 
@@ -337,8 +340,9 @@
   }
 
   .lda-hero-emoji {
-    font-size: 56px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
   }
 
@@ -447,7 +451,9 @@
   }
 
   .lda-stat-icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
   }
 

@@ -1,0 +1,14 @@
+{
+  "identifier": "monitor",
+  "description": "Capabilities for headless monitor dashboard windows",
+  "windows": [
+    "monitor-*"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-show",
+    "core:window:allow-close",
+    "core:window:allow-set-focus"
+  ]
+}

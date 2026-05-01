@@ -54,7 +54,9 @@ class DatasetsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load datasets", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load datasets", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -69,7 +71,9 @@ class DatasetsStore {
       this.previewTotal = result.total ?? 0;
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load preview", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load preview", msg);
+      }
     } finally {
       this.previewLoading = false;
     }

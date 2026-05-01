@@ -3,6 +3,7 @@
 <script lang="ts">
   import { agents as agentsApi } from '$lib/api/client';
   import type { BizforgeAgent } from '$lib/api/types';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     selected?: string;
@@ -22,7 +23,7 @@
 
   const displayLabel = $derived(
     selectedAgent
-      ? `${selectedAgent.avatar_emoji} ${selectedAgent.display_name}`
+      ? selectedAgent.display_name
       : 'Default Agent'
   );
 
@@ -101,7 +102,7 @@
           aria-selected={!selected}
           onclick={() => select('')}
         >
-          <span class="as-emoji">🤖</span>
+          <span class="as-emoji"><AgentIcon value="robot" size={14} /></span>
           <span class="as-name">Default Agent</span>
         </button>
         {#each agentList as agent (agent.id)}
@@ -112,7 +113,7 @@
             aria-selected={selected === agent.id}
             onclick={() => select(agent.id)}
           >
-            <span class="as-emoji">{agent.avatar_emoji}</span>
+            <span class="as-emoji"><AgentIcon value={agent.avatar_emoji} size={14} /></span>
             <span class="as-name">{agent.display_name}</span>
             <span class="as-role">{agent.role}</span>
           </button>
@@ -201,9 +202,10 @@
   }
 
   .as-emoji {
-    font-size: 14px;
     flex-shrink: 0;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
   }
 
   .as-name {

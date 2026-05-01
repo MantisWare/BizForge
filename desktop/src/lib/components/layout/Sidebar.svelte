@@ -10,6 +10,7 @@
   import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
   import SidebarNavItem from './SidebarNavItem.svelte';
   import SidebarSection from './SidebarSection.svelte';
+  import { getIconDef } from '$lib/utils/agent-icons';
 
   interface User {
     name: string;
@@ -27,15 +28,14 @@
 
   let currentPath = $derived($page.url.pathname as string);
 
-  // Division display config (fallback grouping when no real teams exist)
-  const DIVISION_META: Record<string, { emoji: string; label: string; order: number }> = {
-    core:        { emoji: '🧭', label: 'Core',        order: 0 },
-    foundations:  { emoji: '🔍', label: 'Foundations',  order: 1 },
-    marketing:   { emoji: '📣', label: 'Marketing',   order: 2 },
-    nurture:     { emoji: '✉️', label: 'Nurture',     order: 3 },
-    sales:       { emoji: '💰', label: 'Sales',       order: 4 },
-    launch:      { emoji: '🚀', label: 'Launch',      order: 5 },
-    scale:       { emoji: '📈', label: 'Scale',       order: 6 },
+  const DIVISION_META: Record<string, { icon: string; label: string; order: number }> = {
+    core:        { icon: 'compass',     label: 'Core',        order: 0 },
+    foundations:  { icon: 'foundations', label: 'Foundations',  order: 1 },
+    marketing:   { icon: 'marketing',   label: 'Marketing',   order: 2 },
+    nurture:     { icon: 'nurture',     label: 'Nurture',     order: 3 },
+    sales:       { icon: 'sales',       label: 'Sales',       order: 4 },
+    launch:      { icon: 'launch',      label: 'Launch',      order: 5 },
+    scale:       { icon: 'scale-up',    label: 'Scale',       order: 6 },
   };
 
   function isActive(href: string): boolean {
@@ -84,20 +84,25 @@
     agent:        'M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z',
     terminal:     'M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z',
     hamburger:    'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5',
+    chevronLeft:  'M15.75 19.5L8.25 12l7.5-7.5',
     close:        'M6 18L18 6M6 6l12 12',
     search:       'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z',
     plus:         'M12 4.5v15m7.5-7.5h-15',
+    wiki:         'M12 7.5h1.5m-1.5 3h1.5m-7.014 3.014L9.75 8.25 12 13.5l2.25-5.25 2.764 5.264m-8.028 0H6.75v-13.5h10.5v13.5h-2.736',
   } as const;
 </script>
 
 <aside class="sb-sidebar" class:collapsed={isCollapsed} aria-label="Main navigation">
   <!-- Toggle button -->
   <div class="sb-toggle-row">
-    {#if !isCollapsed}
-      <img class="sb-brand-logo" src="/logo.png" alt="BizForge" width="110" height="auto" />
-    {:else}
-      <img class="sb-brand-icon" src="/logo.png" alt="BizForge" width="28" height="28" />
-    {/if}
+    <img
+      class="sb-brand-icon"
+      class:sb-brand-icon--expanded={!isCollapsed}
+      src="/OSAIconLogo.png"
+      alt="BizForge"
+      width={isCollapsed ? 28 : 34}
+      height={isCollapsed ? 28 : 34}
+    />
     <span class="sb-toggle-spacer"></span>
     <button
       class="sb-toggle"
@@ -106,7 +111,7 @@
       title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d={isCollapsed ? ICONS.hamburger : ICONS.close} />
+        <path d={isCollapsed ? ICONS.hamburger : ICONS.chevronLeft} />
       </svg>
     </button>
   </div>
@@ -137,26 +142,26 @@
   <nav class="sb-nav" aria-label="Sidebar navigation">
     <!-- ═══ DAILY DRIVERS (no label, always visible) ═══ -->
     <div class="sb-core">
-      <SidebarNavItem href="/app" label="Home" icon={ICONS.dashboard} shortcut={!isCollapsed ? '⌘1' : undefined} active={isActive('/app')} />
-      <SidebarNavItem href="/app/inbox" label="Inbox" icon={ICONS.inbox} shortcut={!isCollapsed ? '⌘2' : undefined} badge={inboxBadge} active={isActive('/app/inbox')} />
-      <SidebarNavItem href="/app/office" label="Office" icon={ICONS.office} shortcut={!isCollapsed ? '⌘3' : undefined} active={isActive('/app/office')} />
+      <SidebarNavItem href="/app" label="Home" icon={ICONS.dashboard} shortcut={!isCollapsed ? '⌘1' : undefined} active={isActive('/app')} description="Your workspace command center with KPIs, active runs, activity feed, and system health." />
+      <SidebarNavItem href="/app/inbox" label="Inbox" icon={ICONS.inbox} shortcut={!isCollapsed ? '⌘2' : undefined} badge={inboxBadge} active={isActive('/app/inbox')} description="Unified notifications: approvals, alerts, agent mentions, failure reports, and budget warnings." />
+      <SidebarNavItem href="/app/office" label="Office" icon={ICONS.office} shortcut={!isCollapsed ? '⌘3' : undefined} active={isActive('/app/office')} description="Pixel-art virtual office showing your agents in themed rooms with real-time status indicators." />
     </div>
 
     {#if !isCollapsed}
       <div class="sb-divider" aria-hidden="true"></div>
 
       <!-- ═══ WORK — What you're building ═══ -->
-      <SidebarSection label="Work">
-        <SidebarNavItem href="/app/projects" label="Projects" icon={ICONS.workspaces} active={isActive('/app/projects')} />
-        <SidebarNavItem href="/app/goals" label="Goals" icon={ICONS.goals} active={isActive('/app/goals')} />
-        <SidebarNavItem href="/app/issues" label="Issues" icon={ICONS.issues} active={isActive('/app/issues')} />
-        <SidebarNavItem href="/app/documents" label="Documents" icon={ICONS.documents} active={isActive('/app/documents')} />
+      <SidebarSection label="Work" description="Manage projects, goals, issues, and documents. This is where you define what your agents are working on.">
+        <SidebarNavItem href="/app/projects" label="Projects" icon={ICONS.workspaces} active={isActive('/app/projects')} description="Top-level containers that group goals, issues, agents, and costs into distinct workstreams." />
+        <SidebarNavItem href="/app/goals" label="Goals" icon={ICONS.goals} active={isActive('/app/goals')} description="Hierarchical objectives under each project. Goals can be decomposed into sub-goals and linked to issues." />
+        <SidebarNavItem href="/app/issues" label="Issues" icon={ICONS.issues} active={isActive('/app/issues')} description="Track bugs, tasks, and features. Assign to agents, view as Kanban board, list, or table." />
+        <SidebarNavItem href="/app/documents" label="Documents" icon={ICONS.documents} active={isActive('/app/documents')} description="Workspace documentation tree. Manage SYSTEM.md files, skill definitions, and agent prompts." />
       </SidebarSection>
 
       <div class="sb-divider" aria-hidden="true"></div>
 
       <!-- ═══ AGENTS — Organized by Division → Department → Team → Agent ═══ -->
-      <SidebarSection label="Agents" badge={agentsStore.agents.length || undefined}>
+      <SidebarSection label="Agents" badge={agentsStore.agents.length || undefined} description="Your AI workforce organized by division, department, and team. Hire, configure, and monitor agents from here.">
         {#if agentsStore.agents.length === 0}
           <div class="sb-empty">No agents deployed</div>
         {:else}
@@ -170,13 +175,13 @@
                 .flatMap(t => (t.agents ?? []).map(a => a.id))
             )}
             {#each tree.divisions as division (division.id)}
-              {@const divMeta = DIVISION_META[division.slug] ?? DIVISION_META[division.name?.toLowerCase()]}
+              {@const divMeta = DIVISION_META[division.slug] ?? DIVISION_META[division.name?.toLowerCase()] ?? undefined}
               {@const divAgentCount = (division.departments ?? [])
                 .flatMap(dept => dept.teams ?? [])
                 .flatMap(t => t.agents ?? []).length}
               {#if divAgentCount > 0}
                 <SidebarSection
-                  label="{divMeta?.emoji ?? '📁'} {division.name}"
+                  label={division.name}
                   badge={divAgentCount}
                   defaultOpen={divAgentCount <= 8}
                 >
@@ -186,7 +191,7 @@
                       {#if (dept.teams ?? []).length === 1}
                         <!-- Single team in department — show agents directly under dept name -->
                         {@const team = dept.teams[0]}
-                        <SidebarSection label={dept.name} badge={deptAgentCount} defaultOpen={true}>
+                        <SidebarSection label={dept.name} badge={deptAgentCount}>
                           {#each (team.agents ?? []) as agent (agent.id)}
                             <SidebarNavItem
                               href="/app/agents/{agent.id}"
@@ -198,10 +203,10 @@
                         </SidebarSection>
                       {:else}
                         <!-- Multiple teams — show dept > team > agents -->
-                        <SidebarSection label={dept.name} badge={deptAgentCount} defaultOpen={false}>
+                        <SidebarSection label={dept.name} badge={deptAgentCount}>
                           {#each (dept.teams ?? []) as team (team.id)}
                             {#if (team.agents ?? []).length > 0}
-                              <SidebarSection label={team.name} badge={team.agents.length} defaultOpen={true}>
+                              <SidebarSection label={team.name} badge={team.agents.length}>
                                 {#each (team.agents ?? []) as agent (agent.id)}
                                   <SidebarNavItem
                                     href="/app/agents/{agent.id}"
@@ -224,7 +229,7 @@
             <!-- Unassigned agents (not in any team in the tree) -->
             {@const unassigned = agentsStore.agents.filter(a => !assignedAgentIds.has(a.id))}
             {#if unassigned.length > 0}
-              <SidebarSection label="Unassigned" badge={unassigned.length} defaultOpen={false}>
+              <SidebarSection label="Unassigned" badge={unassigned.length}>
                 {#each unassigned.slice(0, 10) as agent (agent.id)}
                   <SidebarNavItem
                     href="/app/agents/{agent.id}"
@@ -251,7 +256,7 @@
             })()}
             {#each grouped as [divKey, divAgents] (divKey)}
               {@const meta = DIVISION_META[divKey]}
-              <SidebarSection label="{meta?.emoji ?? '📁'} {meta?.label ?? divKey}" badge={divAgents.length} defaultOpen={true}>
+              <SidebarSection label={meta?.label ?? divKey} badge={divAgents.length}>
                 {#each divAgents as agent (agent.id)}
                   <SidebarNavItem
                     href="/app/agents/{agent.id}"
@@ -276,54 +281,45 @@
 
       <div class="sb-divider" aria-hidden="true"></div>
 
-      <!-- ═══ CHAT — Talk to agents ═══ -->
-      <SidebarNavItem href="/app/chat" label="Chat" icon={ICONS.chat} active={isActive('/app/chat')} />
-
-      <div class="sb-divider" aria-hidden="true"></div>
-
       <!-- ═══ DATA — What agents know & produce ═══ -->
-      <SidebarSection label="Data">
-        <SidebarNavItem href="/app/memory" label="Memory" icon={ICONS.memory} active={isActive('/app/memory')} />
-        <SidebarNavItem href="/app/datasets" label="Datasets" icon={ICONS.datasets} active={isActive('/app/datasets')} />
-        <SidebarNavItem href="/app/work-products" label="Work Products" icon={ICONS.workProducts} active={isActive('/app/work-products')} />
+      <SidebarSection label="Data" description="Knowledge, datasets, and artifacts. Memory stores persistent knowledge agents learn over time. Datasets provide structured data access.">
+        <SidebarNavItem href="/app/memory" label="Memory" icon={ICONS.memory} active={isActive('/app/memory')} description="Persistent knowledge store. Agents read and write facts, procedures, and context that carry across sessions." />
+        <SidebarNavItem href="/app/datasets" label="Datasets" icon={ICONS.datasets} active={isActive('/app/datasets')} description="Registry of structured data sources — CSV, databases, APIs — that agents can query and analyze." />
+        <SidebarNavItem href="/app/work-products" label="Work Products" icon={ICONS.workProducts} active={isActive('/app/work-products')} description="Artifacts produced by agents: reports, code, analyses, and design documents." />
       </SidebarSection>
 
       <div class="sb-divider" aria-hidden="true"></div>
 
       <!-- ═══ OBSERVE — How things are going ═══ -->
-      <SidebarSection label="Observe">
-        <SidebarNavItem href="/app/activity" label="Activity" icon={ICONS.activity} active={isActive('/app/activity')} />
-        <SidebarNavItem href="/app/sessions" label="Sessions" icon={ICONS.sessions} active={isActive('/app/sessions')} />
-        <SidebarNavItem href="/app/costs" label="Costs" icon={ICONS.costs} active={isActive('/app/costs')} />
-        <SidebarNavItem href="/app/analytics" label="Analytics" icon={ICONS.activity} active={isActive('/app/analytics')} />
-        <SidebarNavItem href="/app/reports" label="Reports" icon={ICONS.documents} active={isActive('/app/reports')} />
+      <SidebarSection label="Observe" description="Monitor everything: live activity, session transcripts, costs, analytics, and reports. See what your agents are doing and how much they're spending.">
+        <SidebarNavItem href="/app/activity" label="Activity" icon={ICONS.activity} active={isActive('/app/activity')} description="Real-time event stream of everything happening in your workspace — agent actions, errors, and system events." />
+        <SidebarNavItem href="/app/sessions" label="Sessions" icon={ICONS.sessions} active={isActive('/app/sessions')} description="Every agent execution with full transcripts, token usage, cost tracking, and an integrated log viewer." />
+        <SidebarNavItem href="/app/costs" label="Costs" icon={ICONS.costs} active={isActive('/app/costs')} description="AI spending dashboard broken down by agent, model, and time period with budget policy monitoring." />
+        <SidebarNavItem href="/app/analytics" label="Analytics" icon={ICONS.activity} active={isActive('/app/analytics')} description="Aggregated performance metrics: session counts, success rates, task completion, and per-agent ROI." />
+        <SidebarNavItem href="/app/reports" label="Reports" icon={ICONS.documents} active={isActive('/app/reports')} description="Build, schedule, and export structured reports — performance summaries, cost breakdowns, and more." />
       </SidebarSection>
 
       <div class="sb-divider" aria-hidden="true"></div>
 
       <!-- ═══ AUTOMATE — Make things happen automatically ═══ -->
-      <SidebarSection label="Automate">
-        <SidebarNavItem href="/app/skills" label="Skills" icon={ICONS.skills} active={isActive('/app/skills')} />
-        <SidebarNavItem href="/app/workflows" label="Workflows" icon={ICONS.workflows} active={isActive('/app/workflows')} />
-        <SidebarNavItem href="/app/schedules" label="Schedules" icon={ICONS.schedules} active={isActive('/app/schedules')} />
-        <SidebarNavItem href="/app/alerts" label="Alerts" icon={ICONS.alerts} active={isActive('/app/alerts')} />
+      <SidebarSection label="Automate" description="Set up recurring tasks, workflows, and alert rules. Skills define what agents can do, schedules define when they run.">
+        <SidebarNavItem href="/app/skills" label="Skills" icon={ICONS.skills} active={isActive('/app/skills')} description="Capabilities agents can use — tools, integrations, and behaviors. Toggle skills on or off workspace-wide." />
+        <SidebarNavItem href="/app/workflows" label="Workflows" icon={ICONS.workflows} active={isActive('/app/workflows')} description="Multi-step automated processes with conditional logic. Chain agent tasks, conditions, and approvals." />
+        <SidebarNavItem href="/app/schedules" label="Schedules" icon={ICONS.schedules} active={isActive('/app/schedules')} description="Cron-based heartbeat schedules that define when agents run — hourly, daily, or custom intervals." />
+        <SidebarNavItem href="/app/alerts" label="Alerts" icon={ICONS.alerts} active={isActive('/app/alerts')} description="Rule-based monitoring. Trigger notifications or actions when costs, errors, or metrics cross thresholds." />
+        <SidebarNavItem href="/app/library" label="Library" icon={ICONS.library} active={isActive('/app/library')} description="Marketplace of 330+ agent templates, skills, team configs, and company blueprints ready to deploy." />
       </SidebarSection>
 
       <div class="sb-divider" aria-hidden="true"></div>
 
-      <!-- ═══ LIBRARY — Templates, skills, marketplace ═══ -->
-      <SidebarNavItem href="/app/library" label="Library" icon={ICONS.library} active={isActive('/app/library')} />
-
-      <div class="sb-divider" aria-hidden="true"></div>
-
-      <!-- ═══ SYSTEM (collapsed by default) — Org, users, config ═══ -->
-      <SidebarSection label="System" defaultOpen={false}>
-        <SidebarNavItem href="/app/hierarchy" label="Organization" icon={ICONS.hierarchy} active={isActive('/app/hierarchy') || isActive('/app/organizations') || isActive('/app/divisions') || isActive('/app/departments') || isActive('/app/teams')} />
-        <SidebarNavItem href="/app/users" label="Users & Access" icon={ICONS.users} active={isActive('/app/users') || isActive('/app/access')} />
-        <SidebarNavItem href="/app/integrations" label="Integrations" icon={ICONS.integrations} active={isActive('/app/integrations') || isActive('/app/webhooks') || isActive('/app/plugins')} />
-        <SidebarNavItem href="/app/secrets" label="Secrets" icon={ICONS.secrets} active={isActive('/app/secrets')} />
-        <SidebarNavItem href="/app/environment" label="Environment" icon={ICONS.terminal} active={isActive('/app/environment')} />
-        <SidebarNavItem href="/app/config" label="Config" icon={ICONS.config} active={isActive('/app/config') || isActive('/app/gateways') || isActive('/app/execution-workspaces') || isActive('/app/audit')} />
+      <!-- ═══ SYSTEM — Org, users, config ═══ -->
+      <SidebarSection label="System" description="Organization structure, user management, integrations, secrets, and system configuration. Set up your AI company hierarchy and access controls.">
+        <SidebarNavItem href="/app/hierarchy" label="Organization" icon={ICONS.hierarchy} active={isActive('/app/hierarchy') || isActive('/app/organizations') || isActive('/app/divisions') || isActive('/app/departments') || isActive('/app/teams')} description="Full org tree: Organization → Divisions → Departments → Teams → Agents. Structure your AI company." />
+        <SidebarNavItem href="/app/users" label="Users & Access" icon={ICONS.users} active={isActive('/app/users') || isActive('/app/access')} description="Human user directory and role-based access control. Assign admin, member, or viewer roles." />
+        <SidebarNavItem href="/app/integrations" label="Integrations" icon={ICONS.integrations} active={isActive('/app/integrations') || isActive('/app/webhooks') || isActive('/app/plugins')} description="Connect AI adapters, external services, webhooks, and plugins. Install and manage backends." />
+        <SidebarNavItem href="/app/secrets" label="Secrets" icon={ICONS.secrets} active={isActive('/app/secrets')} description="Secure vault for API keys, tokens, passwords, and certificates. Agents reference secrets by name." />
+        <SidebarNavItem href="/app/environment" label="Environment" icon={ICONS.terminal} active={isActive('/app/environment')} description="Detected local runtime: installed apps, system resources, and agent capabilities on your machine." />
+        <SidebarNavItem href="/app/config" label="Config" icon={ICONS.config} active={isActive('/app/config') || isActive('/app/gateways') || isActive('/app/execution-workspaces') || isActive('/app/audit')} description="Gateways, execution workspaces, and audit log. Advanced system configuration and compliance." />
       </SidebarSection>
     {:else}
       <!-- Collapsed icon-only mode -->
@@ -341,8 +337,10 @@
   <!-- Bottom pinned -->
   <div class="sb-bottom">
     <div class="sb-divider" aria-hidden="true"></div>
-    <SidebarNavItem href="/app/terminal" label="Terminal" icon={ICONS.terminal} shortcut={!isCollapsed ? '⌘T' : undefined} active={isActive('/app/terminal')} />
-    <SidebarNavItem href="/app/settings" label="Settings" icon={ICONS.config} shortcut={!isCollapsed ? '⌘,' : undefined} active={isActive('/app/settings')} />
+    <SidebarNavItem href="/app/chat" label="Chat" icon={ICONS.chat} active={isActive('/app/chat')} description="Real-time conversations with your agents. Multi-turn, streaming responses with full session history." />
+    <SidebarNavItem href="/app/wiki" label="Wiki" icon={ICONS.wiki} active={isActive('/app/wiki')} description="In-app feature documentation with search. Learn about every BizForge capability and how to configure it." />
+    <SidebarNavItem href="/app/terminal" label="Terminal" icon={ICONS.terminal} shortcut={!isCollapsed ? '⌘T' : undefined} active={isActive('/app/terminal')} description="Interactive web-based terminal for running system commands within the BizForge environment." />
+    <SidebarNavItem href="/app/settings" label="Settings" icon={ICONS.config} shortcut={!isCollapsed ? '⌘,' : undefined} active={isActive('/app/settings')} description="Workspace preferences, theme, sidebar layout, notification settings, and account management." />
 
     {#if user}
       <button type="button" class="sb-user" title="{user.name} — {user.email}" aria-label="Open profile" onclick={() => goto('/app/settings')}>
@@ -387,15 +385,8 @@
   .sb-toggle-row {
     display: flex;
     align-items: center;
-    padding: 38px 8px 4px;
+    padding: 12px 8px 4px;
     flex-shrink: 0;
-  }
-
-  .sb-brand-logo {
-    height: auto;
-    max-width: 110px;
-    object-fit: contain;
-    margin-left: 4px;
   }
 
   .sb-brand-icon {
@@ -403,6 +394,12 @@
     height: 28px;
     object-fit: contain;
     border-radius: var(--radius-xs);
+  }
+
+  .sb-brand-icon--expanded {
+    width: 34px;
+    height: 34px;
+    margin-left: 2px;
   }
 
   .sb-toggle-spacer {

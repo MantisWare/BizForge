@@ -48,14 +48,19 @@ class AgentsStore {
   });
 
   async fetchAgents(workspaceId?: string): Promise<void> {
+    console.log(`[bizforge:agents] Fetching agents${workspaceId ? ` for workspace ${workspaceId}` : ""}...`);
     this.loading = true;
     try {
       this.agents = await agentsApi.list(workspaceId);
       this.error = null;
+      console.log(`[bizforge:agents] Loaded ${this.agents.length} agents (${this.activeCount} active)`);
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load agents", msg);
+      console.error(`[bizforge:agents] Fetch failed: ${msg}`);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load agents", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -113,7 +118,9 @@ class AgentsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load hierarchy", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load hierarchy", msg);
+      }
     } finally {
       this.loading = false;
     }

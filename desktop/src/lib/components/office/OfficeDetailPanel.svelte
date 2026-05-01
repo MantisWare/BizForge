@@ -4,6 +4,7 @@
   import { fly } from 'svelte/transition';
   import type { BizforgeAgent, AgentStatus, AgentLifecycleAction } from '$api/types';
   import { agentsStore } from '$lib/stores/agents.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     agent: BizforgeAgent | null;
@@ -125,13 +126,7 @@
     <!-- Header -->
     <div class="odp-header">
       <div class="odp-avatar" style="background: {avatarColor};">
-        {#if agent.avatar_emoji}
-          <span class="odp-emoji">{agent.avatar_emoji}</span>
-        {:else}
-          <span class="odp-initial">
-            {(agent.display_name?.[0] ?? agent.name?.[0] ?? '?').toUpperCase()}
-          </span>
-        {/if}
+        <span class="odp-icon"><AgentIcon value={agent.avatar_emoji} size={24} /></span>
         <!-- Status ring -->
         <span class="odp-status-ring" style="border-color: {statusColor};"
           class:odp-status-ring--pulse={agent.status === 'running'}></span>
@@ -302,16 +297,11 @@
     position: relative;
   }
 
-  .odp-emoji {
-    font-size: 22px;
-    line-height: 1;
-  }
-
-  .odp-initial {
-    font-size: 18px;
-    font-weight: 700;
+  .odp-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
-    font-family: system-ui, sans-serif;
   }
 
   .odp-status-ring {

@@ -62,14 +62,17 @@ class ActivityStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load activity", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load activity", msg);
+      }
     } finally {
       this.loading = false;
     }
   }
 
   subscribe(): void {
-    if (this.#sseAbortController) return; // already connected
+    if (this.#sseAbortController) return;
+    console.log("[bizforge:activity] Subscribing to SSE activity stream...");
 
     const controller = new AbortController();
     this.#sseAbortController = controller;
@@ -77,10 +80,12 @@ class ActivityStore {
     subscribeToActivityStream(
       {
         onConnect: () => {
+          console.log("[bizforge:activity] SSE stream connected");
           this.connected = true;
           this.error = null;
         },
         onDisconnect: () => {
+          console.warn("[bizforge:activity] SSE stream disconnected");
           this.connected = false;
         },
         onEvent: (event) => {

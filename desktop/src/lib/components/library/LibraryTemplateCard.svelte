@@ -1,6 +1,7 @@
 <!-- src/lib/components/library/LibraryTemplateCard.svelte -->
 <script lang="ts">
   import type { LibraryTemplate } from '$lib/api/mock/library';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     template: LibraryTemplate;
@@ -33,7 +34,7 @@
 <article class="ltc-card ltc-card--{template.size}" aria-label="{template.name} template">
   <!-- Top: emoji + name -->
   <div class="ltc-top">
-    <span class="ltc-emoji" aria-hidden="true">{template.emoji}</span>
+    <span class="ltc-emoji" aria-hidden="true"><AgentIcon value={template.emoji} size={24} /></span>
     <div class="ltc-name-wrap">
       <div class="ltc-name">{template.name}</div>
       <div class="ltc-badges">
@@ -146,8 +147,9 @@
   }
 
   .ltc-emoji {
-    font-size: 30px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
   }
 

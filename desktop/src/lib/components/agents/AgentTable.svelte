@@ -4,6 +4,7 @@
   import StatusDot from '$lib/components/shared/StatusDot.svelte';
   import TimeAgo from '$lib/components/shared/TimeAgo.svelte';
   import Badge from '$lib/components/shared/Badge.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import type { BizforgeAgent, AgentStatus } from '$api/types';
 
   interface Props {
@@ -137,7 +138,7 @@
         >
           <!-- Name -->
           <td class="at-td at-td--name">
-            <span class="at-emoji" aria-hidden="true">{agent.avatar_emoji}</span>
+            <span class="at-emoji" aria-hidden="true"><AgentIcon value={agent.avatar_emoji} size={16} /></span>
             <span class="at-name">{agent.display_name}</span>
           </td>
 
@@ -306,9 +307,10 @@
   }
 
   .at-emoji {
-    font-size: 16px;
-    line-height: 1;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    color: #f26522;
   }
 
   .at-name {

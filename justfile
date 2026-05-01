@@ -267,6 +267,79 @@ format:
     cd {{backend}} && mix format
     cd {{desktop}} && npx prettier --write "src/**/*.{ts,svelte,css}"
 
+# ── Headless ─────────────────────────────────────────────────────────
+
+# Run workspace in headless mode (no GUI, agents only)
+[group('headless')]
+headless workspace_path: _ensure-dirs
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just stop-backend 2>/dev/null || true
+
+    printf "Starting BizForge in headless mode...\n"
+    printf "  Workspace: %s\n" "{{workspace_path}}"
+    printf "\n"
+
+    export BIZFORGE_HEADLESS=true
+    export BIZFORGE_WORKSPACE_PATH="$(cd "{{workspace_path}}" && pwd)"
+    export BIZFORGE_HEALTH_PORT=9090
+
+    cd {{backend}} && mix phx.server > {{log_dir}}/headless.log 2>&1 &
+    echo $! > {{pid_dir}}/headless.pid
+    printf "  Headless PID: %s\n" "$(cat {{pid_dir}}/headless.pid)"
+
+    # Wait for backend health
+    for i in $(seq 1 30); do
+        if curl -sf http://127.0.0.1:9089/api/v1/health >/dev/null 2>&1; then
+            printf "  Backend ready.\n"
+            break
+        fi
+        if [ "$i" -eq 30 ]; then
+            printf "  Backend may still be starting (continuing anyway).\n"
+        fi
+        sleep 1
+    done
+
+    printf "\nBizForge headless mode is running.\n"
+    printf "  Health:  http://127.0.0.1:9090/health\n"
+    printf "\nUse 'just headless-status' to check, 'just headless-stop' to shut down.\n"
+
+# Stop headless instance
+[group('headless')]
+headless-stop:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pidfile="{{pid_dir}}/headless.pid"
+    if [ -f "$pidfile" ]; then
+        pid=$(cat "$pidfile")
+        kill "$pid" 2>/dev/null && printf "  Stopped headless instance (PID %s)\n" "$pid" || true
+        rm -f "$pidfile"
+    else
+        printf "  No headless instance running.\n"
+    fi
+
+# Show headless instance status
+[group('headless')]
+headless-status:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    printf "Headless Status:\n"
+    pidfile="{{pid_dir}}/headless.pid"
+    if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+        printf "  headless   running  (PID %s)\n" "$(cat "$pidfile")"
+    else
+        printf "  headless   stopped\n"
+        rm -f "$pidfile" 2>/dev/null || true
+    fi
+    printf "\nHealth:\n"
+    curl -sf http://127.0.0.1:9090/health 2>/dev/null && printf "\n" || printf "  Health endpoint unreachable\n"
+
+# Tail headless logs
+[group('headless')]
+headless-logs:
+    tail -f {{log_dir}}/headless.log
+
 # ── Build ────────────────────────────────────────────────────────────────────
 
 # Production Tauri app bundle (.app on macOS)

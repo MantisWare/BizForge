@@ -49,7 +49,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "team-lead",
     "Team Lead",
-    "🎯",
+    "flag",
     "orchestrator",
     ["coordination", "planning"],
     null,
@@ -59,7 +59,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "specialist",
     "Specialist",
-    "🔬",
+    "beaker",
     "specialist",
     ["analysis", "research"],
     "team-lead",
@@ -69,7 +69,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "executor",
     "Executor",
-    "⚙️",
+    "cog",
     "engineer",
     ["execution", "implementation"],
     "team-lead",

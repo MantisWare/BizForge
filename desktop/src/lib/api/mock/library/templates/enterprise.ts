@@ -51,7 +51,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "ceo",
     "CEO Agent",
-    "🏢",
+    "building",
     "orchestrator",
     "executive",
     ["strategy", "governance"],
@@ -62,7 +62,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "cto",
     "CTO Agent",
-    "💻",
+    "code-bracket",
     "orchestrator",
     "executive",
     ["technology", "architecture"],
@@ -73,7 +73,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "cfo",
     "CFO Agent",
-    "💰",
+    "banknotes",
     "analyst",
     "executive",
     ["finance", "budgets", "compliance"],
@@ -86,7 +86,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "eng-lead",
     "Engineering Lead",
-    "⚙️",
+    "cog",
     "manager",
     "engineering",
     ["planning", "coordination"],
@@ -97,7 +97,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "backend-dev",
     "Backend Developer",
-    "🔧",
+    "wrench",
     "engineer",
     "engineering",
     ["code-generation", "api-design"],
@@ -108,7 +108,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "frontend-dev",
     "Frontend Developer",
-    "🎨",
+    "paint-brush",
     "engineer",
     "engineering",
     ["code-generation", "ui-design"],
@@ -119,7 +119,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "qa-engineer",
     "QA Engineer",
-    "🧪",
+    "beaker",
     "reviewer",
     "engineering",
     ["testing", "quality-assurance"],
@@ -132,7 +132,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "product-lead",
     "Product Lead",
-    "🗺️",
+    "compass",
     "manager",
     "product",
     ["planning", "research"],
@@ -143,7 +143,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "product-analyst",
     "Product Analyst",
-    "📈",
+    "scale-up",
     "analyst",
     "product",
     ["analysis", "data"],
@@ -154,7 +154,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "ux-designer",
     "UX Designer",
-    "✏️",
+    "document-text",
     "creator",
     "product",
     ["design", "research"],
@@ -167,7 +167,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "marketing-lead",
     "Marketing Lead",
-    "📣",
+    "megaphone",
     "manager",
     "marketing",
     ["strategy", "campaigns"],
@@ -178,7 +178,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "content-creator",
     "Content Creator",
-    "✍️",
+    "document-text",
     "creator",
     "marketing",
     ["writing", "content"],
@@ -189,7 +189,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "seo-specialist",
     "SEO Specialist",
-    "🔍",
+    "magnifying",
     "specialist",
     "marketing",
     ["seo", "web-search"],
@@ -202,7 +202,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "compliance-officer",
     "Compliance Officer",
-    "⚖️",
+    "cog",
     "reviewer",
     "compliance",
     ["compliance", "audit"],
@@ -213,7 +213,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "security-analyst",
     "Security Analyst",
-    "🔒",
+    "lock-closed",
     "analyst",
     "compliance",
     ["security", "audit"],

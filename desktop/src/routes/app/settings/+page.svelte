@@ -6,6 +6,7 @@
   import { toastStore } from '$lib/stores/toasts.svelte';
 
   import GeneralSettings from './tabs/GeneralSettings.svelte';
+  import ProvidersSettings from './tabs/ProvidersSettings.svelte';
   import AppearanceSettings from './tabs/AppearanceSettings.svelte';
   import AgentsSettings from './tabs/AgentsSettings.svelte';
   import BudgetSettings from './tabs/BudgetSettings.svelte';
@@ -13,10 +14,11 @@
   import IntegrationsSettings from './tabs/IntegrationsSettings.svelte';
   import AdvancedSettings from './tabs/AdvancedSettings.svelte';
 
-  type TabId = 'general' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'advanced';
+  type TabId = 'general' | 'providers' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'advanced';
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'general',       label: 'General' },
+    { id: 'providers',     label: 'AI Providers' },
     { id: 'appearance',    label: 'Appearance' },
     { id: 'agents',        label: 'Agents' },
     { id: 'budget',        label: 'Budget' },
@@ -62,6 +64,8 @@
     <div class="stg-panel">
       {#if activeTab === 'general'}
         <GeneralSettings />
+      {:else if activeTab === 'providers'}
+        <ProvidersSettings />
       {:else if activeTab === 'appearance'}
         <AppearanceSettings />
       {:else if activeTab === 'agents'}

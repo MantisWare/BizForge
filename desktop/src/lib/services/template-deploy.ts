@@ -68,7 +68,7 @@ export async function deployTemplate(
           agents: agents.map((a) => ({
             id: a.name,
             name: a.display_name || a.name,
-            emoji: a.avatar_emoji || "🤖",
+            emoji: a.avatar_emoji || "robot",
             role: a.role,
             adapter: a.adapter.replace(/_/g, "-"), // Rust expects hyphenated
             model: a.model || null,

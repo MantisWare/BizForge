@@ -195,7 +195,7 @@ export function enrichOperation(o: RawOperation): LibraryOperation {
   const isOfficial = true;
   return {
     ...o,
-    emoji: o.emoji ?? "🏢",
+    emoji: o.emoji ?? "building",
     isOfficial,
     downloads: deriveDownloads(o.id, isOfficial),
     favorites: deriveFavorites(o.id, isOfficial),
@@ -209,7 +209,7 @@ export function enrichTemplate(t: RawTemplate): LibraryTemplate {
   const isOfficial = true;
   return {
     ...t,
-    emoji: t.emoji ?? "📋",
+    emoji: t.emoji ?? "document-text",
     isOfficial,
     downloads: deriveDownloads(t.id, isOfficial),
     favorites: deriveFavorites(t.id, isOfficial),

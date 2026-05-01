@@ -269,6 +269,7 @@ export interface AgentCreateRequest {
   role: string;
   adapter: AdapterType;
   model: string;
+  provider_id?: string;
   system_prompt?: string;
   temperature?: number;
   max_concurrent_runs?: number;
@@ -782,6 +783,65 @@ export interface Adapter {
   status: "available" | "configured" | "error";
   config: Record<string, unknown>;
   agent_count: number;
+}
+
+// ── AI Providers ─────────────────────────────────────────────────────────────
+
+export type AIProviderCategory = "cloud" | "local";
+
+export type AILocalRuntime =
+  | "ollama"
+  | "lm-studio"
+  | "jan"
+  | "gpt4all"
+  | "llamacpp";
+
+export interface AIProviderConfig {
+  temperature?: number;
+  max_tokens?: number;
+  top_p?: number;
+  top_k?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  local_runtime?: AILocalRuntime;
+  local_endpoint?: string;
+}
+
+export interface AIProvider {
+  id: string;
+  slug: string;
+  name: string;
+  category: AIProviderCategory;
+  api_key_set: boolean;
+  endpoint?: string;
+  config: AIProviderConfig;
+  models: string[];
+  is_default: boolean;
+  status: "untested" | "connected" | "error";
+  last_tested_at?: string;
+  error_message?: string;
+  workspace_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIProviderCreateRequest {
+  slug: string;
+  name: string;
+  category: AIProviderCategory;
+  api_key?: string;
+  endpoint?: string;
+  config?: AIProviderConfig;
+  models?: string[];
+  is_default?: boolean;
+  workspace_id?: string;
+}
+
+export interface AIProviderTestResult {
+  status: "connected" | "error";
+  latency_ms: number | null;
+  models: string[];
+  error_message?: string;
 }
 
 // ── Gateways ──────────────────────────────────────────────────────────────────

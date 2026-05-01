@@ -23,11 +23,16 @@ defmodule BizforgeWeb.Router do
     plug BizforgeWeb.Plugs.CORS
   end
 
+  pipeline :headless_auth do
+    plug BizforgeWeb.Plugs.ApiKeyAuth
+  end
+
   # Health check — no auth
   scope "/api/v1", BizforgeWeb do
     pipe_through :api
 
     get "/health", HealthController, :show
+    get "/metrics", MetricsController, :show
     post "/auth/login", AuthController, :login
     post "/auth/refresh", AuthController, :refresh
     post "/auth/register", AuthController, :register
@@ -65,7 +70,7 @@ defmodule BizforgeWeb.Router do
     end
 
     # Sessions
-    resources "/sessions", SessionController, only: [:index, :show, :delete] do
+    resources "/sessions", SessionController, only: [:index, :show, :create, :delete] do
       get "/transcript", SessionController, :transcript, as: :transcript
       post "/message", SessionController, :message, as: :message
       get "/chain", SessionController, :chain, as: :chain
@@ -221,6 +226,10 @@ defmodule BizforgeWeb.Router do
 
     resources "/gateways", GatewayController, only: [:index, :show, :create, :update, :delete] do
       post "/probe", GatewayController, :probe, as: :probe
+    end
+
+    resources "/providers", ProviderController, only: [:index, :show, :create, :update, :delete] do
+      post "/test", ProviderController, :test, as: :test
     end
 
     get "/config", ConfigController, :show

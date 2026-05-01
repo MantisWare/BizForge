@@ -1,48 +1,103 @@
 <script lang="ts">
-  interface Provider {
+  import {
+    FEATURED_PROVIDERS,
+    MORE_PROVIDERS,
+    LOCAL_RUNTIMES,
+    findProvider,
+    getDefaultEndpoint,
+    type LocalRuntime,
+  } from '$lib/data/provider-catalog';
+
+  export interface ProviderSetup {
     slug: string;
-    name: string;
-    description: string;
-    noKey?: boolean;
-    recommended?: boolean;
+    apiKey: string;
+    localRuntime?: LocalRuntime;
+    endpoint?: string;
   }
 
-  const FEATURED_PROVIDERS: Provider[] = [
-    { slug: 'anthropic',    name: 'Anthropic',      description: 'Claude models — most capable reasoning' },
-    { slug: 'ollama-cloud', name: 'Ollama Cloud',   description: 'Managed Ollama — zero infra, instant start',    recommended: true },
-    { slug: 'ollama-local', name: 'Ollama Local',   description: 'Run models locally — no API key required',      noKey: true },
-    { slug: 'google',       name: 'Google',          description: 'Gemini models — multimodal, long context' },
-    { slug: 'groq',         name: 'Groq',            description: 'Ultra-fast inference at low cost' },
-    { slug: 'deepseek',     name: 'DeepSeek',        description: 'Strong reasoning, competitive pricing' },
-  ];
-
-  const MORE_PROVIDERS: Provider[] = [
-    { slug: 'mistral',      name: 'Mistral',         description: 'European open-weight models' },
-    { slug: 'cohere',       name: 'Cohere',          description: 'Enterprise NLP and embeddings' },
-    { slug: 'together',     name: 'Together AI',     description: 'Open-source models at scale' },
-    { slug: 'fireworks',    name: 'Fireworks AI',    description: 'Fast open-source model inference' },
-    { slug: 'perplexity',   name: 'Perplexity',      description: 'Search-augmented language models' },
-    { slug: 'cerebras',     name: 'Cerebras',        description: 'Wafer-scale AI chip inference' },
-    { slug: 'sambanova',    name: 'SambaNova',       description: 'Reconfigurable dataflow architecture' },
-    { slug: 'openrouter',   name: 'OpenRouter',      description: 'Unified API for 100+ models' },
-    { slug: 'openai',       name: 'OpenAI',          description: 'GPT-4o and o-series models' },
-    { slug: 'replicate',    name: 'Replicate',       description: 'Run open-source models via API' },
-    { slug: 'xai',          name: 'xAI',             description: 'Grok models from xAI' },
-    { slug: 'lambda',       name: 'Lambda',          description: 'GPU cloud for AI workloads' },
-    { slug: 'lepton',       name: 'Lepton AI',       description: 'Serverless AI inference platform' },
-  ];
-
   interface Props {
-    selectedProviderSlug: string;
-    providerKeys: Record<string, string>;
+    selectedProviders: ProviderSetup[];
   }
 
   let {
-    selectedProviderSlug = $bindable(),
-    providerKeys = $bindable(),
+    selectedProviders = $bindable(),
   }: Props = $props();
 
   let showMoreProviders = $state(false);
+  let testingSlug = $state<string | null>(null);
+  let testResults = $state<Record<string, { ok: boolean; msg: string }>>({});
+
+  function isSelected(slug: string): boolean {
+    return selectedProviders.some((p) => p.slug === slug);
+  }
+
+  function toggleProvider(slug: string) {
+    if (isSelected(slug)) {
+      selectedProviders = selectedProviders.filter((p) => p.slug !== slug);
+    } else {
+      const entry = findProvider(slug);
+      const setup: ProviderSetup = { slug, apiKey: '' };
+      if (slug === 'local') {
+        setup.localRuntime = 'ollama';
+        setup.endpoint = getDefaultEndpoint('local', 'ollama');
+      } else if (entry?.defaultEndpoint) {
+        setup.endpoint = entry.defaultEndpoint;
+      }
+      selectedProviders = [...selectedProviders, setup];
+    }
+  }
+
+  function getSetup(slug: string): ProviderSetup | undefined {
+    return selectedProviders.find((p) => p.slug === slug);
+  }
+
+  function updateKey(slug: string, key: string) {
+    selectedProviders = selectedProviders.map((p) =>
+      p.slug === slug ? { ...p, apiKey: key } : p,
+    );
+  }
+
+  function updateRuntime(slug: string, runtime: LocalRuntime) {
+    selectedProviders = selectedProviders.map((p) =>
+      p.slug === slug
+        ? { ...p, localRuntime: runtime, endpoint: getDefaultEndpoint('local', runtime) }
+        : p,
+    );
+  }
+
+  async function handleTest(slug: string) {
+    testingSlug = slug;
+    const setup = getSetup(slug);
+    if (setup === undefined) { testingSlug = null; return; }
+
+    try {
+      const endpoint = setup.endpoint ?? findProvider(slug)?.defaultEndpoint ?? '';
+      const testUrl = endpoint.replace(/\/$/, '') + '/v1/models';
+      const headers: Record<string, string> = {};
+      if (setup.apiKey) {
+        if (slug === 'anthropic') {
+          headers['x-api-key'] = setup.apiKey;
+          headers['anthropic-version'] = '2023-06-01';
+        } else {
+          headers['Authorization'] = `Bearer ${setup.apiKey}`;
+        }
+      }
+      const resp = await fetch(testUrl, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(8000),
+      });
+      if (resp.ok) {
+        testResults = { ...testResults, [slug]: { ok: true, msg: 'Connected' } };
+      } else {
+        testResults = { ...testResults, [slug]: { ok: false, msg: `HTTP ${resp.status}` } };
+      }
+    } catch (e) {
+      testResults = { ...testResults, [slug]: { ok: false, msg: (e as Error).message } };
+    } finally {
+      testingSlug = null;
+    }
+  }
 </script>
 
 <div class="ob-step">
@@ -52,31 +107,24 @@
       <path d="M10 6v4l2.5 2.5"/>
     </svg>
   </div>
-  <h1 class="ob-title">Choose a Provider</h1>
-  <p class="ob-subtitle">Select where your AI models run</p>
+  <h1 class="ob-title">Configure Providers</h1>
+  <p class="ob-subtitle">Select one or more AI providers — you can add keys and test each one</p>
 
   <div class="ob-providers">
     {#each FEATURED_PROVIDERS as p}
-      {@const isSelected = selectedProviderSlug === p.slug}
+      {@const selected = isSelected(p.slug)}
+      {@const setup = getSetup(p.slug)}
       <button
         class="ob-provider-card"
-        class:ob-provider-card--selected={isSelected}
-        onclick={() => selectedProviderSlug = p.slug}
+        class:ob-provider-card--selected={selected}
+        onclick={() => toggleProvider(p.slug)}
       >
         <div class="ob-provider-header">
-          <span class="ob-provider-icon">
-            {#if p.slug === 'anthropic'}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M10 3L17 17H3L10 3z"/></svg>
-            {:else if p.slug === 'ollama-cloud' || p.slug === 'ollama-local'}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="10" cy="8" r="4"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6"/></svg>
-            {:else if p.slug === 'google'}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="10" cy="10" r="7.5"/><path d="M10 10h4.5M10 10a4.5 4.5 0 100-4.5H10v4.5z"/></svg>
-            {:else if p.slug === 'groq'}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg>
-            {:else if p.slug === 'deepseek'}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.636 5.636l1.414 1.414M12.95 12.95l1.414 1.414M5.636 14.364l1.414-1.414M12.95 7.05l1.414-1.414"/></svg>
+          <span class="ob-provider-check">
+            {#if selected}
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M3.5 8.5l3 3 6-7"/></svg>
             {:else}
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/></svg>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><rect x="2" y="2" width="12" height="12" rx="3"/></svg>
             {/if}
           </span>
           <span class="ob-provider-name">{p.name}</span>
@@ -88,16 +136,59 @@
           {/if}
         </div>
         <p class="ob-provider-desc">{p.description}</p>
-        {#if isSelected && !p.noKey}
-          <div class="ob-key-wrap" onclick={(e) => e.stopPropagation()} role="none">
-            <input
-              class="ob-input ob-input--key"
-              type="password"
-              placeholder="sk-..."
-              autocomplete="off"
-              value={providerKeys[p.slug] ?? ''}
-              oninput={(e) => { providerKeys[p.slug] = (e.currentTarget as HTMLInputElement).value; }}
-            />
+
+        {#if selected}
+          <div class="ob-provider-config" onclick={(e) => e.stopPropagation()} role="none">
+            {#if p.slug === 'local'}
+              <!-- Local runtime picker -->
+              <div class="ob-runtime-row">
+                {#each LOCAL_RUNTIMES as rt (rt.id)}
+                  <button
+                    class="ob-runtime-chip"
+                    class:ob-runtime-chip--active={setup?.localRuntime === rt.id}
+                    onclick={() => updateRuntime(p.slug, rt.id)}
+                  >
+                    {rt.name}
+                  </button>
+                {/each}
+              </div>
+              <input
+                class="ob-input ob-input--key"
+                type="text"
+                placeholder={setup?.endpoint ?? 'http://localhost:11434'}
+                value={setup?.endpoint ?? ''}
+                oninput={(e) => {
+                  selectedProviders = selectedProviders.map((s) =>
+                    s.slug === p.slug ? { ...s, endpoint: (e.currentTarget as HTMLInputElement).value } : s,
+                  );
+                }}
+              />
+            {:else if !p.noKey}
+              <input
+                class="ob-input ob-input--key"
+                type="password"
+                placeholder="sk-..."
+                autocomplete="off"
+                value={setup?.apiKey ?? ''}
+                oninput={(e) => updateKey(p.slug, (e.currentTarget as HTMLInputElement).value)}
+              />
+            {/if}
+
+            <!-- Test button -->
+            <div class="ob-test-row">
+              <button
+                class="ob-test-btn"
+                onclick={() => handleTest(p.slug)}
+                disabled={testingSlug === p.slug}
+              >
+                {testingSlug === p.slug ? 'Testing...' : 'Test Connection'}
+              </button>
+              {#if testResults[p.slug] !== undefined}
+                <span class="ob-test-result" class:ob-test-result--ok={testResults[p.slug].ok} class:ob-test-result--fail={!testResults[p.slug].ok}>
+                  {testResults[p.slug].msg}
+                </span>
+              {/if}
+            </div>
           </div>
         {/if}
       </button>
@@ -114,29 +205,48 @@
   {#if showMoreProviders}
     <div class="ob-providers ob-providers--more">
       {#each MORE_PROVIDERS as p}
-        {@const isSelected = selectedProviderSlug === p.slug}
+        {@const selected = isSelected(p.slug)}
+        {@const setup = getSetup(p.slug)}
         <button
           class="ob-provider-card ob-provider-card--compact"
-          class:ob-provider-card--selected={isSelected}
-          onclick={() => selectedProviderSlug = p.slug}
+          class:ob-provider-card--selected={selected}
+          onclick={() => toggleProvider(p.slug)}
         >
           <div class="ob-provider-header">
-            <span class="ob-provider-icon">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="3"/></svg>
+            <span class="ob-provider-check">
+              {#if selected}
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M3.5 8.5l3 3 6-7"/></svg>
+              {:else}
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="11" height="11"><rect x="2" y="2" width="12" height="12" rx="3"/></svg>
+              {/if}
             </span>
             <span class="ob-provider-name">{p.name}</span>
           </div>
           <p class="ob-provider-desc">{p.description}</p>
-          {#if isSelected}
-            <div class="ob-key-wrap" onclick={(e) => e.stopPropagation()} role="none">
+          {#if selected}
+            <div class="ob-provider-config" onclick={(e) => e.stopPropagation()} role="none">
               <input
                 class="ob-input ob-input--key"
                 type="password"
                 placeholder="API key..."
                 autocomplete="off"
-                value={providerKeys[p.slug] ?? ''}
-                oninput={(e) => { providerKeys[p.slug] = (e.currentTarget as HTMLInputElement).value; }}
+                value={setup?.apiKey ?? ''}
+                oninput={(e) => updateKey(p.slug, (e.currentTarget as HTMLInputElement).value)}
               />
+              <div class="ob-test-row">
+                <button
+                  class="ob-test-btn"
+                  onclick={() => handleTest(p.slug)}
+                  disabled={testingSlug === p.slug}
+                >
+                  {testingSlug === p.slug ? 'Testing...' : 'Test'}
+                </button>
+                {#if testResults[p.slug] !== undefined}
+                  <span class="ob-test-result" class:ob-test-result--ok={testResults[p.slug].ok} class:ob-test-result--fail={!testResults[p.slug].ok}>
+                    {testResults[p.slug].msg}
+                  </span>
+                {/if}
+              </div>
             </div>
           {/if}
         </button>
@@ -229,11 +339,15 @@
     flex-wrap: wrap;
   }
 
-  .ob-provider-icon {
-    color: rgba(255, 255, 255, 0.5);
+  .ob-provider-check {
+    color: rgba(255, 255, 255, 0.4);
     display: flex;
     align-items: center;
     flex-shrink: 0;
+  }
+
+  .ob-provider-card--selected .ob-provider-check {
+    color: #f26522;
   }
 
   .ob-provider-name {
@@ -267,6 +381,77 @@
     color: #f26522;
     border-color: rgba(242, 101, 34, 0.25);
   }
+
+  .ob-provider-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+  }
+
+  .ob-runtime-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .ob-runtime-chip {
+    padding: 3px 8px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  .ob-runtime-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .ob-runtime-chip--active {
+    background: rgba(242, 101, 34, 0.15);
+    border-color: rgba(242, 101, 34, 0.4);
+    color: #f26522;
+  }
+
+  .ob-test-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ob-test-btn {
+    padding: 3px 10px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 150ms ease;
+    white-space: nowrap;
+  }
+
+  .ob-test-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .ob-test-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ob-test-result {
+    font-size: 0.625rem;
+    font-weight: 500;
+  }
+
+  .ob-test-result--ok { color: #22c55e; }
+  .ob-test-result--fail { color: #ef4444; }
 
   .ob-show-more {
     display: flex;
@@ -308,12 +493,6 @@
   }
 
   .ob-input--key {
-    margin-top: 0.625rem;
     font-size: 0.875rem;
-  }
-
-  .ob-key-wrap {
-    width: 100%;
-    padding-top: 0.25rem;
   }
 </style>

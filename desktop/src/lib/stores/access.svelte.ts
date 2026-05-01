@@ -40,7 +40,9 @@ class AccessStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load access assignments", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load access assignments", msg);
+      }
     } finally {
       this.loading = false;
     }

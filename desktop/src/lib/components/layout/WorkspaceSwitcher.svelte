@@ -13,6 +13,26 @@
   let active = $derived(workspaceStore.activeWorkspace);
   let workspaces = $derived(workspaceStore.workspaces);
 
+  /** Display-friendly name: if the stored name is just a path fragment like "~", derive a better label */
+  function displayName(ws: { name: string; path: string }): string {
+    const name = ws.name?.trim();
+    if (name === '~' || name === '/') return '~ HOME/ROOT';
+    if (name !== undefined && name !== '' && !name.startsWith('~/.')) {
+      return name;
+    }
+    const segments = ws.path.replace(/\/+$/, '').split('/');
+    const last = segments[segments.length - 1];
+    if (last === '.bizforge' && segments.length >= 2) {
+      return segments[segments.length - 2] ?? 'Workspace';
+    }
+    return last ?? 'Workspace';
+  }
+
+  /** Shorten path for display: collapse home dir to ~ */
+  function shortPath(path: string): string {
+    return path.replace(/^\/Users\/[^/]+/, '~').replace(/\/$/, '');
+  }
+
   function toggle() {
     isOpen = !isOpen;
     if (!isOpen) isCreating = false;
@@ -126,7 +146,15 @@
         <path d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
       </svg>
     </span>
-    <span class="ws-trigger-name">{active?.name ?? 'No Workspace'}</span>
+    <span class="ws-trigger-label">
+      {#if active}
+        <span class="ws-trigger-name">{displayName(active)}</span>
+        <span class="ws-trigger-sep">&middot;</span>
+        <span class="ws-trigger-path">{shortPath(active.path)}</span>
+      {:else}
+        <span class="ws-trigger-name">No Workspace</span>
+      {/if}
+    </span>
     <span class="ws-chevron" class:open={isOpen} aria-hidden="true">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 9l-7 7-7-7" />
@@ -151,8 +179,21 @@
               role="option"
               aria-selected={ws.id === active?.id}
             >
-              <span class="ws-item-name">{ws.name}</span>
-              <span class="ws-item-path">{ws.path}</span>
+              <span class="ws-item-row">
+                {#if ws.id === active?.id}
+                  <span class="ws-item-check" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                {:else}
+                  <span class="ws-item-check-placeholder" aria-hidden="true"></span>
+                {/if}
+                <span class="ws-item-text">
+                  <span class="ws-item-name">{displayName(ws)}</span>
+                  <span class="ws-item-path">{shortPath(ws.path)}</span>
+                </span>
+              </span>
             </button>
           {/each}
         </div>
@@ -227,12 +268,36 @@
     display: flex;
   }
 
-  .ws-trigger-name {
+  .ws-trigger-label {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+  }
+
+  .ws-trigger-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .ws-trigger-sep {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .ws-trigger-path {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 400;
   }
 
   .ws-chevron {
@@ -274,7 +339,6 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1px;
     width: 100%;
     padding: 6px 8px;
     border: none;
@@ -294,10 +358,44 @@
     background: var(--bg-elevated);
   }
 
+  .ws-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .ws-item-check {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary, #3b82f6);
+  }
+
+  .ws-item-check-placeholder {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
+
+  .ws-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
   .ws-item-name {
     font-size: 13px;
     font-weight: 500;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .ws-item-path {
@@ -306,7 +404,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100%;
   }
 
   .ws-empty {

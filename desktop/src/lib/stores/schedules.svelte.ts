@@ -110,7 +110,9 @@ class SchedulesStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load schedules", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load schedules", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -124,7 +126,9 @@ class SchedulesStore {
       return runs;
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load run history", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load run history", msg);
+      }
       return [];
     }
   }

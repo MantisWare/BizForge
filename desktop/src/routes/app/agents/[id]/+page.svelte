@@ -7,6 +7,7 @@
   import MetricCard from '$lib/components/shared/MetricCard.svelte';
   import TimeAgo from '$lib/components/shared/TimeAgo.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { environmentStore } from '$lib/stores/environment.svelte';
   import { gatewaysStore } from '$lib/stores/gateways.svelte';
@@ -245,15 +246,15 @@
     await agentsStore.performAction(agent.id, action);
   }
 
-  function categoryEmoji(cat: string): string {
+  function categoryIconId(cat: string): string {
     switch (cat) {
-      case 'development':   return '🛠️';
-      case 'database':      return '🗄️';
-      case 'automation':    return '⚙️';
-      case 'browser':       return '🌐';
-      case 'design':        return '🎨';
-      case 'communication': return '💬';
-      default:              return '📦';
+      case 'development':   return 'wrench';
+      case 'database':      return 'circle-stack';
+      case 'automation':    return 'cog';
+      case 'browser':       return 'globe';
+      case 'design':        return 'paint-brush';
+      case 'communication': return 'chat-bubble';
+      default:              return 'package';
     }
   }
 
@@ -284,7 +285,7 @@
 
   {:else if !agent}
     <div class="ad-not-found" role="main">
-      <span class="ad-not-found-icon" aria-hidden="true">🔍</span>
+      <span class="ad-not-found-icon" aria-hidden="true"><AgentIcon value="magnifying" size={40} /></span>
       <p class="ad-not-found-text">Agent not found.</p>
       <button
         class="ad-back-btn"
@@ -308,7 +309,7 @@
         </svg>
       </button>
 
-      <span class="ad-emoji" aria-hidden="true">{agent.avatar_emoji}</span>
+      <span class="ad-emoji" aria-hidden="true"><AgentIcon value={agent.avatar_emoji} size={32} /></span>
 
       <div class="ad-identity">
         <h1 class="ad-name">{agent.display_name}</h1>
@@ -512,7 +513,7 @@
 
             {#if localAdapter === 'claude-code' || localAdapter === 'claude_code'}
               <div class="ad-runtime-callout">
-                <span class="ad-runtime-callout-icon" aria-hidden="true">⌨️</span>
+                <span class="ad-runtime-callout-icon" aria-hidden="true"><AgentIcon value="command-line" size={18} /></span>
                 <div>
                   <strong>Claude Code</strong> — This agent runs the <code>claude</code> CLI in its own isolated terminal process.
                   It has full coding capabilities: file read/write, shell execution, and autonomous task completion.
@@ -628,7 +629,7 @@
             </section>
           {:else}
             <div class="ad-empty-tab" role="status">
-              <span class="ad-empty-icon" aria-hidden="true">🗓️</span>
+              <span class="ad-empty-icon" aria-hidden="true"><AgentIcon value="calendar" size={36} /></span>
               <p>No schedule assigned to this agent.</p>
             </div>
           {/if}
@@ -656,7 +657,7 @@
             </section>
           {:else}
             <div class="ad-empty-tab" role="status">
-              <span class="ad-empty-icon" aria-hidden="true">⚡</span>
+              <span class="ad-empty-icon" aria-hidden="true"><AgentIcon value="bolt" size={36} /></span>
               <p>No skills assigned.</p>
             </div>
           {/if}
@@ -677,7 +678,7 @@
             </div>
           {:else if runs.length === 0}
             <div class="ad-empty-tab" role="status">
-              <span class="ad-empty-icon" aria-hidden="true">🏃</span>
+              <span class="ad-empty-icon" aria-hidden="true"><AgentIcon value="running" size={36} /></span>
               <p>No runs yet.</p>
             </div>
           {:else}
@@ -760,7 +761,7 @@
             </div>
           {:else if inboxItems.length === 0}
             <div class="ad-empty-tab" role="status">
-              <span class="ad-empty-icon" aria-hidden="true">📬</span>
+              <span class="ad-empty-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={36} /></span>
               <p>No notifications.</p>
             </div>
           {:else}
@@ -856,7 +857,7 @@
                         <option value={gw.id}>
                           {gw.name}
                           {gw.is_primary ? ' (primary)' : ''}
-                          {gw.status === 'healthy' || gw.status === 'connected' ? '' : ' ⚠'}
+                          {gw.status === 'healthy' || gw.status === 'connected' ? '' : ' (attention)'}
                         </option>
                       {/each}
                     </select>
@@ -941,7 +942,7 @@
                     aria-label="{app.name}, access {hasAccess ? 'granted' : 'revoked'}"
                   >
                     <div class="ad-app-header">
-                      <span class="ad-app-emoji" aria-hidden="true">{categoryEmoji(app.category)}</span>
+                      <span class="ad-app-emoji" aria-hidden="true"><AgentIcon value={categoryIconId(app.category)} size={14} /></span>
                       <div class="ad-app-meta">
                         <span class="ad-app-name">{app.name}</span>
                         <span class="ad-app-proc">{app.process_name}</span>
@@ -1009,7 +1010,9 @@
   }
 
   .ad-not-found-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 
@@ -1069,9 +1072,10 @@
   }
 
   .ad-emoji {
-    font-size: 28px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
+    color: #f26522;
   }
 
   .ad-identity {
@@ -1431,7 +1435,9 @@
   }
 
   .ad-empty-icon {
-    font-size: 36px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.35;
   }
 
@@ -1683,9 +1689,11 @@
   }
 
   .ad-runtime-callout-icon {
-    font-size: 18px;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
     margin-top: 1px;
+    color: #f26522;
   }
 
   .ad-runtime-callout code {
@@ -1948,10 +1956,11 @@
   }
 
   .ad-app-emoji {
-    font-size: 20px;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
     flex-shrink: 0;
     margin-top: 1px;
+    color: #f26522;
   }
 
   .ad-app-meta {

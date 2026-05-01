@@ -1,6 +1,8 @@
 <!-- src/lib/components/chat/DelegationIndicator.svelte -->
 <!-- Small pill indicating this message was delegated to a specific agent -->
 <script lang="ts">
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
+
   interface Props {
     agentName: string;
     agentEmoji?: string;
@@ -11,7 +13,7 @@
 
 <span class="di-pill" aria-label="Delegated to {agentName}">
   {#if agentEmoji}
-    <span class="di-emoji" aria-hidden="true">{agentEmoji}</span>
+    <span class="di-icon" aria-hidden="true"><AgentIcon value={agentEmoji} size={14} /></span>
   {/if}
   <svg class="di-arrow" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -36,9 +38,13 @@
     white-space: nowrap;
   }
 
-  .di-emoji {
-    font-size: 12px;
-    line-height: 1;
+  .di-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+    color: rgba(147, 197, 253, 0.95);
   }
 
   .di-arrow {

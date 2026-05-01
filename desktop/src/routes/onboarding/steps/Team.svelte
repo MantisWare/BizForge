@@ -2,26 +2,50 @@
   import type { TeamTemplate, AgentTemplateData } from '$lib/stores/onboarding.svelte';
 
   const TEAM_TEMPLATES: { id: TeamTemplate; name: string; description: string; count: number }[] = [
-    { id: 'solo',     name: 'Solo Developer',  description: '1 general-purpose agent',          count: 1 },
-    { id: 'dev-team', name: 'Dev Team',         description: '4 specialised agents',             count: 4 },
-    { id: 'research', name: 'Research Lab',     description: '3 research & writing agents',      count: 3 },
-    { id: 'custom',   name: 'Custom',           description: 'Start with an empty roster',       count: 0 },
+    { id: 'solo',           name: 'Solo Developer',   description: '1 general-purpose agent',             count: 1 },
+    { id: 'dev-team',       name: 'Dev Team',         description: '4 specialised engineering agents',    count: 4 },
+    { id: 'research',       name: 'Research Lab',     description: '3 research & writing agents',         count: 3 },
+    { id: 'content-studio', name: 'Content Studio',   description: '3 content & marketing agents',        count: 3 },
+    { id: 'ops-center',     name: 'Ops Center',       description: '3 DevOps & infrastructure agents',    count: 3 },
+    { id: 'sales-engine',   name: 'Sales Engine',     description: '3 outreach & revenue agents',         count: 3 },
+    { id: 'data-science',   name: 'Data Science',     description: '3 ML & analytics agents',             count: 3 },
+    { id: 'custom',         name: 'Custom',           description: 'Start with an empty roster',          count: 0 },
   ];
 
   const TEMPLATE_AGENTS: Record<TeamTemplate, AgentTemplateData[]> = {
     solo: [
-      { id: 'main-agent', name: 'Main Agent', emoji: 'bot', role: 'engineer', adapter: 'osa', skills: ['code', 'debug', 'test'], system_prompt: 'You are a skilled software engineer...' },
+      { id: 'main-agent', name: 'Main Agent', emoji: 'robot', role: 'engineer', adapter: 'osa', skills: ['code', 'debug', 'test'], system_prompt: 'You are a skilled software engineer...' },
     ],
     'dev-team': [
-      { id: 'orchestrator',    name: 'Orchestrator',    emoji: 'brain',  role: 'orchestrator', adapter: 'osa', skills: ['delegate', 'plan'],              system_prompt: 'You coordinate a development team...' },
-      { id: 'code-worker',     name: 'Code Worker',     emoji: 'code',   role: 'developer',    adapter: 'osa', skills: ['code', 'debug'],                 system_prompt: 'You are a focused code implementation specialist...' },
-      { id: 'research-worker', name: 'Research Worker', emoji: 'search', role: 'researcher',   adapter: 'osa', skills: ['web_search', 'analyze'],         system_prompt: 'You research solutions, APIs, and best practices...' },
-      { id: 'qa-agent',        name: 'QA Agent',        emoji: 'shield', role: 'engineer',     adapter: 'osa', skills: ['test', 'validate'],              system_prompt: 'You ensure code quality through testing...' },
+      { id: 'orchestrator',    name: 'Orchestrator',    emoji: 'light-bulb', role: 'orchestrator', adapter: 'osa', skills: ['delegate', 'plan'],      system_prompt: 'You coordinate a development team...' },
+      { id: 'code-worker',     name: 'Code Worker',     emoji: 'code-bracket', role: 'developer',    adapter: 'osa', skills: ['code', 'debug'],          system_prompt: 'You are a focused code implementation specialist...' },
+      { id: 'research-worker', name: 'Research Worker', emoji: 'magnifying', role: 'researcher',   adapter: 'osa', skills: ['web_search', 'analyze'],  system_prompt: 'You research solutions, APIs, and best practices...' },
+      { id: 'qa-agent',        name: 'QA Agent',        emoji: 'shield-check', role: 'engineer',     adapter: 'osa', skills: ['test', 'validate'],       system_prompt: 'You ensure code quality through testing...' },
     ],
     research: [
-      { id: 'lead-researcher', name: 'Lead Researcher', emoji: 'search', role: 'researcher', adapter: 'osa', skills: ['web_search', 'analyze', 'summarize'], system_prompt: 'You lead research investigations...' },
-      { id: 'data-analyst',    name: 'Data Analyst',    emoji: 'chart',  role: 'researcher', adapter: 'osa', skills: ['analyze', 'visualize'],              system_prompt: 'You analyze data and produce insights...' },
-      { id: 'writer',          name: 'Writer',          emoji: 'pen',    role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'format'],            system_prompt: 'You produce clear, well-structured written content...' },
+      { id: 'lead-researcher', name: 'Lead Researcher', emoji: 'magnifying', role: 'researcher', adapter: 'osa', skills: ['web_search', 'analyze', 'summarize'], system_prompt: 'You lead research investigations...' },
+      { id: 'data-analyst',    name: 'Data Analyst',    emoji: 'chart-bar',  role: 'researcher', adapter: 'osa', skills: ['analyze', 'visualize'],              system_prompt: 'You analyze data and produce insights...' },
+      { id: 'writer',          name: 'Writer',          emoji: 'document-text', role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'format'],            system_prompt: 'You produce clear, well-structured written content...' },
+    ],
+    'content-studio': [
+      { id: 'content-strategist', name: 'Content Strategist', emoji: 'flag', role: 'strategist', adapter: 'osa', skills: ['plan', 'analyze', 'schedule'],     system_prompt: 'You develop content strategies, editorial calendars, and campaign plans...' },
+      { id: 'copywriter',         name: 'Copywriter',         emoji: 'document-text', role: 'writer',     adapter: 'osa', skills: ['write', 'edit', 'seo'],            system_prompt: 'You write compelling copy for blogs, emails, landing pages, and social media...' },
+      { id: 'designer',           name: 'Visual Designer',    emoji: 'paint-brush', role: 'designer',  adapter: 'osa', skills: ['design', 'brand', 'format'],       system_prompt: 'You create visual assets, design briefs, and brand-consistent materials...' },
+    ],
+    'ops-center': [
+      { id: 'infra-engineer',  name: 'Infra Engineer',  emoji: 'cog',  role: 'engineer',    adapter: 'osa', skills: ['deploy', 'monitor', 'provision'], system_prompt: 'You manage infrastructure, CI/CD pipelines, and cloud resources...' },
+      { id: 'sre-agent',       name: 'SRE Agent',       emoji: 'shield-check',  role: 'engineer',    adapter: 'osa', skills: ['monitor', 'alert', 'diagnose'],   system_prompt: 'You ensure reliability, respond to incidents, and manage SLOs...' },
+      { id: 'security-agent',  name: 'Security Agent',  emoji: 'lock-closed',    role: 'engineer',    adapter: 'osa', skills: ['audit', 'scan', 'remediate'],     system_prompt: 'You perform security audits, vulnerability scanning, and compliance checks...' },
+    ],
+    'sales-engine': [
+      { id: 'prospector',      name: 'Prospector',      emoji: 'magnifying',  role: 'researcher',  adapter: 'osa', skills: ['web_search', 'analyze', 'enrich'], system_prompt: 'You find and qualify potential leads, enrich contact data, and score prospects...' },
+      { id: 'outreach-agent',  name: 'Outreach Agent',  emoji: 'envelope',    role: 'writer',      adapter: 'osa', skills: ['write', 'personalize', 'sequence'], system_prompt: 'You craft personalized outreach emails, follow-up sequences, and messaging...' },
+      { id: 'deal-analyst',    name: 'Deal Analyst',    emoji: 'chart-bar',   role: 'analyst',     adapter: 'osa', skills: ['analyze', 'forecast', 'report'],   system_prompt: 'You analyze pipeline health, forecast revenue, and identify deal risks...' },
+    ],
+    'data-science': [
+      { id: 'ml-engineer',     name: 'ML Engineer',     emoji: 'light-bulb',   role: 'engineer',    adapter: 'osa', skills: ['code', 'train', 'evaluate'],       system_prompt: 'You build, train, and evaluate machine learning models...' },
+      { id: 'data-engineer',   name: 'Data Engineer',   emoji: 'circle-stack', role: 'engineer',   adapter: 'osa', skills: ['pipeline', 'transform', 'query'],  system_prompt: 'You build data pipelines, ETL processes, and manage data infrastructure...' },
+      { id: 'analyst',         name: 'Analyst',         emoji: 'chart-bar',   role: 'analyst',     adapter: 'osa', skills: ['analyze', 'visualize', 'report'],  system_prompt: 'You perform exploratory data analysis, create visualizations, and generate reports...' },
     ],
     custom: [],
   };
@@ -136,10 +160,16 @@
 
   .ob-templates {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.5rem;
     width: 100%;
     margin-bottom: 1.25rem;
+  }
+
+  @media (min-width: 480px) {
+    .ob-templates {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .ob-template-card {
@@ -150,6 +180,7 @@
     text-align: left;
     cursor: pointer;
     transition: background 150ms ease, border-color 150ms ease;
+    min-width: 0;
   }
 
   .ob-template-card:hover {
@@ -164,9 +195,10 @@
 
   .ob-template-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 0.25rem;
+    gap: 0.25rem;
+    margin-bottom: 0.125rem;
   }
 
   .ob-template-name {
@@ -178,6 +210,7 @@
   .ob-template-count {
     font-size: 0.6875rem;
     color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
   }
 
   .ob-template-desc {
@@ -221,6 +254,7 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 7px;
     padding: 0.5rem 0.75rem;
+    min-width: 0;
   }
 
   .ob-agent-dot {
@@ -235,13 +269,15 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: #d0d0d0;
-    min-width: 110px;
+    min-width: 0;
+    flex-shrink: 0;
   }
 
   .ob-agent-role {
     font-size: 0.6875rem;
     color: rgba(255, 255, 255, 0.35);
-    min-width: 80px;
+    min-width: 0;
+    flex-shrink: 0;
   }
 
   .ob-agent-skills {
@@ -251,5 +287,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+
+  @media (max-width: 479px) {
+    .ob-agent-item {
+      flex-wrap: wrap;
+      gap: 0.25rem 0.5rem;
+    }
+
+    .ob-agent-skills {
+      flex-basis: 100%;
+      padding-left: calc(6px + 0.625rem);
+    }
   }
 </style>

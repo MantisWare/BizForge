@@ -38,7 +38,9 @@ class WorkflowsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load workflows", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load workflows", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -54,7 +56,9 @@ class WorkflowsStore {
       return workflow;
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load workflow", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load workflow", msg);
+      }
       return null;
     }
   }
@@ -124,7 +128,9 @@ class WorkflowsStore {
       return fetched;
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load steps", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load steps", msg);
+      }
       return [];
     }
   }
@@ -183,7 +189,9 @@ class WorkflowsStore {
       return fetched;
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load runs", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load runs", msg);
+      }
       return [];
     }
   }

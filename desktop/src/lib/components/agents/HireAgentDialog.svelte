@@ -1,7 +1,9 @@
 <!-- src/lib/components/agents/HireAgentDialog.svelte -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
+  import { providersStore } from '$lib/stores/providers.svelte';
   import type { AgentCreateRequest, AdapterType } from '$api/types';
   import AgentIdentity from './hire/AgentIdentity.svelte';
   import AgentAdapterPicker from './hire/AgentAdapterPicker.svelte';
@@ -16,13 +18,19 @@
 
   let { open, onClose }: Props = $props();
 
+  onMount(() => {
+    if (providersStore.totalCount === 0) void providersStore.fetch();
+  });
+
   // Form state
   let name = $state('');
   let displayName = $state('');
-  let emoji = $state('🤖');
+  let emoji = $state('robot');
   let role = $state('');
   let adapter = $state<AdapterType>(settingsStore.data.default_adapter ?? 'osa');
   let model = $state('claude-sonnet-4-6');
+  let providerId = $state(providersStore.defaultProvider?.id ?? '');
+  let agentTemperature = $state('');
   let systemPrompt = $state('');
   let selectedSkills = $state<string[]>([]);
   let dailyLimitDollars = $state('10.00');
@@ -64,6 +72,8 @@
       role: role.trim(),
       adapter,
       model: model.trim(),
+      provider_id: providerId || undefined,
+      temperature: agentTemperature !== '' ? parseFloat(agentTemperature) : undefined,
       system_prompt: systemPrompt.trim() || undefined,
       skills: selectedSkills.length > 0 ? selectedSkills : undefined,
       budget_policy: {
@@ -86,10 +96,12 @@
   function resetForm() {
     name = '';
     displayName = '';
-    emoji = '🤖';
+    emoji = 'robot';
     role = '';
     adapter = settingsStore.data.default_adapter ?? 'osa';
     model = 'claude-sonnet-4-6';
+    providerId = providersStore.defaultProvider?.id ?? '';
+    agentTemperature = '';
     systemPrompt = '';
     selectedSkills = [];
     dailyLimitDollars = '10.00';
@@ -156,9 +168,13 @@
             {selectedSkills}
             {displayName}
             {errors}
+            {providerId}
+            temperature={agentTemperature}
             onModel={(v) => (model = v)}
             onSystemPrompt={(v) => (systemPrompt = v)}
             onToggleSkill={toggleSkill}
+            onProviderId={(v) => (providerId = v)}
+            onTemperature={(v) => (agentTemperature = v)}
           />
 
           <AgentBudgetConfig
@@ -225,9 +241,8 @@
     background: var(--bg-tertiary);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);
-    width: 100%;
-    max-width: 640px;
-    max-height: 90dvh;
+    width: 80vw;
+    height: 80vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);

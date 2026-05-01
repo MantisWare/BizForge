@@ -1,6 +1,7 @@
 <!-- src/lib/components/library/LibraryOperationCard.svelte -->
 <script lang="ts">
   import type { LibraryOperation } from '$lib/api/mock/library';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     operation: LibraryOperation;
@@ -26,7 +27,7 @@
 <article class="loc-card" aria-label={operation.name}>
   <!-- Header: emoji + name -->
   <div class="loc-header">
-    <span class="loc-emoji" aria-hidden="true">{operation.emoji}</span>
+    <span class="loc-emoji" aria-hidden="true"><AgentIcon value={operation.emoji} size={24} /></span>
     <div class="loc-title-wrap">
       <div class="loc-name">{operation.name}</div>
       <div class="loc-badges">
@@ -136,8 +137,9 @@
   }
 
   .loc-emoji {
-    font-size: 34px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
   }
 

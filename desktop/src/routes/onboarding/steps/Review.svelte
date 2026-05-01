@@ -1,33 +1,6 @@
 <script lang="ts">
   import type { AdapterType, TeamTemplate, AgentTemplateData } from '$lib/stores/onboarding.svelte';
-
-  interface Provider {
-    slug: string;
-    name: string;
-    noKey?: boolean;
-  }
-
-  const ALL_PROVIDERS: Provider[] = [
-    { slug: 'anthropic',    name: 'Anthropic' },
-    { slug: 'ollama-cloud', name: 'Ollama Cloud' },
-    { slug: 'ollama-local', name: 'Ollama Local', noKey: true },
-    { slug: 'google',       name: 'Google' },
-    { slug: 'groq',         name: 'Groq' },
-    { slug: 'deepseek',     name: 'DeepSeek' },
-    { slug: 'mistral',      name: 'Mistral' },
-    { slug: 'cohere',       name: 'Cohere' },
-    { slug: 'together',     name: 'Together AI' },
-    { slug: 'fireworks',    name: 'Fireworks AI' },
-    { slug: 'perplexity',   name: 'Perplexity' },
-    { slug: 'cerebras',     name: 'Cerebras' },
-    { slug: 'sambanova',    name: 'SambaNova' },
-    { slug: 'openrouter',   name: 'OpenRouter' },
-    { slug: 'openai',       name: 'OpenAI' },
-    { slug: 'replicate',    name: 'Replicate' },
-    { slug: 'xai',          name: 'xAI' },
-    { slug: 'lambda',       name: 'Lambda' },
-    { slug: 'lepton',       name: 'Lepton AI' },
-  ];
+  import { ALL_PROVIDERS } from '$lib/data/provider-catalog';
 
   const ADAPTER_NAMES: Record<AdapterType, string> = {
     'osa':         'OSA',
@@ -47,9 +20,17 @@
     'custom':   'Custom',
   };
 
+  interface ProviderSetup {
+    slug: string;
+    apiKey: string;
+    localRuntime?: string;
+    endpoint?: string;
+  }
+
   interface Props {
     displayName: string;
     selectedProviderSlug: string;
+    selectedProviders: ProviderSetup[];
     selectedAdapter: AdapterType;
     workspacePath: string;
     teamTemplate: TeamTemplate;
@@ -63,6 +44,7 @@
   let {
     displayName,
     selectedProviderSlug,
+    selectedProviders = [],
     selectedAdapter,
     workspacePath,
     teamTemplate,
@@ -96,10 +78,15 @@
     <div class="ob-summary-row">
       <span class="ob-summary-key">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M8 2l6 12H2L8 2z"/></svg>
-        Provider
+        Providers
       </span>
       <span class="ob-summary-val">
-        {#if currentProvider}
+        {#if selectedProviders.length > 0}
+          {#each selectedProviders as sp, i}
+            {@const prov = ALL_PROVIDERS.find(p => p.slug === sp.slug)}
+            {#if i > 0}, {/if}{prov?.name ?? sp.slug}
+          {/each}
+        {:else if currentProvider}
           {currentProvider.name}
           {#if currentProvider.noKey}<span class="ob-badge">No key</span>{/if}
         {:else}

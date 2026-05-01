@@ -6,6 +6,7 @@
   import { conversationsStore } from '$lib/stores/conversations.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import type { Conversation } from '$api/types';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   // ── Local state ──────────────────────────────────────────────────────────
   let messageInput = $state('');
@@ -162,7 +163,7 @@
         >
           <option value="">Choose an agent...</option>
           {#each agentsStore.agents as agent (agent.id)}
-            <option value={agent.id}>{agent.avatar_emoji} {agent.display_name || agent.name}</option>
+            <option value={agent.id}>{agent.display_name || agent.name}</option>
           {/each}
         </select>
         <div class="ch-new-actions">
@@ -196,7 +197,7 @@
             onclick={() => selectConversation(conv)}
           >
             <div class="ch-conv-avatar" aria-hidden="true">
-              {conv.agent_avatar ?? '🤖'}
+              <AgentIcon value={conv.agent_avatar} size={18} />
             </div>
             <div class="ch-conv-body">
               <div class="ch-conv-row">
@@ -232,7 +233,7 @@
       <header class="ch-chat-header">
         <div class="ch-chat-agent">
           <span class="ch-chat-agent-avatar" aria-hidden="true">
-            {activeConv.agent_avatar ?? '🤖'}
+            <AgentIcon value={activeConv.agent_avatar} size={22} />
           </span>
           <div class="ch-chat-agent-info">
             <span class="ch-chat-agent-name">{activeConv.agent_name ?? 'Agent'}</span>
@@ -289,7 +290,7 @@
               <!-- Agent — left-aligned dark -->
               <div class="ch-msg ch-msg--agent">
                 <div class="ch-msg-agent-header">
-                  <span class="ch-msg-avatar" aria-hidden="true">{activeConv.agent_avatar ?? '🤖'}</span>
+                  <span class="ch-msg-avatar" aria-hidden="true"><AgentIcon value={activeConv.agent_avatar} size={14} /></span>
                   <span class="ch-msg-agent-name">{roleLabel(msg.role)}</span>
                   <span class="ch-msg-meta">{formatTimestamp(msg.inserted_at)}</span>
                 </div>
@@ -304,7 +305,7 @@
           {#if sending}
             <div class="ch-msg ch-msg--agent">
               <div class="ch-msg-agent-header">
-                <span class="ch-msg-avatar" aria-hidden="true">{activeConv.agent_avatar ?? '🤖'}</span>
+                <span class="ch-msg-avatar" aria-hidden="true"><AgentIcon value={activeConv.agent_avatar} size={14} /></span>
                 <span class="ch-msg-agent-name">{activeConv.agent_name ?? 'Agent'}</span>
               </div>
               <div class="ch-msg-bubble ch-msg-bubble--agent ch-msg-bubble--thinking">
@@ -480,8 +481,9 @@
   }
 
   .ch-conv-avatar {
-    font-size: 18px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
     padding-top: 1px;
   }
@@ -582,8 +584,9 @@
   }
 
   .ch-chat-agent-avatar {
-    font-size: 22px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
   }
 
   .ch-chat-agent-info {
@@ -658,8 +661,9 @@
   }
 
   .ch-msg-avatar {
-    font-size: 14px;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    color: #f26522;
   }
 
   .ch-msg-agent-name {

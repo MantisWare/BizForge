@@ -1,6 +1,7 @@
 <!-- src/lib/components/library/LibraryAgentCard.svelte -->
 <script lang="ts">
   import type { LibraryAgent } from '$lib/api/mock/library';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     agent: LibraryAgent;
@@ -32,7 +33,7 @@
 <article class="lac-card" aria-label={agent.name}>
   <!-- Top row: emoji + name + visibility icon -->
   <div class="lac-top">
-    <span class="lac-emoji" aria-hidden="true">{agent.emoji}</span>
+    <span class="lac-emoji" aria-hidden="true"><AgentIcon value={agent.emoji} size={24} /></span>
     <div class="lac-name-wrap">
       <div class="lac-name">{agent.name}</div>
       <div class="lac-badges">
@@ -177,8 +178,9 @@
   }
 
   .lac-emoji {
-    font-size: 26px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
     margin-top: 1px;
   }

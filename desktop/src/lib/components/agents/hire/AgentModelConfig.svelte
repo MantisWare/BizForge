@@ -1,14 +1,20 @@
 <!-- src/lib/components/agents/hire/AgentModelConfig.svelte -->
 <script lang="ts">
+  import { providersStore } from '$lib/stores/providers.svelte';
+
   interface Props {
     model: string;
     systemPrompt: string;
     selectedSkills: string[];
     displayName: string;
     errors: Record<string, string>;
+    providerId: string;
+    temperature: string;
     onModel: (v: string) => void;
     onSystemPrompt: (v: string) => void;
     onToggleSkill: (skill: string) => void;
+    onProviderId: (v: string) => void;
+    onTemperature: (v: string) => void;
   }
 
   let {
@@ -17,19 +23,14 @@
     selectedSkills,
     displayName,
     errors,
+    providerId,
+    temperature,
     onModel,
     onSystemPrompt,
     onToggleSkill,
+    onProviderId,
+    onTemperature,
   }: Props = $props();
-
-  const MODEL_PRESETS = [
-    'claude-sonnet-4-6',
-    'claude-opus-4-6',
-    'claude-haiku-4-5-20251001',
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gemini-2.0-flash',
-  ];
 
   const SKILL_OPTIONS = [
     'code-review', 'security-scan', 'dependency-audit', 'doc-writer',
@@ -37,10 +38,62 @@
     'architecture-analysis', 'research', 'summarization', 'knowledge-graph',
     'security-monitor', 'alert-triage', 'incident-response', 'notification-dispatch',
     'ci-cd', 'build-optimization', 'test-runner', 'ui-design', 'accessibility-audit',
+    'domo-app-scaffold', 'domo-appdb-manage', 'domo-app-publish', 'domo-code-engine',
+    'domo-connector-build', 'domo-dataset-manage', 'domo-magic-etl',
+    'domo-workflow-automate', 'domo-embed-analytics', 'domo-api-integrate',
+    'domo-governance', 'domo-data-science',
   ];
 
   let promptPlaceholder = $derived(`You are ${displayName || 'an AI agent'}…`);
+
+  let selectedProvider = $derived(
+    providerId ? providersStore.getById(providerId) : null,
+  );
+
+  let providerModels = $derived(
+    selectedProvider?.models ?? [],
+  );
+
+  function handleProviderChange(newId: string) {
+    onProviderId(newId);
+    const prov = providersStore.getById(newId);
+    if (prov !== null && prov.models.length > 0 && !prov.models.includes(model)) {
+      onModel(prov.models[0]);
+    }
+    if (prov !== null && prov.config.temperature !== undefined) {
+      onTemperature(prov.config.temperature.toString());
+    }
+  }
 </script>
+
+<!-- Provider -->
+<section class="hmc-section">
+  <h3 class="hmc-section-title">Provider</h3>
+  <div class="hmc-field">
+    <label class="hmc-label" for="hmc-provider">AI Provider</label>
+    {#if providersStore.providers.length > 0}
+      <select
+        id="hmc-provider"
+        class="hmc-select"
+        value={providerId}
+        onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value)}
+      >
+        <option value="">Select a provider...</option>
+        {#each providersStore.providers as prov (prov.id)}
+          <option value={prov.id}>
+            {prov.name}
+            {#if prov.is_default} (default){/if}
+            {#if prov.status === 'connected'} — connected{/if}
+            {#if prov.status === 'error'} — error{/if}
+          </option>
+        {/each}
+      </select>
+      <span class="hmc-hint">Only configured providers are shown — manage in Settings &gt; AI Providers</span>
+    {:else}
+      <p class="hmc-hint">No providers configured. <a href="/app/settings" class="hmc-link">Add providers in Settings</a></p>
+    {/if}
+  </div>
+</section>
 
 <!-- Model -->
 <section class="hmc-section">
@@ -62,15 +115,38 @@
         aria-required="true"
       />
       <datalist id="hmc-model-presets">
-        {#each MODEL_PRESETS as preset}
-          <option value={preset}>{preset}</option>
+        {#each providerModels as pm}
+          <option value={pm}>{pm}</option>
         {/each}
       </datalist>
     </div>
-    <span id="hmc-model-hint" class="hmc-hint">Type or pick from presets</span>
+    <span id="hmc-model-hint" class="hmc-hint">
+      {#if providerModels.length > 0}
+        Pick from the provider's available models or type a custom one
+      {:else}
+        Type a model identifier
+      {/if}
+    </span>
     {#if errors.model}
       <span id="hmc-model-error" class="hmc-error" role="alert">{errors.model}</span>
     {/if}
+  </div>
+
+  <!-- Temperature -->
+  <div class="hmc-field">
+    <label class="hmc-label" for="hmc-temperature">Temperature <span class="hmc-optional">(optional)</span></label>
+    <input
+      id="hmc-temperature"
+      class="hmc-input hmc-input--narrow"
+      type="number"
+      step="0.1"
+      min="0"
+      max="2"
+      placeholder={selectedProvider?.config.temperature?.toString() ?? '0.7'}
+      value={temperature}
+      oninput={(e) => onTemperature((e.target as HTMLInputElement).value)}
+    />
+    <span class="hmc-hint">Override the provider's default temperature for this agent</span>
   </div>
 </section>
 
@@ -144,6 +220,12 @@
     color: var(--accent-error);
   }
 
+  .hmc-optional {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
   .hmc-hint {
     font-size: 11px;
     color: var(--text-muted);
@@ -152,6 +234,15 @@
   .hmc-error {
     font-size: 11px;
     color: var(--accent-error);
+  }
+
+  .hmc-link {
+    color: var(--accent-primary);
+    text-decoration: none;
+  }
+
+  .hmc-link:hover {
+    text-decoration: underline;
   }
 
   .hmc-input {
@@ -173,6 +264,29 @@
 
   .hmc-input--error {
     border-color: var(--accent-error);
+  }
+
+  .hmc-input--narrow {
+    max-width: 120px;
+  }
+
+  .hmc-select {
+    height: 34px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    outline: none;
+    cursor: pointer;
+    appearance: auto;
+    transition: border-color 120ms ease;
+  }
+
+  .hmc-select:focus {
+    border-color: var(--border-focus);
   }
 
   .hmc-model-wrap {

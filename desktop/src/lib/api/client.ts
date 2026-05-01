@@ -29,6 +29,9 @@ import type {
   Integration,
   Adapter,
   Gateway,
+  AIProvider,
+  AIProviderCreateRequest,
+  AIProviderTestResult,
   Workspace,
   Settings,
   AuditEntry,
@@ -69,10 +72,36 @@ import type {
   DocumentRevision,
 } from "./types";
 
+// ── Logging ──────────────────────────────────────────────────────────────────
+
+const LOG_PREFIX = "[bizforge:api]";
+const LOG_STYLES = {
+  info: "color: #3b82f6; font-weight: bold",
+  warn: "color: #eab308; font-weight: bold",
+  error: "color: #ef4444; font-weight: bold",
+  success: "color: #22c55e; font-weight: bold",
+  mock: "color: #a855f7; font-weight: bold",
+  auth: "color: #f59e0b; font-weight: bold",
+  health: "color: #06b6d4; font-weight: bold",
+  net: "color: #64748b; font-weight: bold",
+} as const;
+
+function logInfo(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+  console.log(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
+}
+function logWarn(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+  console.warn(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
+}
+function logError(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+  console.error(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
+}
+
 // ── Configuration ─────────────────────────────────────────────────────────────
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:9089";
 const API_PREFIX = "/api/v1";
+
+logInfo("info", `API base URL: ${BASE_URL}${API_PREFIX}`);
 
 let useMock = true;
 let mockModule: typeof import("./mock/index") | null = null;
@@ -96,6 +125,16 @@ async function getMock() {
 async function setMockEnabled(enabled: boolean): Promise<void> {
   const wasInMock = useMock;
   useMock = enabled;
+
+  if (wasInMock !== enabled) {
+    logInfo("mock", `Mode switched: ${wasInMock ? "mock" : "live"} → ${enabled ? "mock" : "live"}`);
+  }
+
+  try {
+    localStorage.setItem("bizforge-mock-mode", String(enabled));
+  } catch {
+    // Non-fatal (SSR / blocked)
+  }
 
   // If we're switching from mock → real, erect the transition gate BEFORE
   // clearing caches so no racing request sneaks through with stale data.
@@ -137,9 +176,34 @@ async function setMockEnabled(enabled: boolean): Promise<void> {
 }
 
 // ── Token Store ───────────────────────────────────────────────────────────────
+// Eagerly restore token and mock flag from localStorage so Vite HMR module
+// reloads don't wipe in-memory auth state and leave requests hanging.
 
-let _token: string | null = null;
+function _restoreFromLocalStorage(): {
+  token: string | null;
+  mock: boolean | null;
+} {
+  if (typeof localStorage === "undefined") return { token: null, mock: null };
+  try {
+    const token = localStorage.getItem("bizforge-auth-token");
+    const mockRaw = localStorage.getItem("bizforge-mock-mode");
+    const mock = mockRaw !== null ? mockRaw === "true" : null;
+    return { token: token ?? null, mock };
+  } catch {
+    return { token: null, mock: null };
+  }
+}
+
+const _restored = _restoreFromLocalStorage();
+
+let _token: string | null = _restored.token;
 let _firstRun: boolean = false;
+
+// Restore the mock flag so HMR doesn't flip back to true when the backend
+// was already confirmed reachable.
+if (_restored.mock !== null) {
+  useMock = _restored.mock;
+}
 
 export function getToken(): string | null {
   return _token;
@@ -158,10 +222,17 @@ export function isFirstRun(): boolean {
 
 // ── Auth Gate ─────────────────────────────────────────────────────────────────
 // All API requests wait for auth to complete before firing.
+// If we already restored a token from localStorage, pre-resolve the gate so
+// requests don't hang after HMR reloads.
 
 let _authResolve: (() => void) | null = null;
 const _authPromise: Promise<void> = new Promise<void>((resolve) => {
-  _authResolve = resolve;
+  if (_token !== null || useMock) {
+    resolve();
+    _authResolve = null;
+  } else {
+    _authResolve = resolve;
+  }
 });
 
 function resolveAuthGate(): void {
@@ -270,19 +341,21 @@ export function initializeAuth(): Promise<void> {
 }
 
 async function _doInitializeAuth(): Promise<void> {
+  logInfo("auth", "Initializing auth — probing backend health...");
+  const authStartMs = performance.now();
+
   // 0. Probe backend health — if it responds, disable mock mode
   try {
     const probe = await fetch(`${BASE_URL}${API_PREFIX}/health`, {
       signal: AbortSignal.timeout(3000),
     });
     if (probe.ok) {
-      // setMockEnabled(false) clears the response cache, purges all mock
-      // localStorage keys, and notifies the mock module — one call does all.
+      logInfo("health", `Backend reachable (${Math.round(performance.now() - authStartMs)}ms)`);
       clearCache();
       await setMockEnabled(false);
     }
   } catch {
-    // Backend not running — stay in mock mode
+    logWarn("health", `Backend unreachable at ${BASE_URL} — entering mock mode`);
     await setMockEnabled(true);
     resolveAuthGate();
     return;
@@ -299,15 +372,16 @@ async function _doInitializeAuth(): Promise<void> {
         registration_open: boolean;
       };
       _firstRun = !status.has_users;
+      logInfo("auth", `Auth status: has_users=${status.has_users}, first_run=${_firstRun}`);
     }
   } catch {
-    // Non-fatal: assume users exist, proceed normally
     _firstRun = false;
+    logWarn("auth", "Could not fetch auth status — assuming users exist");
   }
 
   // 1. If no users exist yet (first run), open gate and return immediately.
-  //    The root page will redirect to /auth for registration.
   if (_firstRun) {
+    logInfo("auth", "First run detected — skipping token verification, redirecting to registration");
     resolveAuthGate();
     return;
   }
@@ -320,16 +394,22 @@ async function _doInitializeAuth(): Promise<void> {
       defaults: {},
     });
     const stored = await store.get<string>("authToken");
-    if (stored) _token = stored;
+    if (stored) {
+      _token = stored;
+      logInfo("auth", "Token restored from Tauri store");
+    }
   } catch {
-    // Not in Tauri or store unavailable — try localStorage
+    logInfo("auth", "Tauri store unavailable — trying localStorage");
   }
 
   // 3. Fall back to localStorage token if Tauri store had nothing
   if (!_token) {
     try {
       const stored = localStorage.getItem("bizforge-auth-token");
-      if (stored) _token = stored;
+      if (stored) {
+        _token = stored;
+        logInfo("auth", "Token restored from localStorage");
+      }
     } catch {
       // localStorage unavailable (SSR / blocked)
     }
@@ -337,11 +417,14 @@ async function _doInitializeAuth(): Promise<void> {
 
   // 4. If we have a token, verify it is still valid
   if (_token) {
+    logInfo("auth", "Verifying stored token...");
     const valid = await verifyToken(_token);
     if (valid) {
+      logInfo("auth", `Auth complete — token valid (${Math.round(performance.now() - authStartMs)}ms total)`);
       resolveAuthGate();
       return;
     }
+    logWarn("auth", "Stored token is invalid/expired — clearing");
     _token = null;
   }
 
@@ -349,6 +432,7 @@ async function _doInitializeAuth(): Promise<void> {
   const devEmail = import.meta.env.VITE_DEV_EMAIL;
   const devPassword = import.meta.env.VITE_DEV_PASSWORD;
   if (devEmail && devPassword) {
+    logInfo("auth", `Attempting dev auto-login as ${devEmail}...`);
     try {
       const token = await login(devEmail, devPassword);
       _token = token;
@@ -358,15 +442,14 @@ async function _doInitializeAuth(): Promise<void> {
       } catch {
         // Non-fatal
       }
+      logInfo("auth", `Dev auto-login successful (${Math.round(performance.now() - authStartMs)}ms total)`);
     } catch {
-      // Dev credentials rejected — no token, will redirect to /auth for login
+      logWarn("auth", "Dev auto-login failed — will redirect to /auth");
     }
+  } else {
+    logInfo("auth", "No token available — user must log in manually");
   }
-  // If still no token after dev login attempt, the root page will redirect
-  // to /auth for manual login. We do NOT fall back to mock mode here so that
-  // real API calls work once the user provides credentials.
 
-  // Open the auth gate so queued API requests can proceed
   resolveAuthGate();
 }
 
@@ -500,6 +583,8 @@ export async function flushOfflineQueue(): Promise<{
   succeeded: number;
   failed: number;
 }> {
+  if (offlineQueue.length === 0) return { succeeded: 0, failed: 0 };
+  logInfo("net", `Flushing offline queue (${offlineQueue.length} items)...`);
   let succeeded = 0,
     failed = 0;
   while (offlineQueue.length > 0) {
@@ -516,12 +601,12 @@ export async function flushOfflineQueue(): Promise<{
       break;
     }
   }
-  // Clear storage only when the queue drained completely
   if (offlineQueue.length === 0) {
     clearQueueFromStorage();
   } else {
     saveQueueToStorage(offlineQueue);
   }
+  logInfo("net", `Offline queue flush: ${succeeded} succeeded, ${failed} failed, ${offlineQueue.length} remaining`);
   return { succeeded, failed };
 }
 
@@ -548,6 +633,7 @@ async function doFetch<T>(
   retried = false,
 ): Promise<T> {
   const url = `${BASE_URL}${API_PREFIX}${path}`;
+  const method = (options.method ?? "GET").toUpperCase();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -555,10 +641,15 @@ async function doFetch<T>(
   };
   if (_token) headers["Authorization"] = `Bearer ${_token}`;
 
+  const fetchStart = performance.now();
+  logInfo("net", `${method} ${path}${retried ? " (retry)" : ""}`);
+
   const response = await fetch(url, { ...options, headers });
 
+  const elapsed = Math.round(performance.now() - fetchStart);
+
   if (response.status === 401 && !retried && _token) {
-    // Token expired — for now just clear it
+    logWarn("auth", `401 on ${path} — token expired, retrying without token`);
     _token = null;
     return doFetch<T>(path, options, true);
   }
@@ -574,9 +665,11 @@ async function doFetch<T>(
       typeof body === "object" && body !== null && "error" in body
         ? String((body as Record<string, unknown>).error)
         : `HTTP ${response.status}: ${path}`;
+    logError("net", `${method} ${path} → ${response.status} (${elapsed}ms): ${message}`);
     throw new ApiError(response.status, message, body);
   }
 
+  logInfo("net", `${method} ${path} → ${response.status} (${elapsed}ms)`);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
@@ -607,6 +700,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
   }
 
+  // Guard: if the backend is live but there is no auth token, fail fast
+  // instead of sending an unauthenticated request that will 401.
+  // Public endpoints (health, auth/*) bypass this via doFetch directly.
+  if (!useMock && _token === null) {
+    throw new ApiError(401, "unauthorized");
+  }
+
   const method = (options.method ?? "GET").toUpperCase();
 
   // For mutating requests, generate an idempotency key once so retries reuse
@@ -626,14 +726,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (method === "GET") {
     const cached = getCached<T>(path);
-    if (cached !== null) return cached;
+    if (cached !== null) {
+      logInfo("net", `CACHE HIT ${path}`);
+      return cached;
+    }
     try {
       const data = await withRetry(() => doFetch<T>(path, options));
       setCache(path, data);
       return data;
     } catch (error) {
-      // Fall back to mock on network error
       if (!(error instanceof ApiError)) {
+        logWarn("net", `Network error on GET ${path} — falling back to mock`, error);
         await setMockEnabled(true);
         const mock = await getMock();
         return mock.handleRequest<T>(path, options);
@@ -646,6 +749,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return await withRetry(() => doFetch<T>(path, options));
   } catch (error) {
     if (!(error instanceof ApiError)) {
+      logWarn("net", `Network error on ${method} ${path} — queued for offline sync`);
       const body =
         options.body !== undefined
           ? JSON.parse(options.body as string)
@@ -797,24 +901,27 @@ export async function clearToken(): Promise<void> {
 
 export const health = {
   get: async (): Promise<HealthResponse> => {
-    // Always attempt a real probe first — this is how mock mode gets cleared
+    const healthStart = performance.now();
     try {
       const res = await fetch(`${BASE_URL}${API_PREFIX}/health`, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(3000),
       });
       if (!res.ok) throw new ApiError(res.status, "Health check failed");
-      // Backend is reachable — disable mock mode so subsequent requests go to
-      // the real API. setMockEnabled(false) purges localStorage mock data and
-      // clears the response cache in one call.
       if (useMock) {
+        logInfo("health", `Backend came online — switching from mock to live (${Math.round(performance.now() - healthStart)}ms)`);
         clearCache();
         await setMockEnabled(false);
       }
-      return res.json() as Promise<HealthResponse>;
+      const data = await res.json() as HealthResponse;
+      logInfo("health", `Health OK: status=${data.status}, version=${data.version}, agents_active=${data.agents_active ?? 0} (${Math.round(performance.now() - healthStart)}ms)`);
+      return data;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      // Network error — backend unreachable, activate mock mode
+      if (error instanceof ApiError) {
+        logError("health", `Health check returned ${error.status}: ${error.message}`);
+        throw error;
+      }
+      logWarn("health", `Health probe failed (${Math.round(performance.now() - healthStart)}ms) — using mock`, (error as Error).message);
       await setMockEnabled(true);
       const mock = await getMock();
       return mock.handleRequest<HealthResponse>("/health", {});
@@ -1382,6 +1489,49 @@ export const gateways = {
     request<Gateway>(`/gateways/${id}/probe`, { method: "POST" }),
 };
 
+// ── Providers ─────────────────────────────────────────────────────────────────
+
+export const providers = {
+  list: async (workspaceId?: string): Promise<AIProvider[]> => {
+    const qs = workspaceId ? `?workspace_id=${workspaceId}` : "";
+    const data = await request<{ providers: AIProvider[] }>(
+      `/providers${qs}`,
+    );
+    return data.providers ?? [];
+  },
+  show: async (id: string): Promise<AIProvider> => {
+    const data = await request<{ provider: AIProvider }>(`/providers/${id}`);
+    return data.provider ?? (data as unknown as AIProvider);
+  },
+  create: async (body: AIProviderCreateRequest): Promise<AIProvider> => {
+    const data = await request<{ provider: AIProvider }>("/providers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return data.provider ?? (data as unknown as AIProvider);
+  },
+  update: async (
+    id: string,
+    body: Partial<AIProviderCreateRequest>,
+  ): Promise<AIProvider> => {
+    const data = await request<{ provider: AIProvider }>(`/providers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    return data.provider ?? (data as unknown as AIProvider);
+  },
+  delete: (id: string) =>
+    request<void>(`/providers/${id}`, { method: "DELETE" }),
+  test: async (
+    id: string,
+  ): Promise<{ provider: AIProvider; test_result: AIProviderTestResult }> => {
+    return request<{ provider: AIProvider; test_result: AIProviderTestResult }>(
+      `/providers/${id}/test`,
+      { method: "POST" },
+    );
+  },
+};
+
 // ── Documents ─────────────────────────────────────────────────────────────────
 
 export const documents = {
@@ -1456,6 +1606,7 @@ export const workspaces = {
   },
   create: async (params: {
     name: string;
+    path?: string;
     directory?: string;
   }): Promise<Workspace> => {
     return request<Workspace>("/workspaces", {

@@ -68,7 +68,7 @@ Pick Workspace (sales-engine, dev-shop, content-factory, cognitive-os, custom)
         |
         v
 Backend API  (Elixir + Phoenix on :9089)
-        |-- 54 controllers, 56 schemas, 67 migrations, ~151 routes
+        |-- 55 controllers, 57 schemas, 68 migrations, ~157 routes
         |-- Agent lifecycle (heartbeat, sessions, budgets, governance)
         |-- Workflow engine (7 step types, DAG execution, cron scheduling)
         |-- Dynamic dispatch (content-based adapter routing)
@@ -297,7 +297,7 @@ Bizforge's budget enforcement wraps around MPP:
 | **Observe** | Activity, Logs, Analytics, Costs, Reports, Alerts, Audit |
 | **Automate** | Skills, Integrations, Webhooks, Plugins, Gateways |
 | **Library** | Agent Marketplace, Skills, Companies, Teams (with detail pages) |
-| **System** | Organizations, Hierarchy, Divisions, Departments, Teams, Users, Access, Config, Secrets, Environment |
+| **System** | Organizations, Hierarchy, Divisions, Departments, Teams, Users, Access, Config, AI Providers, Secrets, Environment |
 
 ### Virtual Office
 
@@ -449,7 +449,7 @@ Bizforge dispatches work to any connected runtime. Eleven adapters — five full
 | **JidoClaw** | Beta | `curl -fsSL https://raw.githubusercontent.com/robertohluna/jido_claw/main/install.sh \| bash` |
 | **Windsurf** | Beta | [codeium.com/windsurf](https://codeium.com/windsurf) |
 
-The Command Center auto-detects installed adapters and provides one-click setup wizards. Provider credentials stored in the OS keychain via Tauri's secure store.
+The Command Center auto-detects installed adapters and provides one-click setup wizards. AI providers (Anthropic, OpenAI, Google, Groq, DeepSeek, plus 12 more cloud providers and local runtimes like Ollama, LM Studio, Jan, GPT4All, and llama.cpp) are managed through Settings > AI Providers with per-provider API keys, endpoint configuration, model discovery, connection testing, and advanced parameters (temperature, max tokens, top-p, etc.). Configured providers are available during agent hiring, filtering the model picker to each provider's discovered models.
 
 All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
 
@@ -473,10 +473,10 @@ All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`
 
 | Metric | Count |
 |--------|-------|
-| Controllers | 54 |
-| Schemas | 56 |
-| Migrations | 67 |
-| Routes | ~151 |
+| Controllers | 55 |
+| Schemas | 57 |
+| Migrations | 68 |
+| Routes | ~157 |
 | Adapters | 11 |
 
 ### Key Subsystems
@@ -529,6 +529,12 @@ just db-migrate         # Run pending migrations
 just db-reset           # Drop, create, migrate, and seed the database
 just build              # Production Tauri app bundle
 just doctor             # Check prerequisites and ports
+
+# Headless mode
+just headless ./operations/sales-engine   # Run workspace headlessly
+just headless-status                      # Check headless instance
+just headless-stop                        # Stop headless instance
+just headless-logs                        # Tail headless logs
 ```
 
 ### Environment
@@ -640,6 +646,75 @@ Strategy and operational planning docs in `docs/strategy/`:
 - [Nexus Strategy](docs/strategy/nexus-strategy.md)
 - [Quickstart](docs/strategy/quickstart.md)
 - Playbooks, runbooks, and coordination docs
+
+---
+
+## Headless Mode
+
+Run any configured workspace fully autonomously — no GUI required. Set up your workspace in the Command Center, then deploy it headlessly via CLI.
+
+### Quick Start (Headless)
+
+```bash
+# Run a workspace headlessly
+just headless ./operations/sales-engine
+
+# Or using the CLI directly (after building a release)
+bizforge run ./operations/sales-engine
+
+# Check status
+bizforge status
+
+# Stop gracefully (compacts all sessions)
+bizforge stop
+```
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `bizforge run <path>` | Boot backend, load workspace, start all heartbeats |
+| `bizforge stop` | Graceful shutdown with session compaction |
+| `bizforge status` | Running agents, active tasks, budget usage |
+| `bizforge logs` | Tail agent activity logs |
+| `bizforge pause` / `resume` | Pause/resume heartbeats without killing sessions |
+| `bizforge config show` | Display workspace configuration summary |
+| `bizforge config validate` | Validate workspace files before running |
+| `bizforge snapshot create` | Serialize workspace into a deployable snapshot |
+| `bizforge snapshot list` | List available snapshots |
+| `bizforge snapshot restore` | Restore workspace from a snapshot |
+| `bizforge list` | Show all running headless instances |
+| `bizforge monitor` | Open the stats dashboard |
+
+### Headless Architecture
+
+When `BIZFORGE_HEADLESS=true`, the application boots the full OTP supervision tree (Repo, BudgetEnforcer, PubSub, Scheduler, HeartbeatRunner, Workflows) but replaces the Phoenix HTTP endpoint with three headless-specific processes:
+
+- **Monitor** — PID file management, signal handling, graceful shutdown with session compaction
+- **Bootstrap** — Auto-discovers and starts all workspace agents and their schedules on boot
+- **Watchdog** — Detects stuck/crashed agents and recovers them with exponential backoff
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BIZFORGE_HEADLESS` | `false` | Enable headless mode |
+| `BIZFORGE_WORKSPACE_PATH` | `.` | Path to workspace directory |
+| `BIZFORGE_NO_HTTP` | `false` | Skip HTTP endpoint entirely |
+| `BIZFORGE_HEALTH_PORT` | `9090` | Health check port |
+| `BIZFORGE_PID_DIR` | `.bizforge/pids` | PID file directory |
+| `BIZFORGE_LOG_FORMAT` | `text` | Log format (`text` or `json`) |
+
+---
+
+## Roadmap
+
+### Phase: Headless Workspace Execution _(In Progress)_
+
+Run any fully configured workspace autonomously via CLI — no GUI required. Set up in the Command Center, deploy headlessly, monitor from a minimal stats dashboard.
+
+- **Checklist:** [`CHECKLIST.md`](CHECKLIST.md)
+- **Design document:** [`docs/phases/headless-workspace-execution.md`](docs/phases/headless-workspace-execution.md)
 
 ---
 

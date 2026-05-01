@@ -108,7 +108,9 @@ class IssuesStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load issues", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load issues", msg);
+      }
     } finally {
       this.loading = false;
     }

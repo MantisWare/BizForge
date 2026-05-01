@@ -85,8 +85,8 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
           JSON.stringify({ completed: true }),
         );
         onboardingDone = true;
-      } else if (!isMockEnabled()) {
-        // Backend reachable but no token yet — check for existing data.
+      } else if (!isMockEnabled() && getToken()) {
+        // Backend reachable with token — check for existing data.
         try {
           const wsList = await workspaces.list();
           if (wsList.length > 0) {
@@ -121,17 +121,30 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       }
       // ─────────────────────────────────────────────────────────────────────
 
+      const canFetch = isMockEnabled() || getToken() !== null;
+
       // 2. Start connection polling now that _token is set (or mock is active).
       //    Do NOT start polling before auth resolves: health.get() bypasses
       //    request() and can flip useMock=false while _token is still null.
       stopPolling = connectionStore.startPolling(30_000);
 
-      // 3. Subscribe to the activity SSE stream after auth so the token is
+      // 3. Load workspaces from localStorage (always safe — no network)
+      workspaceStore.fetchWorkspaces();
+
+      if (!canFetch) {
+        // Backend reachable but no auth token — redirect to login.
+        // The user completed onboarding but hasn't authenticated against
+        // the live backend yet. Send them to /auth so they can log in.
+        if (!isMockEnabled()) {
+          goto('/auth', { replaceState: true });
+          return;
+        }
+        return;
+      }
+
+      // 4. Subscribe to the activity SSE stream after auth so the token is
       //    available when the Authorization header is attached.
       activityStore.subscribe();
-
-      // 4. Load workspaces from localStorage
-      workspaceStore.fetchWorkspaces();
 
       // 5. Sync workspace list from backend (sets activeWorkspaceId to backend's active workspace)
       await workspaceStore.syncFromBackend();
@@ -209,7 +222,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   <Sidebar bind:isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} {user} />
   <main class="main-content" id="main-content">
     {@render children()}
-    <ConnectionStatusBar />
+    <ConnectionStatusBar alwaysShow={true} />
   </main>
 </div>
 

@@ -23,6 +23,22 @@ end
 config :bizforge, BizforgeWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "9089"))]
 
+config :bizforge, :headless,
+  enabled: System.get_env("BIZFORGE_HEADLESS") == "true",
+  workspace_path: System.get_env("BIZFORGE_WORKSPACE_PATH"),
+  no_http: System.get_env("BIZFORGE_NO_HTTP") == "true",
+  health_port: String.to_integer(System.get_env("BIZFORGE_HEALTH_PORT", "9090")),
+  pid_dir: System.get_env("BIZFORGE_PID_DIR", ".bizforge/pids"),
+  log_format: System.get_env("BIZFORGE_LOG_FORMAT", "text"),
+  webhook_url: System.get_env("BIZFORGE_WEBHOOK_URL"),
+  api_key: System.get_env("BIZFORGE_API_KEY")
+
+if System.get_env("BIZFORGE_LOG_FORMAT") == "json" do
+  config :logger, :console,
+    format: {Bizforge.Headless.JsonLogger, :format},
+    metadata: :all
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

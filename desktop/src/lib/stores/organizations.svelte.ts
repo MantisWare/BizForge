@@ -17,18 +17,22 @@ class OrganizationsStore {
   totalCount = $derived(this.organizations.length);
 
   async fetchOrganizations(): Promise<void> {
+    console.log("[bizforge:orgs] Fetching organizations...");
     this.loading = true;
     try {
       this.organizations = await orgsApi.list();
       this.error = null;
-      // Auto-select first org if none is current
+      console.log(`[bizforge:orgs] Loaded ${this.organizations.length} organization(s)`);
       if (!this.current && this.organizations.length > 0) {
         this.current = this.organizations[0];
       }
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load organizations", msg);
+      console.error(`[bizforge:orgs] Fetch failed: ${msg}`);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load organizations", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -38,9 +42,12 @@ class OrganizationsStore {
   async ensureDefault(): Promise<void> {
     await this.fetchOrganizations();
     if (this.organizations.length === 0) {
-      const created = await this.createOrganization({
-        name: "My Organization",
-      });
+      const name = "My Organization";
+      const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      const created = await this.createOrganization({ name, slug });
       if (created) this.current = created;
     }
   }
@@ -73,7 +80,9 @@ class OrganizationsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load members", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load members", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -87,7 +96,9 @@ class OrganizationsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load organization", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load organization", msg);
+      }
     }
   }
 

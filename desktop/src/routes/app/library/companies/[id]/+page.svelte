@@ -9,6 +9,7 @@
   } from '$lib/api/mock/library';
   import { deployTemplate } from '$lib/services/template-deploy';
   import { toastStore } from '$lib/stores/toasts.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   const id = $derived(page.params.id ?? '');
   const company = $derived<LibraryOperation | null>(id ? getLibraryCompanyDetail(id) : null);
@@ -24,7 +25,7 @@
       if (result.success) {
         deployed = true;
         toastStore.success(
-          `${company.emoji} ${company.name} deployed`,
+          `${company.name} deployed`,
           `${result.agentCount} agents provisioned.`,
         );
         goto('/app');
@@ -66,7 +67,7 @@
 <PageShell title={company?.name ?? 'Company'} subtitle={company ? company.category : undefined}>
   {#if !company}
     <div class="ldc-not-found" role="main">
-      <span class="ldc-not-found-icon" aria-hidden="true">🔍</span>
+      <span class="ldc-not-found-icon" aria-hidden="true"><AgentIcon value="magnifying" size={36} /></span>
       <p class="ldc-not-found-text">Company template not found.</p>
       <button
         class="ldc-back-btn"
@@ -103,7 +104,7 @@
 
           <!-- Hero -->
           <div class="ldc-hero">
-            <span class="ldc-hero-emoji" aria-hidden="true">{company.emoji}</span>
+            <span class="ldc-hero-emoji" aria-hidden="true"><AgentIcon value={company.emoji} size={36} /></span>
             <div class="ldc-hero-meta">
               <div class="ldc-hero-badges">
                 {#if company.isOfficial}
@@ -134,13 +135,13 @@
             <h2 class="ldc-card-title">Composition</h2>
             <div class="ldc-composition">
               <div class="ldc-comp-item">
-                <div class="ldc-comp-icon" aria-hidden="true">🤖</div>
+                <div class="ldc-comp-icon" aria-hidden="true"><AgentIcon value="robot" size={24} /></div>
                 <div class="ldc-comp-count">{company.agent_count}</div>
                 <div class="ldc-comp-label">Agents</div>
               </div>
               <div class="ldc-comp-divider" aria-hidden="true"></div>
               <div class="ldc-comp-item">
-                <div class="ldc-comp-icon" aria-hidden="true">⚡</div>
+                <div class="ldc-comp-icon" aria-hidden="true"><AgentIcon value="bolt" size={24} /></div>
                 <div class="ldc-comp-count">{company.skill_count}</div>
                 <div class="ldc-comp-label">Skills</div>
               </div>
@@ -152,17 +153,17 @@
             <h2 class="ldc-card-title">Stats</h2>
             <div class="ldc-stats-grid" role="list">
               <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true">⬇</span>
+                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
                 <span class="ldc-stat-value">{formatNumber(company.downloads)}</span>
                 <span class="ldc-stat-label">Downloads</span>
               </div>
               <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true">★</span>
+                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
                 <span class="ldc-stat-value">{formatNumber(company.favorites)}</span>
                 <span class="ldc-stat-label">Favorites</span>
               </div>
               <div class="ldc-stat" role="listitem">
-                <span class="ldc-stat-icon" aria-hidden="true">⑂</span>
+                <span class="ldc-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
                 <span class="ldc-stat-value">{formatNumber(company.forks)}</span>
                 <span class="ldc-stat-label">Forks</span>
               </div>
@@ -261,7 +262,9 @@
   }
 
   .ldc-not-found-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 
@@ -359,8 +362,9 @@
   }
 
   .ldc-hero-emoji {
-    font-size: 56px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
   }
 
@@ -465,7 +469,10 @@
   }
 
   .ldc-comp-icon {
-    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f26522;
   }
 
   .ldc-comp-count {
@@ -500,7 +507,9 @@
   }
 
   .ldc-stat-icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
   }
 

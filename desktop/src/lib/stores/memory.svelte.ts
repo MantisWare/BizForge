@@ -261,7 +261,9 @@ class MemoryStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load memory", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load memory", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -324,7 +326,9 @@ class MemoryStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load namespace", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load namespace", msg);
+      }
     } finally {
       this.loading = false;
     }

@@ -4,7 +4,10 @@ defmodule Bizforge.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
+    headless_config = Application.get_env(:bizforge, :headless, [])
+    headless? = Keyword.get(headless_config, :enabled, false)
+
+    core_children = [
       BizforgeWeb.Telemetry,
       Bizforge.Repo,
       Bizforge.BudgetEnforcer,
@@ -17,9 +20,21 @@ defmodule Bizforge.Application do
       Bizforge.AlertEvaluator,
       Bizforge.StaleCleanup,
       Bizforge.IdempotencyCleanup,
-      Bizforge.Workflows.Supervisor,
-      BizforgeWeb.Endpoint
+      Bizforge.Workflows.Supervisor
     ]
+
+    children =
+      if headless? do
+        core_children ++
+          [
+            Bizforge.Headless.Monitor,
+            Bizforge.Headless.Bootstrap,
+            Bizforge.Headless.Watchdog,
+            Bizforge.Headless.Notifier
+          ]
+      else
+        core_children ++ [BizforgeWeb.Endpoint]
+      end
 
     # Create ETS tables before endpoint starts (avoids TOCTOU race)
     :ets.new(:bizforge_idempotency_cache, [:named_table, :set, :public, read_concurrency: true])
@@ -38,7 +53,12 @@ defmodule Bizforge.Application do
 
   @impl true
   def config_change(changed, _new, removed) do
-    BizforgeWeb.Endpoint.config_change(changed, removed)
+    headless_config = Application.get_env(:bizforge, :headless, [])
+
+    unless Keyword.get(headless_config, :enabled, false) do
+      BizforgeWeb.Endpoint.config_change(changed, removed)
+    end
+
     :ok
   end
 end

@@ -2,6 +2,7 @@
 <script lang="ts">
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { workflowsStore } from '$lib/stores/workflows.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import type { Workflow, WorkflowStep } from '$api/types';
@@ -292,11 +293,9 @@
                   <div class="wf-step-card">
                     <div class="wf-step-header">
                       <div class="wf-step-agent">
-                        {#if step.agent_emoji}
-                          <span class="wf-step-emoji" aria-hidden="true">{step.agent_emoji}</span>
-                        {:else}
-                          <span class="wf-step-emoji wf-step-emoji--default" aria-hidden="true">⚡</span>
-                        {/if}
+                        <span class="wf-step-emoji" class:wf-step-emoji--default={!step.agent_emoji} aria-hidden="true">
+                          <AgentIcon value={step.agent_emoji ?? 'bolt'} size={16} />
+                        </span>
                         <div class="wf-step-info">
                           <span class="wf-step-name">{step.name}</span>
                           {#if step.agent_name}
@@ -825,9 +824,10 @@
 }
 
 .wf-step-emoji {
-  font-size: 1.125rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  color: #f26522;
 }
 
 .wf-step-emoji--default {

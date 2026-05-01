@@ -47,7 +47,9 @@ class ConversationsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load conversations", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load conversations", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -61,7 +63,6 @@ class ConversationsStore {
       this.activeConversation = result.conversation;
       this.messages = result.messages ?? [];
 
-      // Sync into list
       const idx = this.conversations.findIndex((c) => c.id === id);
       if (idx >= 0) {
         this.conversations = this.conversations.map((c) =>
@@ -71,7 +72,9 @@ class ConversationsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load conversation", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load conversation", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -109,7 +112,9 @@ class ConversationsStore {
       }
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load messages", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load messages", msg);
+      }
     }
   }
 

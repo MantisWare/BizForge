@@ -113,7 +113,7 @@ export function frontmatterToAgent(
     id: `tpl-${rawId}`,
     name: rawId,
     display_name: (frontmatter["name"] as string | undefined) ?? rawId,
-    avatar_emoji: (frontmatter["emoji"] as string | undefined) ?? "🤖",
+    avatar_emoji: (frontmatter["emoji"] as string | undefined) ?? "robot",
     role: (frontmatter["role"] as string | undefined) ?? "agent",
     status: "idle",
     adapter: normaliseAdapter(frontmatter["adapter"]),

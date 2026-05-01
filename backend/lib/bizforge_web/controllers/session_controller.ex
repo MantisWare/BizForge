@@ -230,30 +230,79 @@ defmodule BizforgeWeb.SessionController do
     json(conn, %{messages: messages})
   end
 
+  def create(conn, params) do
+    agent_id = params["agent_id"]
+    title = params["title"]
+
+    case Repo.get(Agent, agent_id) do
+      nil ->
+        conn |> put_status(404) |> json(%{error: "agent_not_found"})
+
+      agent ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        attrs = %{
+          agent_id: agent.id,
+          workspace_id: agent.workspace_id,
+          model: params["model"] || agent.model,
+          status: "active",
+          started_at: now
+        }
+
+        case %Session{} |> Session.changeset(attrs) |> Repo.insert() do
+          {:ok, session} ->
+            conn
+            |> put_status(201)
+            |> json(%{
+              id: session.id,
+              agent_id: session.agent_id,
+              agent_name: agent.name,
+              title: title,
+              status: session.status,
+              started_at: session.started_at,
+              created_at: session.started_at
+            })
+
+          {:error, changeset} ->
+            conn
+            |> put_status(422)
+            |> json(%{error: "validation_failed", details: format_errors(changeset)})
+        end
+    end
+  end
+
   def message(conn, %{"session_id" => session_id} = params) do
     body = params["body"] || params["message"] || ""
+    model = params["model"]
 
-    case Repo.get(Session, session_id) do
+    case Repo.get(Session, session_id) |> Repo.preload(:agent) do
       nil ->
         conn |> put_status(404) |> json(%{error: "not_found"})
 
-      _session ->
+      session ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-        event = %SessionEvent{
+        %SessionEvent{
           session_id: session_id,
           event_type: "user_message",
           data: %{"body" => body},
           tokens: 0,
           inserted_at: now
         }
-
-        Repo.insert!(event)
+        |> Repo.insert!()
 
         Bizforge.EventBus.broadcast(
           Bizforge.EventBus.session_topic(session_id),
           %{event: "user_message", body: body, session_id: session_id}
         )
+
+        agent = session.agent
+
+        if agent do
+          Task.Supervisor.start_child(Bizforge.HeartbeatRunner, fn ->
+            execute_chat_message(session, agent, body, model)
+          end)
+        end
 
         conn |> put_status(202) |> json(%{ok: true, session_id: session_id})
     end
@@ -289,6 +338,138 @@ defmodule BizforgeWeb.SessionController do
         end
     end
   end
+
+  defp execute_chat_message(session, agent, message, model_override) do
+    adapter_type = agent.adapter || "osa"
+
+    case Bizforge.Adapter.resolve(adapter_type) do
+      {:ok, adapter_mod} ->
+        base_url = (agent.config || %{})["url"]
+        model = model_override || agent.model || "claude-sonnet-4-6"
+
+        config = %{
+          "url" => base_url,
+          "model" => model
+        }
+
+        case adapter_mod.start(config) do
+          {:ok, osa_session} ->
+            try do
+              adapter_mod.send_message(osa_session, message)
+              |> Stream.each(fn raw_event ->
+                normalized = normalize_event(raw_event)
+                event_type = normalized["event_type"] || "run.output"
+                data = normalized["data"] || %{}
+
+                %SessionEvent{
+                  session_id: session.id,
+                  event_type: event_type,
+                  data: data,
+                  tokens: 0,
+                  inserted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+                }
+                |> Repo.insert!()
+
+                for fe_event <- to_frontend_events(event_type, data, session.id, agent.id) do
+                  Bizforge.EventBus.broadcast(
+                    Bizforge.EventBus.session_topic(session.id),
+                    fe_event
+                  )
+                end
+              end)
+              |> Stream.run()
+
+              Bizforge.EventBus.broadcast(
+                Bizforge.EventBus.session_topic(session.id),
+                %{event: "done", session_id: session.id}
+              )
+            after
+              adapter_mod.stop(osa_session)
+            end
+
+          {:error, reason} ->
+            Bizforge.EventBus.broadcast(
+              Bizforge.EventBus.session_topic(session.id),
+              %{
+                event: "error",
+                data: %{"message" => "Adapter start failed: #{inspect(reason)}"},
+                session_id: session.id
+              }
+            )
+        end
+
+      {:error, _} ->
+        Bizforge.EventBus.broadcast(
+          Bizforge.EventBus.session_topic(session.id),
+          %{
+            event: "error",
+            data: %{"message" => "Unknown adapter: #{adapter_type}"},
+            session_id: session.id
+          }
+        )
+    end
+  end
+
+  defp normalize_event(event) when is_map(event) do
+    cond do
+      is_binary(Map.get(event, "event_type")) -> event
+      is_binary(Map.get(event, :event_type)) ->
+        %{
+          "event_type" => to_string(Map.get(event, :event_type)),
+          "data" => Map.get(event, :data, %{})
+        }
+      true -> %{"event_type" => "run.output", "data" => event}
+    end
+  end
+
+  defp to_frontend_events(event_type, data, session_id, agent_id) do
+    base = %{session_id: session_id, agent_id: agent_id}
+
+    case event_type do
+      t when t in ["content_block_delta", "text_delta", "run.output"] ->
+        delta = extract_text_delta(data)
+        if delta != "" do
+          [Map.merge(base, %{event: "streaming_token", type: "streaming_token", delta: delta})]
+        else
+          [Map.merge(base, %{event: event_type, data: data})]
+        end
+
+      "thinking" ->
+        delta = data["thinking"] || data["text"] || ""
+        [Map.merge(base, %{event: "thinking_delta", type: "thinking_delta", delta: delta})]
+
+      t when t in ["tool_use", "run.tool_call"] ->
+        [Map.merge(base, %{
+          event: "tool_call",
+          type: "tool_call",
+          tool_use_id: data["id"] || data["tool_use_id"],
+          tool_name: data["name"] || data["tool_name"],
+          input: data["input"] || %{}
+        })]
+
+      t when t in ["tool_result", "run.tool_result"] ->
+        [Map.merge(base, %{event: "tool_result", type: "tool_result", data: data})]
+
+      "error" ->
+        [Map.merge(base, %{event: "error", type: "error", message: data["message"] || "Unknown error"})]
+
+      _ ->
+        [Map.merge(base, %{event: event_type, data: data})]
+    end
+  end
+
+  defp extract_text_delta(data) when is_map(data) do
+    cond do
+      is_binary(data["delta"]) -> data["delta"]
+      is_map(data["delta"]) && is_binary(data["delta"]["text"]) -> data["delta"]["text"]
+      is_binary(data["text"]) -> data["text"]
+      is_binary(data["content"]) -> data["content"]
+      is_binary(data["body"]) -> data["body"]
+      true -> ""
+    end
+  end
+
+  defp extract_text_delta(_), do: ""
 
   defp sanitize_content(nil), do: ""
 

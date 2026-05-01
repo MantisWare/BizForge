@@ -142,12 +142,12 @@ class SessionsStore {
   // ── List operations ────────────────────────────────────────────────────────
 
   async fetch(workspaceId?: string): Promise<void> {
+    console.log(`[bizforge:sessions] Fetching sessions${workspaceId ? ` for workspace ${workspaceId}` : ""}...`);
     this.loading = true;
     this.error = null;
     try {
       this.sessions = await sessionsApi.list(workspaceId);
-      // Refresh selectedSession from the new array so stale references don't
-      // keep detail panels rendered after the underlying data changes.
+      console.log(`[bizforge:sessions] Loaded ${this.sessions.length} sessions`);
       if (this.selectedSession) {
         const refreshed = this.sessions.find(
           (s) => s.id === this.selectedSession!.id,
@@ -157,7 +157,10 @@ class SessionsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load sessions", msg);
+      console.error(`[bizforge:sessions] Fetch failed: ${msg}`);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load sessions", msg);
+      }
     } finally {
       this.loading = false;
     }
@@ -167,7 +170,6 @@ class SessionsStore {
     try {
       const session = await sessionsApi.get(id);
       this.selectedSession = session;
-      // Sync into the list if present
       const idx = this.sessions.findIndex((s) => s.id === id);
       if (idx >= 0) {
         this.sessions = this.sessions.map((s) => (s.id === id ? session : s));
@@ -176,7 +178,9 @@ class SessionsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load session", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load session", msg);
+      }
       return null;
     }
   }
@@ -190,7 +194,9 @@ class SessionsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load transcript", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load transcript", msg);
+      }
     } finally {
       this.transcriptLoading = false;
     }
@@ -250,7 +256,9 @@ class SessionsStore {
       this.chain = await sessionChainApi.get(sessionId);
     } catch (e) {
       const msg = (e as Error).message;
-      toastStore.error("Failed to load session chain", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load session chain", msg);
+      }
     } finally {
       this.chainLoading = false;
     }

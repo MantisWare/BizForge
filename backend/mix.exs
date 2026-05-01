@@ -10,6 +10,7 @@ defmodule Bizforge.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      releases: releases(),
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -62,6 +63,16 @@ defmodule Bizforge.MixProject do
   #     $ mix setup
   #
   # See the documentation for `Mix` for more info on aliases.
+  defp releases do
+    [
+      bizforge: [
+        include_executables_for: [:unix],
+        applications: [runtime_tools: :permanent],
+        rel_overlays: "rel/overlays"
+      ]
+    ]
+  end
+
   defp aliases do
     [
       setup: ["deps.get", "ecto.setup"],

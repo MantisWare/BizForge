@@ -6,6 +6,7 @@
   import GoalHierarchy from '$lib/components/goals/GoalHierarchy.svelte';
   import IssueList from '$lib/components/issues/IssueList.svelte';
   import AgentCard from '$lib/components/agents/AgentCard.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { projectsStore } from '$lib/stores/projects.svelte';
   import { goalsStore } from '$lib/stores/goals.svelte';
   import { issuesStore } from '$lib/stores/issues.svelte';
@@ -222,7 +223,7 @@
   <!-- ── Not found ──────────────────────────────────────────────────────────── -->
   {:else if notFound || (!project && !projectsStore.loading)}
     <div class="pj-empty" role="main">
-      <span class="pj-empty-icon" aria-hidden="true">📁</span>
+      <span class="pj-empty-icon" aria-hidden="true"><AgentIcon value="folder" size={40} /></span>
       <p class="pj-empty-text">Project not found.</p>
       <button
         class="pj-btn-ghost"
@@ -690,7 +691,12 @@
     font-size: 13px;
   }
 
-  .pj-empty-icon { font-size: 40px; opacity: 0.4; }
+  .pj-empty-icon {
+    display: flex;
+    align-items: center;
+    color: #f26522;
+    opacity: 0.4;
+  }
   .pj-empty-text { margin: 0; }
 
   .pj-empty-tab {

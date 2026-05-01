@@ -118,7 +118,9 @@ class CostsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load costs", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load costs", msg);
+      }
     } finally {
       this.isLoading = false;
     }
@@ -139,7 +141,9 @@ class CostsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      toastStore.error("Failed to load budget policies", msg);
+      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+        toastStore.error("Failed to load budget policies", msg);
+      }
     } finally {
       this.isLoading = false;
     }

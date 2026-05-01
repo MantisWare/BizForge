@@ -52,7 +52,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "growth-director",
     "Growth Director",
-    "🧭",
+    "compass",
     "orchestrator",
     "core",
     ["research", "define-niche", "build-icp", "design-offer", "extract-voice"],
@@ -64,7 +64,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "research",
     "Research Agent",
-    "🔍",
+    "magnifying",
     "analyst",
     "foundations",
     ["research"],
@@ -74,7 +74,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "niche-architect",
     "Niche Architect",
-    "🎯",
+    "flag",
     "strategist",
     "foundations",
     ["define-niche"],
@@ -84,7 +84,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "icp-builder",
     "ICP Builder",
-    "👤",
+    "finger-print",
     "analyst",
     "foundations",
     ["build-icp"],
@@ -94,7 +94,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "offer-architect",
     "Offer Architect",
-    "🏗️",
+    "building",
     "strategist",
     "foundations",
     ["design-offer"],
@@ -104,7 +104,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "brand-voice",
     "Brand Voice Extractor",
-    "🎙️",
+    "megaphone",
     "analyst",
     "foundations",
     ["extract-voice"],
@@ -116,7 +116,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "content-strategist",
     "Content Strategist",
-    "📅",
+    "calendar",
     "strategist",
     "marketing",
     ["content-calendar", "repurpose"],
@@ -126,7 +126,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "youtube",
     "YouTube Agent",
-    "🎬",
+    "camera",
     "creator",
     "marketing",
     ["youtube-script"],
@@ -136,7 +136,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "short-form",
     "Short-Form Agent",
-    "📱",
+    "chat-bubble",
     "creator",
     "marketing",
     ["short-form"],
@@ -146,7 +146,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "stories",
     "Story Sequence Agent",
-    "📸",
+    "camera",
     "creator",
     "marketing",
     ["story-sequence"],
@@ -156,7 +156,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "twitter",
     "Twitter/X Agent",
-    "🐦",
+    "megaphone",
     "creator",
     "marketing",
     ["twitter-thread"],
@@ -166,7 +166,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "linkedin",
     "LinkedIn Agent",
-    "💼",
+    "briefcase",
     "creator",
     "marketing",
     ["linkedin-post"],
@@ -176,7 +176,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "paid-ads",
     "Paid Ads Agent",
-    "💰",
+    "banknotes",
     "strategist",
     "marketing",
     ["ad-creative"],
@@ -186,7 +186,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "seo-blog",
     "SEO/Blog Agent",
-    "✍️",
+    "document-text",
     "creator",
     "marketing",
     ["blog-post"],
@@ -196,7 +196,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "marketing-assets",
     "Marketing Assets Agent",
-    "🎨",
+    "paint-brush",
     "creator",
     "marketing",
     ["marketing-asset"],
@@ -206,7 +206,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "podcast",
     "Podcast Agent",
-    "🎙️",
+    "megaphone",
     "creator",
     "marketing",
     ["podcast-outline"],
@@ -218,7 +218,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "email-sequence",
     "Email Sequence Agent",
-    "✉️",
+    "envelope",
     "architect",
     "nurture",
     ["email-sequence"],
@@ -228,7 +228,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "lead-magnet",
     "Lead Magnet Agent",
-    "🧲",
+    "package",
     "creator",
     "nurture",
     ["lead-magnet"],
@@ -238,7 +238,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "community",
     "Community Agent",
-    "🤝",
+    "cog",
     "strategist",
     "nurture",
     ["community-content"],
@@ -248,7 +248,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "webinar",
     "Webinar/Challenge Agent",
-    "🎓",
+    "academic-cap",
     "architect",
     "nurture",
     ["webinar-script"],
@@ -258,7 +258,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "sms",
     "SMS Agent",
-    "💬",
+    "chat-bubble",
     "creator",
     "nurture",
     ["sms-sequence"],
@@ -270,7 +270,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "vsl-builder",
     "VSL Builder",
-    "🎥",
+    "camera",
     "architect",
     "sales",
     ["build-vsl"],
@@ -280,7 +280,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "funnel-assets",
     "Funnel Assets Agent",
-    "🔄",
+    "arrows-pointing-out",
     "architect",
     "sales",
     ["build-funnel"],
@@ -290,7 +290,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "sales-scripts",
     "Sales Script Agent",
-    "📝",
+    "document-text",
     "architect",
     "sales",
     ["sales-script", "objections"],
@@ -300,7 +300,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "dm-sales",
     "DM Sales Agent",
-    "💬",
+    "chat-bubble",
     "strategist",
     "sales",
     ["dm-sequence"],
@@ -310,7 +310,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "call-prep",
     "Call Prep Agent",
-    "📋",
+    "document-text",
     "analyst",
     "sales",
     ["call-prep"],
@@ -320,7 +320,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "proposal",
     "Proposal Agent",
-    "📑",
+    "folder",
     "architect",
     "sales",
     ["proposal"],
@@ -330,7 +330,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "crm-automation",
     "CRM Automation Agent",
-    "⚙️",
+    "cog",
     "engineer",
     "sales",
     ["crm-update"],
@@ -342,7 +342,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "launch-manager",
     "Launch Manager",
-    "🚀",
+    "rocket",
     "strategist",
     "launch",
     ["plan-launch"],
@@ -352,7 +352,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "post-launch",
     "Post-Launch Analyst",
-    "📊",
+    "chart-bar",
     "analyst",
     "launch",
     ["launch-report"],
@@ -364,7 +364,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "sop-builder",
     "SOP Builder",
-    "📋",
+    "document-text",
     "architect",
     "scale",
     ["build-sop"],
@@ -374,7 +374,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "team-builder",
     "Team Builder",
-    "👥",
+    "briefcase",
     "strategist",
     "scale",
     ["hiring-brief"],
@@ -384,7 +384,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "competitor",
     "Competitor Agent",
-    "🏆",
+    "star",
     "analyst",
     "scale",
     ["competitor-intel"],
@@ -394,7 +394,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "financial",
     "Financial Agent",
-    "💹",
+    "chart-bar",
     "analyst",
     "scale",
     ["revenue-report"],
@@ -404,7 +404,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "retention",
     "Client Retention Agent",
-    "❤️",
+    "heart",
     "strategist",
     "scale",
     ["retention-check"],
@@ -414,7 +414,7 @@ export const agents: BizforgeAgent[] = [
   agent(
     "case-study",
     "Case Study Agent",
-    "📖",
+    "academic-cap",
     "creator",
     "scale",
     ["case-study"],

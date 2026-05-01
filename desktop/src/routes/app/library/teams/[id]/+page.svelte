@@ -9,6 +9,7 @@
   } from '$lib/api/mock/library';
   import { deployTemplate } from '$lib/services/template-deploy';
   import { toastStore } from '$lib/stores/toasts.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   const id = $derived(page.params.id ?? '');
   const team = $derived<LibraryTemplate | null>(id ? getLibraryTeamDetail(id) : null);
@@ -24,7 +25,7 @@
       if (result.success) {
         deployed = true;
         toastStore.success(
-          `${team.emoji} ${team.name} deployed`,
+          `${team.name} deployed`,
           `${result.agentCount} agents provisioned.`,
         );
         goto('/app');
@@ -63,7 +64,7 @@
 <PageShell title={team?.name ?? 'Team'} subtitle={team ? team.size : undefined}>
   {#if !team}
     <div class="ldt-not-found" role="main">
-      <span class="ldt-not-found-icon" aria-hidden="true">🔍</span>
+      <span class="ldt-not-found-icon" aria-hidden="true"><AgentIcon value="magnifying" size={36} /></span>
       <p class="ldt-not-found-text">Team template not found.</p>
       <button
         class="ldt-back-btn"
@@ -100,7 +101,7 @@
 
           <!-- Hero -->
           <div class="ldt-hero">
-            <span class="ldt-hero-emoji" aria-hidden="true">{team.emoji}</span>
+            <span class="ldt-hero-emoji" aria-hidden="true"><AgentIcon value={team.emoji} size={36} /></span>
             <div class="ldt-hero-meta">
               <div class="ldt-hero-badges">
                 {#if team.isOfficial}
@@ -131,7 +132,7 @@
             <h2 class="ldt-card-title">Composition</h2>
             <div class="ldt-composition">
               <div class="ldt-comp-item">
-                <div class="ldt-comp-icon" aria-hidden="true">🤖</div>
+                <div class="ldt-comp-icon" aria-hidden="true"><AgentIcon value="robot" size={24} /></div>
                 <div class="ldt-comp-count">{team.agent_count}</div>
                 <div class="ldt-comp-label">Agents</div>
               </div>
@@ -143,17 +144,17 @@
             <h2 class="ldt-card-title">Stats</h2>
             <div class="ldt-stats-grid" role="list">
               <div class="ldt-stat" role="listitem">
-                <span class="ldt-stat-icon" aria-hidden="true">⬇</span>
+                <span class="ldt-stat-icon" aria-hidden="true"><AgentIcon value="inbox-icon" size={16} /></span>
                 <span class="ldt-stat-value">{formatNumber(team.downloads)}</span>
                 <span class="ldt-stat-label">Downloads</span>
               </div>
               <div class="ldt-stat" role="listitem">
-                <span class="ldt-stat-icon" aria-hidden="true">★</span>
+                <span class="ldt-stat-icon" aria-hidden="true"><AgentIcon value="star" size={16} /></span>
                 <span class="ldt-stat-value">{formatNumber(team.favorites)}</span>
                 <span class="ldt-stat-label">Favorites</span>
               </div>
               <div class="ldt-stat" role="listitem">
-                <span class="ldt-stat-icon" aria-hidden="true">⑂</span>
+                <span class="ldt-stat-icon" aria-hidden="true"><AgentIcon value="arrows-pointing-out" size={16} /></span>
                 <span class="ldt-stat-value">{formatNumber(team.forks)}</span>
                 <span class="ldt-stat-label">Forks</span>
               </div>
@@ -244,7 +245,9 @@
   }
 
   .ldt-not-found-icon {
-    font-size: 40px;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     opacity: 0.4;
   }
 
@@ -342,8 +345,9 @@
   }
 
   .ldt-hero-emoji {
-    font-size: 56px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: #f26522;
     flex-shrink: 0;
   }
 
@@ -438,7 +442,10 @@
   }
 
   .ldt-comp-icon {
-    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f26522;
   }
 
   .ldt-comp-count {
@@ -473,7 +480,9 @@
   }
 
   .ldt-stat-icon {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
   }
 
