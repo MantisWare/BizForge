@@ -88,6 +88,19 @@ class AnalyticsStore {
     }
   }
 
+  async resetAnalytics(): Promise<void> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      await analyticsApi.reset();
+      await this.fetchAnalytics(this.period);
+    } catch (e) {
+      this.error = (e as Error).message;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   async fetchAgentMetrics(): Promise<AgentMetrics[]> {
     try {
       const raw = (await analyticsApi.agents(this.period)) as {

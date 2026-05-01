@@ -1,5 +1,6 @@
 <!-- src/routes/app/hierarchy/+page.svelte -->
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
@@ -12,6 +13,11 @@
     HierarchyDivisionNode,
     BizforgeAgent,
   } from '$api/types';
+
+  const isAuthError = $derived(
+    hierarchyStore.error !== null &&
+    (hierarchyStore.error.includes('unauthorized') || hierarchyStore.error.includes('401'))
+  );
 
   // ── Data fetch ───────────────────────────────────────────────────────────────
 
@@ -283,14 +289,29 @@
       <div class="hc-empty" role="status">
         <div class="hc-empty-icon" aria-hidden="true">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            {#if isAuthError}
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            {:else}
+              <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            {/if}
           </svg>
         </div>
-        <p class="hc-empty-text">Could not load organization hierarchy.</p>
-        <p class="hc-empty-sub">{hierarchyStore.error}</p>
-        <button class="hc-btn hc-btn--ghost hc-retry-btn" onclick={() => { const org = organizationsStore.current; if (org) void hierarchyStore.fetchTree(org.id); }}>
-          Try again
-        </button>
+        {#if isAuthError}
+          <p class="hc-empty-text">Authentication required</p>
+          <p class="hc-empty-sub">Your session has expired or you are not signed in. Please sign in to view the organization hierarchy.</p>
+          <div class="hc-error-actions">
+            <button class="hc-btn hc-btn--primary" onclick={() => void goto('/auth')} type="button">Sign in</button>
+            <button class="hc-btn hc-btn--ghost hc-retry-btn" onclick={() => { const org = organizationsStore.current; if (org) void hierarchyStore.fetchTree(org.id); }}>
+              Retry
+            </button>
+          </div>
+        {:else}
+          <p class="hc-empty-text">Could not load organization hierarchy.</p>
+          <p class="hc-empty-sub">{hierarchyStore.error}</p>
+          <button class="hc-btn hc-btn--ghost hc-retry-btn" onclick={() => { const org = organizationsStore.current; if (org) void hierarchyStore.fetchTree(org.id); }}>
+            Try again
+          </button>
+        {/if}
       </div>
 
     {:else if hierarchyStore.tree === null || !Array.isArray(hierarchyStore.tree.divisions) || hierarchyStore.tree.divisions.length === 0}
@@ -992,6 +1013,21 @@
     color: var(--text-tertiary);
     margin: 0;
     max-width: 320px;
+  }
+  .hc-error-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .hc-btn--primary {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: var(--accent, #e8731a);
+    color: #fff;
   }
 
   .hc-retry-btn {

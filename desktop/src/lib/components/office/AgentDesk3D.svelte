@@ -10,10 +10,11 @@
     position: [number, number, number];
     selected: boolean;
     emissive: string;
+    zoneColor?: string;
     onclick: () => void;
   }
 
-  let { agent, position, selected, emissive, onclick }: Props = $props();
+  let { agent, position, selected, emissive, zoneColor = '#8888a0', onclick }: Props = $props();
 
   // Deterministic color from agent id
   function agentColor(id: string): string {
@@ -22,7 +23,7 @@
       hash = ((hash << 5) - hash + id.charCodeAt(i)) >>> 0;
     }
     const hue = hash % 360;
-    return `hsl(${hue}, 50%, 45%)`;
+    return `hsl(${hue}, 55%, 50%)`;
   }
 
   // Breathing / working animation
@@ -38,50 +39,67 @@
   });
 
   const color = agentColor(agent.id);
-  const label = agent.display_name || agent.name;
+  const label = agent.display_name ?? agent.name;
   const shortLabel = label.length > 10 ? label.slice(0, 10) + '...' : label;
 </script>
 
 <T.Group position.x={position[0]} position.y={position[1]} position.z={position[2]}>
-  <!-- Desk surface -->
+  <!-- Desk surface — warm birch wood -->
   <T.Mesh position.y={0.45} castShadow>
     <T.BoxGeometry args={[1.8, 0.08, 0.9]} />
-    <T.MeshStandardMaterial color="#2d2a4a" roughness={0.7} metalness={0.2} />
+    <T.MeshStandardMaterial color="#8a7b6a" roughness={0.7} metalness={0.1} />
   </T.Mesh>
 
   <!-- Desk legs -->
   {#each [[-0.8, 0.22, -0.35], [0.8, 0.22, -0.35], [-0.8, 0.22, 0.35], [0.8, 0.22, 0.35]] as leg}
     <T.Mesh position={leg as [number, number, number]}>
       <T.CylinderGeometry args={[0.03, 0.03, 0.44, 6]} />
-      <T.MeshStandardMaterial color="#1e1e35" />
+      <T.MeshStandardMaterial color="#605545" />
     </T.Mesh>
   {/each}
 
   <!-- Monitor on desk -->
-  <T.Mesh position={[0, 0.7, -0.25]}>
-    <T.BoxGeometry args={[0.6, 0.4, 0.03]} />
+  <T.Mesh position={[0, 0.72, -0.25]}>
+    <T.BoxGeometry args={[0.65, 0.42, 0.03]} />
     <T.MeshStandardMaterial
-      color={agent.status === 'running' ? '#0a1628' : '#0a0a14'}
+      color={agent.status === 'running' ? '#0f1828' : '#121520'}
       emissive={agent.status === 'running' ? emissive : '#000000'}
-      emissiveIntensity={agent.status === 'running' ? 0.3 : 0}
+      emissiveIntensity={agent.status === 'running' ? 0.4 : 0}
     />
+  </T.Mesh>
+  <!-- Monitor bezel -->
+  <T.Mesh position={[0, 0.72, -0.26]}>
+    <T.BoxGeometry args={[0.7, 0.47, 0.02]} />
+    <T.MeshStandardMaterial color="#3a3555" roughness={0.5} metalness={0.3} />
   </T.Mesh>
   <!-- Monitor stand -->
   <T.Mesh position={[0, 0.52, -0.25]}>
-    <T.CylinderGeometry args={[0.04, 0.06, 0.08, 8]} />
-    <T.MeshStandardMaterial color="#1e1e35" />
+    <T.CylinderGeometry args={[0.04, 0.06, 0.06, 8]} />
+    <T.MeshStandardMaterial color="#3a3555" metalness={0.3} />
+  </T.Mesh>
+  <!-- Monitor base -->
+  <T.Mesh position={[0, 0.485, -0.25]}>
+    <T.CylinderGeometry args={[0.12, 0.12, 0.02, 12]} />
+    <T.MeshStandardMaterial color="#3a3555" metalness={0.3} />
   </T.Mesh>
 
-  <!-- Chair -->
+  <!-- Chair seat — soft upholstery -->
   <T.Mesh position={[0, 0.35, 0.6]}>
-    <T.BoxGeometry args={[0.5, 0.06, 0.5]} />
-    <T.MeshStandardMaterial color="#1a1a30" roughness={0.9} />
+    <T.BoxGeometry args={[0.5, 0.07, 0.5]} />
+    <T.MeshStandardMaterial color="#5a5578" roughness={0.9} />
   </T.Mesh>
   <!-- Chair back -->
-  <T.Mesh position={[0, 0.6, 0.82]}>
-    <T.BoxGeometry args={[0.5, 0.45, 0.06]} />
-    <T.MeshStandardMaterial color="#1a1a30" roughness={0.9} />
+  <T.Mesh position={[0, 0.62, 0.82]}>
+    <T.BoxGeometry args={[0.5, 0.48, 0.06]} />
+    <T.MeshStandardMaterial color="#4a4568" roughness={0.9} />
   </T.Mesh>
+  <!-- Chair legs -->
+  {#each [[-0.2, 0.17, 0.4], [0.2, 0.17, 0.4], [-0.2, 0.17, 0.75], [0.2, 0.17, 0.75]] as chairLeg}
+    <T.Mesh position={chairLeg as [number, number, number]}>
+      <T.CylinderGeometry args={[0.02, 0.02, 0.34, 6]} />
+      <T.MeshStandardMaterial color="#3a3558" metalness={0.4} />
+    </T.Mesh>
+  {/each}
 
   <!-- Agent character (stylized capsule) -->
   <T.Group position={[0, 0.9 + bobY, 0.6]}>
@@ -127,20 +145,20 @@
   </T.Group>
 
   <!-- Agent name label floating above -->
-  <T.Group position={[0, 1.8, 0.6]}>
-    <Float speed={2} floatIntensity={0.15}>
+  <T.Group position={[0, 1.85, 0.6]}>
+    <Float speed={2} floatIntensity={0.12}>
       <Text
         text={shortLabel}
         fontSize={0.15}
-        color={selected ? '#fdba74' : '#8888a0'}
+        color={selected ? '#fdba74' : '#c8c0d8'}
         anchorX="center"
         anchorY="middle"
       />
     </Float>
   </T.Group>
 
-  <!-- Status label -->
-  <T.Group position={[0, 1.6, 0.6]}>
+  <!-- Status label with zone-colored dot effect -->
+  <T.Group position={[0, 1.65, 0.6]}>
     <Text
       text={agent.status}
       fontSize={0.1}
@@ -150,18 +168,35 @@
     />
   </T.Group>
 
+  <!-- Department pip (small sphere near name) -->
+  <T.Mesh position={[-0.5, 1.85, 0.6]}>
+    <T.SphereGeometry args={[0.04, 8, 8]} />
+    <T.MeshBasicMaterial color={zoneColor} />
+  </T.Mesh>
+
   <!-- Current task speech bubble (if running) -->
-  {#if agent.status === 'running' && agent.current_task}
-    <T.Group position={[0, 2.1, 0.6]}>
-      <Float speed={3} floatIntensity={0.2}>
+  {#if agent.status === 'running' && agent.current_task !== undefined}
+    <T.Group position={[0, 2.15, 0.6]}>
+      <Float speed={3} floatIntensity={0.15}>
         <Text
           text={agent.current_task.slice(0, 30)}
           fontSize={0.08}
-          color="rgba(34, 197, 94, 0.7)"
+          color="#6ee7b7"
           anchorX="center"
           anchorY="middle"
         />
       </Float>
     </T.Group>
+  {/if}
+
+  <!-- Monitor glow on desk when running -->
+  {#if agent.status === 'running'}
+    <T.PointLight
+      position={[0, 0.55, -0.1]}
+      intensity={0.25}
+      color={emissive}
+      distance={1.5}
+      decay={2}
+    />
   {/if}
 </T.Group>

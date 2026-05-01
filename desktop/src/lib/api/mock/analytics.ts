@@ -1,5 +1,15 @@
 // src/lib/api/mock/analytics.ts
 
+let analyticsResetActive = false;
+
+export function setMockAnalyticsReset(active: boolean): void {
+  analyticsResetActive = active;
+}
+
+export function isMockAnalyticsReset(): boolean {
+  return analyticsResetActive;
+}
+
 const AGENTS = [
   { id: "agt-orchestrator", name: "Orchestrator", team_id: "team-core" },
   { id: "agt-developer", name: "Developer Agent", team_id: "team-core" },

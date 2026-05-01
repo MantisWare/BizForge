@@ -20,6 +20,16 @@ defmodule BizforgeWeb.AnalyticsController do
   def summary(conn, params) do
     period = params["period"] || "30d"
     days = parse_period(period)
+    workspace_id = conn.assigns[:workspace_id] || "default"
+
+    if workspace_reset?(workspace_id) do
+      json(conn, empty_summary(period, days))
+    else
+      summary_with_data(conn, period, days)
+    end
+  end
+
+  defp summary_with_data(conn, period, days) do
     :rand.seed(:exsss, {days, 42, 7})
 
     total_sessions = rand_int(120, 600)
@@ -68,14 +78,33 @@ defmodule BizforgeWeb.AnalyticsController do
 
   # GET /analytics/agents?period=30d
   def agents(conn, params) do
+    workspace_id = conn.assigns[:workspace_id] || "default"
     days = parse_period(params["period"])
-    json(conn, %{agents: build_agent_metrics(days)})
+
+    if workspace_reset?(workspace_id) do
+      json(conn, %{agents: []})
+    else
+      json(conn, %{agents: build_agent_metrics(days)})
+    end
   end
 
   # GET /analytics/teams?period=30d
   def teams(conn, params) do
+    workspace_id = conn.assigns[:workspace_id] || "default"
     days = parse_period(params["period"])
-    json(conn, %{teams: build_team_metrics(days)})
+
+    if workspace_reset?(workspace_id) do
+      json(conn, %{teams: []})
+    else
+      json(conn, %{teams: build_team_metrics(days)})
+    end
+  end
+
+  # DELETE /analytics/reset
+  def reset(conn, _params) do
+    workspace_id = conn.assigns[:workspace_id] || "default"
+    :persistent_term.put({__MODULE__, :reset_at, workspace_id}, DateTime.utc_now())
+    json(conn, %{ok: true, reset_at: DateTime.to_iso8601(DateTime.utc_now())})
   end
 
   # --- Private helpers ---
@@ -133,6 +162,38 @@ defmodule BizforgeWeb.AnalyticsController do
       }
     end)
     |> Enum.sort_by(& &1.total_sessions, :desc)
+  end
+
+  defp workspace_reset?(workspace_id) do
+    case :persistent_term.get({__MODULE__, :reset_at, workspace_id}, nil) do
+      nil -> false
+      _dt -> true
+    end
+  end
+
+  defp empty_summary(period, days) do
+    empty_days =
+      for i <- 1..days do
+        date = Date.add(Date.utc_today(), -(days - i))
+        %{date: Date.to_iso8601(date), count: 0, cents: 0, cost_cents: 0}
+      end
+
+    %{
+      period: period,
+      totals: %{
+        total_sessions: 0,
+        total_cost_cents: 0,
+        avg_success_rate: 0,
+        total_tasks: 0,
+        active_agents: 0
+      },
+      trends: %{
+        sessions_by_day: Enum.map(empty_days, &%{date: &1.date, count: 0}),
+        costs_by_day: Enum.map(empty_days, &%{date: &1.date, cents: 0})
+      },
+      agent_metrics: [],
+      team_metrics: []
+    }
   end
 
   defp parse_period(nil), do: 30

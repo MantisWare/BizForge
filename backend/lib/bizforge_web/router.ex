@@ -323,6 +323,7 @@ defmodule BizforgeWeb.Router do
     get "/analytics/summary", AnalyticsController, :summary
     get "/analytics/agents", AnalyticsController, :agents
     get "/analytics/teams", AnalyticsController, :teams
+    delete "/analytics/reset", AnalyticsController, :reset
 
     # Config Revisions
     get "/config/revisions", ConfigRevisionController, :index

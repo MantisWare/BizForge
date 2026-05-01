@@ -109,7 +109,7 @@ import {
 import { mockSignals } from "./signals";
 import { mockAudit } from "./audit";
 import { mockLogs } from "./logs";
-import { mockAnalytics } from "./analytics";
+import { mockAnalytics, isMockAnalyticsReset, setMockAnalyticsReset } from "./analytics";
 import { mockWorkProducts } from "./work-products";
 import {
   getMockConversations,
@@ -994,6 +994,25 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   {
     pattern: /^\/analytics\/summary$/,
     handler: (_path, _options, rawPath) => {
+      if (isMockAnalyticsReset()) {
+        const period =
+          new URL("http://x" + rawPath).searchParams.get("period") ?? "30d";
+        const days = period === "7d" ? 7 : period === "90d" ? 90 : 30;
+        const emptyDays = Array.from({ length: days }, (_, i) => {
+          const d = new Date(Date.now() - (days - 1 - i) * 86_400_000);
+          return d.toISOString().slice(0, 10);
+        });
+        return {
+          period,
+          totals: { total_sessions: 0, total_cost_cents: 0, avg_success_rate: 0, total_tasks: 0, active_agents: 0 },
+          trends: {
+            sessions_by_day: emptyDays.map((date) => ({ date, count: 0 })),
+            costs_by_day: emptyDays.map((date) => ({ date, cents: 0 })),
+          },
+          agent_metrics: [],
+          team_metrics: [],
+        };
+      }
       const period =
         new URL("http://x" + rawPath).searchParams.get("period") ?? "30d";
       return mockAnalytics(period);
@@ -1002,6 +1021,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   {
     pattern: /^\/analytics\/agents$/,
     handler: (_path, _options, rawPath) => {
+      if (isMockAnalyticsReset()) return { agents: [] };
       const period =
         new URL("http://x" + rawPath).searchParams.get("period") ?? "30d";
       return { agents: mockAnalytics(period).agent_metrics };
@@ -1010,9 +1030,17 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   {
     pattern: /^\/analytics\/teams$/,
     handler: (_path, _options, rawPath) => {
+      if (isMockAnalyticsReset()) return { teams: [] };
       const period =
         new URL("http://x" + rawPath).searchParams.get("period") ?? "30d";
       return { teams: mockAnalytics(period).team_metrics };
+    },
+  },
+  {
+    pattern: /^\/analytics\/reset$/,
+    handler: () => {
+      setMockAnalyticsReset(true);
+      return { ok: true, reset_at: new Date().toISOString() };
     },
   },
 
@@ -2167,6 +2195,16 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   },
 
   // ── Hierarchy / Org Structure ──────────────────────────────────────────────────
+  {
+    pattern: /^\/hierarchy$/,
+    handler: () => ({
+      organization: {
+        id: "org-1",
+        name: "Default Organization",
+        divisions: [],
+      },
+    }),
+  },
   {
     pattern: /^\/divisions\/([^/]+)\/departments$/,
     handler: () => ({ departments: [] }),

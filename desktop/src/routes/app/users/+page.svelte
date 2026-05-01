@@ -1,9 +1,15 @@
 <!-- src/routes/app/users/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import { usersStore } from '$lib/stores/users.svelte';
   import type { User, UserRole } from '$api/types';
+
+  const isAuthError = $derived(
+    usersStore.error !== null &&
+    (usersStore.error.includes('unauthorized') || usersStore.error.includes('401'))
+  );
 
   onMount(() => {
     void usersStore.fetchUsers();
@@ -175,8 +181,27 @@
     </div>
   {:else if usersStore.error !== null && usersStore.users.length === 0}
     <div class="usr-empty" role="alert">
-      <p>Failed to load users: {usersStore.error}</p>
-      <button class="usr-retry-btn" onclick={() => void usersStore.fetchUsers()} type="button">Retry</button>
+      <div class="usr-error-icon" aria-hidden="true">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          {#if isAuthError}
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          {:else}
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          {/if}
+        </svg>
+      </div>
+      {#if isAuthError}
+        <p class="usr-error-title">Authentication required</p>
+        <p class="usr-error-detail">Your session has expired or you are not signed in. Please sign in to view users.</p>
+        <div class="usr-error-actions">
+          <button class="usr-retry-btn usr-retry-btn--primary" onclick={() => void goto('/auth')} type="button">Sign in</button>
+          <button class="usr-retry-btn" onclick={() => void usersStore.fetchUsers()} type="button">Retry</button>
+        </div>
+      {:else}
+        <p class="usr-error-title">Unable to load users</p>
+        <p class="usr-error-detail">{usersStore.error}</p>
+        <button class="usr-retry-btn" onclick={() => void usersStore.fetchUsers()} type="button">Retry</button>
+      {/if}
     </div>
   {:else if usersStore.filteredUsers.length === 0}
     <div class="usr-empty" role="status">
@@ -448,6 +473,10 @@
     color: var(--dt3); font-size: 13px;
   }
   .usr-empty p { margin: 0; }
+  .usr-error-icon { color: var(--dt3); opacity: 0.7; margin-bottom: 4px; }
+  .usr-error-title { font-size: 14px; font-weight: 600; color: var(--dt1); margin: 0; }
+  .usr-error-detail { font-size: 12px; color: var(--dt3); max-width: 320px; text-align: center; margin: 0; }
+  .usr-error-actions { display: flex; gap: 8px; margin-top: 4px; }
   .usr-spinner {
     width: 24px; height: 24px; border-radius: 50%;
     border: 2px solid var(--dbd); border-top-color: var(--dt2);
@@ -457,6 +486,9 @@
   .usr-retry-btn {
     padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer;
     border: 1px solid var(--dbd); background: var(--dbg2); color: var(--dt2);
+  }
+  .usr-retry-btn--primary {
+    background: var(--accent, #e8731a); color: #fff; border-color: transparent;
   }
 
   /* ── User list ──────────────────────────────────────────────────────────────── */

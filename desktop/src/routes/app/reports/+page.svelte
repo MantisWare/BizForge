@@ -37,6 +37,37 @@
   let sortAsc = $state(true);
   let confirmDeleteId = $state<string | null>(null);
 
+  // Resizable panel state
+  const PANEL_MIN = 220;
+  const PANEL_MAX = 600;
+  const PANEL_DEFAULT = 320;
+  let panelWidth = $state(PANEL_DEFAULT);
+  let dragging = $state(false);
+
+  function onResizeStart(e: PointerEvent): void {
+    dragging = true;
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+
+    function onMove(ev: PointerEvent): void {
+      const delta = ev.clientX - startX;
+      panelWidth = Math.min(PANEL_MAX, Math.max(PANEL_MIN, startWidth + delta));
+    }
+
+    function onUp(): void {
+      dragging = false;
+      target.removeEventListener('pointermove', onMove);
+      target.removeEventListener('pointerup', onUp);
+      target.removeEventListener('pointercancel', onUp);
+    }
+
+    target.addEventListener('pointermove', onMove);
+    target.addEventListener('pointerup', onUp);
+    target.addEventListener('pointercancel', onUp);
+  }
+
   // New report form state
   let form = $state<Partial<ReportCreateRequest>>({
     name: '',
@@ -229,7 +260,7 @@
     </button>
   {/snippet}
 
-  <div class="rp-layout">
+  <div class="rp-layout" class:rp-layout--dragging={dragging} style="grid-template-columns: {panelWidth}px 0px 1fr;">
     <!-- ── Left panel: list ──────────────────────────────────────────────── -->
     <aside class="rp-list-panel" aria-label="Reports list">
 
@@ -409,6 +440,23 @@
         </ul>
       {/if}
     </aside>
+
+    <!-- ── Resize handle ─────────────────────────────────────────────────── -->
+    <div
+      class="rp-resize-handle"
+      class:rp-resize-handle--active={dragging}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize reports panel"
+      tabindex="0"
+      onpointerdown={onResizeStart}
+      onkeydown={(e) => {
+        if (e.key === 'ArrowLeft') { panelWidth = Math.max(PANEL_MIN, panelWidth - 20); e.preventDefault(); }
+        if (e.key === 'ArrowRight') { panelWidth = Math.min(PANEL_MAX, panelWidth + 20); e.preventDefault(); }
+      }}
+    >
+      <div class="rp-resize-line" aria-hidden="true"></div>
+    </div>
 
     <!-- ── Right panel: viewer ───────────────────────────────────────────── -->
     <section class="rp-viewer" aria-label="Report viewer">
@@ -693,7 +741,6 @@
   /* ── Layout ─────────────────────────────────────────────────────────── */
   .rp-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
     gap: 0;
     min-height: 0;
     flex: 1;
@@ -703,11 +750,52 @@
     background: var(--bg-elevated);
   }
 
+  .rp-layout--dragging {
+    cursor: col-resize;
+    user-select: none;
+  }
+
   @media (max-width: 800px) {
     .rp-layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
+      grid-template-columns: 1fr !important;
+      grid-template-rows: auto 0 1fr;
     }
+  }
+
+  /* ── Resize handle ──────────────────────────────────────────────────── */
+  .rp-resize-handle {
+    width: 8px;
+    margin: 0 -4px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+    touch-action: none;
+  }
+
+  .rp-resize-line {
+    width: 1px;
+    height: 100%;
+    background: var(--border-default);
+    transition: width 120ms ease, background 120ms ease;
+    border-radius: 1px;
+  }
+
+  .rp-resize-handle:hover .rp-resize-line,
+  .rp-resize-handle--active .rp-resize-line {
+    width: 3px;
+    background: var(--accent-primary, #58a6ff);
+  }
+
+  .rp-resize-handle:focus-visible {
+    outline: none;
+  }
+
+  .rp-resize-handle:focus-visible .rp-resize-line {
+    width: 3px;
+    background: var(--accent-primary, #58a6ff);
   }
 
   /* ── New report button ───────────────────────────────────────────────── */
@@ -731,7 +819,6 @@
 
   /* ── List panel ─────────────────────────────────────────────────────── */
   .rp-list-panel {
-    border-right: 1px solid var(--border-default);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -744,12 +831,9 @@
     border-bottom: 1px solid var(--border-default);
     padding: 0 4px;
     overflow-x: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
     flex-shrink: 0;
-  }
-
-  .rp-tabs::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
   }
 
   .rp-tab {
@@ -783,6 +867,15 @@
     text-align: center;
     color: var(--text-tertiary);
     font-size: 12px;
+  }
+
+  .rp-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 8px;
   }
 
   .rp-list-loading {

@@ -24,6 +24,7 @@ export interface OfficeRoom {
   y: number; // grid row start
   width: number; // cols
   height: number; // rows
+  floorPattern?: FloorPattern;
 }
 
 /** Furniture piece placed in the office */
@@ -48,7 +49,19 @@ export enum FurnitureType {
   COFFEE = "coffee",
   BIN = "bin",
   CABINET = "cabinet",
+  RUG = "rug",
+  WATERCOOLER = "watercooler",
+  CEILING_LIGHT = "ceiling_light",
+  WALL_ART = "wall_art",
+  ENTRANCE_MAT = "entrance_mat",
+  KITCHEN_COUNTER = "kitchen_counter",
+  MICROWAVE = "microwave",
+  COFFEE_MACHINE = "coffee_machine",
+  FRIDGE = "fridge",
+  TV = "tv",
 }
+
+export type FloorPattern = "checker" | "grid" | "herringbone" | "dot" | "carpet";
 
 /** Character state for animation */
 export enum CharacterState {

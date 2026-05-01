@@ -1,5 +1,5 @@
 // Pixel Office — Canvas 2D renderer
-// Draws the complete office: floor, walls, rooms, furniture, characters
+// Draws the complete office: ground, rooms, walls, corridors, furniture, characters
 
 import type {
   OfficeLayout,
@@ -8,6 +8,7 @@ import type {
   TimeOfDay,
   ZDrawable,
   Furniture,
+  OfficeRoom,
 } from "./types";
 import { CharacterState, FurnitureType } from "./types";
 import {
@@ -15,6 +16,12 @@ import {
   resolveColor,
   agentPalette,
   checkerFloor,
+  gridFloor,
+  herringboneFloor,
+  dotFloor,
+  carpetFloor,
+  groundTile,
+  corridorTile,
   renderSpriteToCanvas,
   DESK_SPRITE,
   PC_ON_SPRITE,
@@ -24,7 +31,23 @@ import {
   BOOKSHELF_SPRITE,
   SOFA_SPRITE,
   WHITEBOARD_SPRITE,
+  RUG_SPRITE,
+  WATERCOOLER_SPRITE,
+  CEILING_LIGHT_SPRITE,
+  WALL_ART_SPRITE,
+  ENTRANCE_MAT_SPRITE,
+  KITCHEN_COUNTER_SPRITE,
+  MICROWAVE_SPRITE,
+  COFFEE_MACHINE_SPRITE,
+  FRIDGE_SPRITE,
+  TV_SPRITE,
 } from "./sprites";
+import {
+  CORRIDOR_H_START,
+  CORRIDOR_H_END,
+  CORRIDOR_V_START,
+  CORRIDOR_V_END,
+} from "./layout";
 
 // ─── Time-of-day color schemes ────────────────────────────
 const TIME_COLORS: Record<
@@ -33,37 +56,72 @@ const TIME_COLORS: Record<
     ambient: string;
     overlay: string;
     overlayAlpha: number;
-    wallColor: string;
-    voidColor: string;
+    wallTop: string;
+    wallFace: string;
+    wallShadow: string;
+    groundBase: string;
+    groundAlt: string;
+    groundCrack: string;
+    corridorEdge: string;
+    corridorPath: string;
+    corridorPathAlt: string;
   }
 > = {
   dawn: {
     ambient: "#f5dcc0",
     overlay: "#fbb98a",
     overlayAlpha: 0.05,
-    wallColor: "#78583a",
-    voidColor: "#e8d8c0",
+    wallTop: "#a08870",
+    wallFace: "#78583a",
+    wallShadow: "rgba(80, 50, 30, 0.25)",
+    groundBase: "#c8b8a0",
+    groundAlt: "#beb098",
+    groundCrack: "#a89880",
+    corridorEdge: "#8a7860",
+    corridorPath: "#b0a088",
+    corridorPathAlt: "#a89880",
   },
   day: {
     ambient: "#f8f0e0",
     overlay: "#ffffff",
     overlayAlpha: 0.0,
-    wallColor: "#6b6590",
-    voidColor: "#e0d8c8",
+    wallTop: "#8880a8",
+    wallFace: "#6b6590",
+    wallShadow: "rgba(40, 35, 70, 0.20)",
+    groundBase: "#c8c0b0",
+    groundAlt: "#beb8a8",
+    groundCrack: "#a8a090",
+    corridorEdge: "#7a7590",
+    corridorPath: "#908898",
+    corridorPathAlt: "#888090",
   },
   dusk: {
     ambient: "#d4a8a0",
     overlay: "#e08878",
     overlayAlpha: 0.06,
-    wallColor: "#504068",
-    voidColor: "#b89888",
+    wallTop: "#684870",
+    wallFace: "#504068",
+    wallShadow: "rgba(50, 30, 60, 0.25)",
+    groundBase: "#988078",
+    groundAlt: "#907870",
+    groundCrack: "#786860",
+    corridorEdge: "#604858",
+    corridorPath: "#786070",
+    corridorPathAlt: "#705868",
   },
   night: {
     ambient: "#1e2038",
     overlay: "#4040a0",
     overlayAlpha: 0.08,
-    wallColor: "#2a2848",
-    voidColor: "#161828",
+    wallTop: "#383050",
+    wallFace: "#2a2848",
+    wallShadow: "rgba(10, 10, 30, 0.35)",
+    groundBase: "#1a1828",
+    groundAlt: "#181620",
+    groundCrack: "#121018",
+    corridorEdge: "#282040",
+    corridorPath: "#242038",
+    corridorPathAlt: "#201c30",
   },
 };
 
@@ -90,8 +148,101 @@ function getFurnitureSprite(
       return SOFA_SPRITE;
     case FurnitureType.WHITEBOARD:
       return WHITEBOARD_SPRITE;
+    case FurnitureType.RUG:
+      return RUG_SPRITE;
+    case FurnitureType.WATERCOOLER:
+      return WATERCOOLER_SPRITE;
+    case FurnitureType.CEILING_LIGHT:
+      return CEILING_LIGHT_SPRITE;
+    case FurnitureType.WALL_ART:
+      return WALL_ART_SPRITE;
+    case FurnitureType.ENTRANCE_MAT:
+      return ENTRANCE_MAT_SPRITE;
+    case FurnitureType.KITCHEN_COUNTER:
+      return KITCHEN_COUNTER_SPRITE;
+    case FurnitureType.MICROWAVE:
+      return MICROWAVE_SPRITE;
+    case FurnitureType.COFFEE_MACHINE:
+      return COFFEE_MACHINE_SPRITE;
+    case FurnitureType.FRIDGE:
+      return FRIDGE_SPRITE;
+    case FurnitureType.TV:
+      return TV_SPRITE;
     default:
       return null;
+  }
+}
+
+// ─── Floor pattern selector ──────────────────────────────
+function getRoomFloorTile(room: OfficeRoom, zoom: number): HTMLCanvasElement {
+  const pattern = room.floorPattern ?? "checker";
+  const c1 = room.color;
+  const c2 = adjustBrightness(room.color, 1.08);
+  const lineColor = adjustBrightness(room.color, 1.18);
+  const dotColor = adjustBrightness(room.color, 1.25);
+  const borderColor = adjustBrightness(room.color, 0.85);
+
+  let tile: string[][];
+  switch (pattern) {
+    case "grid":
+      tile = gridFloor(c1, lineColor);
+      break;
+    case "herringbone":
+      tile = herringboneFloor(c1, c2);
+      break;
+    case "dot":
+      tile = dotFloor(c1, dotColor);
+      break;
+    case "carpet":
+      tile = carpetFloor(c1, borderColor);
+      break;
+    default:
+      tile = checkerFloor(c1, c2);
+      break;
+  }
+  return renderSpriteToCanvas(tile, zoom, `floor_${room.id}_${pattern}`);
+}
+
+// ─── Doorway detection ────────────────────────────────────
+function roomHasDoorway(
+  room: OfficeRoom,
+  side: "north" | "south" | "east" | "west",
+): boolean {
+  const rx1 = room.x;
+  const ry1 = room.y;
+  const rx2 = room.x + room.width - 1;
+  const ry2 = room.y + room.height - 1;
+
+  switch (side) {
+    case "north":
+      return ry1 - 1 >= CORRIDOR_H_START && ry1 - 1 <= CORRIDOR_H_END;
+    case "south":
+      return ry2 + 1 >= CORRIDOR_H_START && ry2 + 1 <= CORRIDOR_H_END;
+    case "west":
+      return rx1 - 1 >= CORRIDOR_V_START && rx1 - 1 <= CORRIDOR_V_END;
+    case "east":
+      return rx2 + 1 >= CORRIDOR_V_START && rx2 + 1 <= CORRIDOR_V_END;
+  }
+}
+
+function getDoorwayRange(
+  room: OfficeRoom,
+  side: "north" | "south" | "east" | "west",
+): [number, number] {
+  // Returns [start, end] in the parallel axis for the doorway opening
+  switch (side) {
+    case "north":
+    case "south": {
+      const overlapStart = Math.max(room.x, CORRIDOR_V_START);
+      const overlapEnd = Math.min(room.x + room.width - 1, CORRIDOR_V_END);
+      return [overlapStart, overlapEnd];
+    }
+    case "west":
+    case "east": {
+      const overlapStart = Math.max(room.y, CORRIDOR_H_START);
+      const overlapEnd = Math.min(room.y + room.height - 1, CORRIDOR_H_END);
+      return [overlapStart, overlapEnd];
+    }
   }
 }
 
@@ -111,98 +262,110 @@ export function renderOffice(
 ): void {
   const { cols, rows, tileSize, rooms, furniture } = layout;
   const { zoom } = camera;
-  const ts = tileSize * zoom; // scaled tile size
+  const ts = tileSize * zoom;
 
   ctx.imageSmoothingEnabled = false;
   const tc = TIME_COLORS[timeOfDay];
 
   // Clear
-  ctx.fillStyle = tc.voidColor;
+  ctx.fillStyle = tc.groundBase;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  // Draw checkered void pattern
-  const voidTileSize = 16 * zoom;
-  for (let vy = 0; vy < canvasHeight; vy += voidTileSize) {
-    for (let vx = 0; vx < canvasWidth; vx += voidTileSize) {
-      const isAlt =
-        (Math.floor(vx / voidTileSize) + Math.floor(vy / voidTileSize)) % 2 ===
-        0;
-      if (isAlt) {
-        ctx.fillStyle = adjustBrightness(tc.voidColor, 0.95);
-        ctx.fillRect(vx, vy, voidTileSize, voidTileSize);
-      }
+  // ─── 1. Ground / outdoor paving texture ────────────────
+  const camOffX = -camera.x * zoom + canvasWidth / 2;
+  const camOffY = -camera.y * zoom + canvasHeight / 2;
+
+  // Calculate visible tile range
+  const startTileX = Math.floor(-camOffX / ts) - 1;
+  const startTileY = Math.floor(-camOffY / ts) - 1;
+  const endTileX = Math.ceil((canvasWidth - camOffX) / ts) + 1;
+  const endTileY = Math.ceil((canvasHeight - camOffY) / ts) + 1;
+
+  ctx.save();
+  ctx.translate(camOffX, camOffY);
+
+  for (let ty = startTileY; ty <= endTileY; ty++) {
+    for (let tx = startTileX; tx <= endTileX; tx++) {
+      const gt = groundTile(tc.groundBase, tc.groundAlt, tc.groundCrack, tx, ty);
+      const gtCanvas = renderSpriteToCanvas(gt, zoom, `ground_${timeOfDay}_${((tx * 7919 + ty * 104729) >>> 0) % 1000}`);
+      ctx.drawImage(gtCanvas, tx * ts, ty * ts);
     }
   }
 
-  // Camera transform
-  ctx.save();
-  ctx.translate(
-    -camera.x * zoom + canvasWidth / 2,
-    -camera.y * zoom + canvasHeight / 2,
-  );
-
-  // ─── Draw rooms ─────────────────────────────────────────
+  // ─── 2. Room floors (per-department patterns) ──────────
   for (const room of rooms) {
     const rx = room.x * ts;
     const ry = room.y * ts;
-    const rw = room.width * ts;
-    const rh = room.height * ts;
 
-    // Floor
-    const floorTile = checkerFloor(
-      room.color,
-      adjustBrightness(room.color, 1.08),
-    );
-    const floorCanvas = renderSpriteToCanvas(
-      floorTile,
-      zoom,
-      `floor_${room.id}`,
-    );
+    const floorCanvas = getRoomFloorTile(room, zoom);
 
-    // Tile the floor
     for (let ty = 0; ty < room.height; ty++) {
       for (let tx = 0; tx < room.width; tx++) {
         ctx.drawImage(floorCanvas, rx + tx * ts, ry + ty * ts);
       }
     }
 
-    // Room border (walls)
-    ctx.strokeStyle = tc.wallColor;
-    ctx.lineWidth = Math.max(2, 3 * zoom);
-    ctx.strokeRect(rx - 1, ry - 1, rw + 2, rh + 2);
-
-    // Room label
-    const fontSize = Math.max(8, 10 * zoom);
-    ctx.font = `bold ${fontSize}px monospace`;
-    ctx.fillStyle = room.labelColor;
-    ctx.globalAlpha = 0.7;
-    ctx.fillText(room.label, rx + 4 * zoom, ry + fontSize + 2 * zoom);
+    // Inner floor shadow near walls (subtle darkening)
+    ctx.fillStyle = tc.wallShadow;
+    // Top edge shadow
+    ctx.fillRect(rx, ry, room.width * ts, ts * 0.3);
+    // Left edge shadow
+    ctx.fillRect(rx, ry, ts * 0.3, room.height * ts);
+    // Right edge shadow (lighter)
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(rx + room.width * ts - ts * 0.15, ry, ts * 0.15, room.height * ts);
+    // Bottom edge shadow (lighter)
+    ctx.fillRect(rx, ry + room.height * ts - ts * 0.15, room.width * ts, ts * 0.15);
     ctx.globalAlpha = 1.0;
   }
 
-  // ─── Draw corridors ─────────────────────────────────────
-  const corridorColor = adjustBrightness(tc.wallColor, 0.6);
-  const corridorAlt = adjustBrightness(tc.wallColor, 0.55);
-
-  // Horizontal corridor (y = 7, 8)
+  // ─── 3. Corridors with carpet runner ───────────────────
+  // Horizontal corridor (y = CORRIDOR_H_START to CORRIDOR_H_END)
   for (let x = 0; x < cols; x++) {
-    for (let cy = 7; cy <= 8; cy++) {
-      const isAlt = (x + cy) % 2 === 0;
-      ctx.fillStyle = isAlt ? corridorColor : corridorAlt;
-      ctx.fillRect(x * ts, cy * ts, ts, ts);
-    }
-  }
-  // Vertical corridor (x = 9, 10)
-  for (let y = 0; y < rows; y++) {
-    for (let cx = 9; cx <= 10; cx++) {
-      if (y === 7 || y === 8) continue; // already drawn
-      const isAlt = (cx + y) % 2 === 0;
-      ctx.fillStyle = isAlt ? corridorColor : corridorAlt;
-      ctx.fillRect(cx * ts, y * ts, ts, ts);
+    for (let cy = CORRIDOR_H_START; cy <= CORRIDOR_H_END; cy++) {
+      // Skip if inside a room
+      const inRoom = rooms.some(
+        (r) => x >= r.x && x < r.x + r.width && cy >= r.y && cy < r.y + r.height,
+      );
+      if (inRoom) continue;
+
+      const ct = corridorTile(tc.corridorEdge, tc.corridorPath, tc.corridorPathAlt, true);
+      const isMiddle = cy === CORRIDOR_H_START + 1;
+      const tileKey = `corridor_h_${timeOfDay}_${isMiddle ? "mid" : "edge"}`;
+      const ctCanvas = renderSpriteToCanvas(ct, zoom, tileKey);
+      ctx.drawImage(ctCanvas, x * ts, cy * ts);
     }
   }
 
-  // ─── Collect z-sorted drawables ─────────────────────────
+  // Vertical corridor (x = CORRIDOR_V_START to CORRIDOR_V_END)
+  for (let y = 0; y < rows; y++) {
+    for (let cx = CORRIDOR_V_START; cx <= CORRIDOR_V_END; cx++) {
+      // Skip if inside a room or already drawn as horizontal corridor
+      const inRoom = rooms.some(
+        (r) => cx >= r.x && cx < r.x + r.width && y >= r.y && y < r.y + r.height,
+      );
+      if (inRoom) continue;
+      if (y >= CORRIDOR_H_START && y <= CORRIDOR_H_END) continue;
+
+      const ct = corridorTile(tc.corridorEdge, tc.corridorPath, tc.corridorPathAlt, false);
+      const isMiddle = cx === CORRIDOR_V_START + 1;
+      const tileKey = `corridor_v_${timeOfDay}_${isMiddle ? "mid" : "edge"}`;
+      const ctCanvas = renderSpriteToCanvas(ct, zoom, tileKey);
+      ctx.drawImage(ctCanvas, cx * ts, y * ts);
+    }
+  }
+
+  // ─── 4. Thick walls with doorway cutouts ───────────────
+  for (const room of rooms) {
+    drawRoomWalls(ctx, room, ts, zoom, tc);
+  }
+
+  // ─── 5. Room sign plates ───────────────────────────────
+  for (const room of rooms) {
+    drawSignPlate(ctx, room, ts, zoom);
+  }
+
+  // ─── 6. Collect z-sorted drawables ─────────────────────
   const drawables: ZDrawable[] = [];
 
   // Determine which desks have active agents
@@ -216,7 +379,13 @@ export function renderOffice(
   // Add furniture to drawables
   for (const f of furniture) {
     const sprite = getFurnitureSprite(f, activeDesks);
-    if (!sprite) continue;
+    if (sprite === null) continue;
+
+    // Decorative items rendered below furniture layer
+    const isDecor =
+      f.type === FurnitureType.RUG ||
+      f.type === FurnitureType.CEILING_LIGHT ||
+      f.type === FurnitureType.ENTRANCE_MAT;
 
     const spriteCanvas = renderSpriteToCanvas(
       sprite,
@@ -225,12 +394,11 @@ export function renderOffice(
     );
     const fx = f.x * ts;
     const fy = f.y * ts;
-    const bottomY = fy + spriteCanvas.height;
+    const bottomY = isDecor ? fy - 1000 : fy + spriteCanvas.height;
 
     drawables.push({
       zY: bottomY,
       draw: (c: CanvasRenderingContext2D) => {
-        // Center sprite on tile
         const offX = (ts - spriteCanvas.width) / 2;
         const offY = ts - spriteCanvas.height;
         c.drawImage(spriteCanvas, fx + offX, fy + offY);
@@ -245,7 +413,6 @@ export function renderOffice(
     const frameIndex = Math.floor(char.animFrame) % frames.length;
     const frame = frames[frameIndex];
 
-    // Resolve sprite colors
     const coloredSprite: string[][] = frame.map((row) =>
       row.map((key) => resolveColor(key, palette) ?? ""),
     );
@@ -277,10 +444,26 @@ export function renderOffice(
     const isHovered = hoveredCharId === char.id;
 
     drawables.push({
-      zY: charBottomY + 0.5, // characters render slightly in front of same-row furniture
+      zY: charBottomY + 0.5,
       draw: (c: CanvasRenderingContext2D) => {
         const offX = (ts - spriteCanvas.width) / 2;
         const offY = ts - spriteCanvas.height;
+
+        // ─── Character shadow (dark ellipse) ─────────
+        c.save();
+        c.fillStyle = "rgba(0, 0, 0, 0.18)";
+        c.beginPath();
+        c.ellipse(
+          px + ts / 2,
+          py + ts - 1 * zoom,
+          ts * 0.35,
+          ts * 0.12,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        c.fill();
+        c.restore();
 
         // Selection/hover glow
         if (isSelected || isHovered) {
@@ -316,19 +499,19 @@ export function renderOffice(
           c.globalAlpha = 1.0;
         }
 
-        // Name label
+        // Name label with department color pip
         const labelFontSize = Math.max(7, 8 * zoom);
         c.font = `${labelFontSize}px monospace`;
         c.textAlign = "center";
 
-        // Label background
         const labelText =
           char.name.length > 12 ? char.name.slice(0, 12) + ".." : char.name;
-        const labelWidth = c.measureText(labelText).width + 6 * zoom;
+        const labelWidth = c.measureText(labelText).width + 10 * zoom;
         const labelX = px + ts / 2;
         const labelY = py + offY - 4 * zoom;
 
-        c.fillStyle = "rgba(15, 17, 23, 0.72)";
+        // Label background
+        c.fillStyle = "rgba(15, 17, 23, 0.78)";
         c.beginPath();
         c.roundRect(
           labelX - labelWidth / 2,
@@ -339,13 +522,25 @@ export function renderOffice(
         );
         c.fill();
 
+        // Department color pip on the left side of label
+        c.fillStyle = char.statusColor;
+        c.beginPath();
+        c.arc(
+          labelX - labelWidth / 2 + 4 * zoom,
+          labelY - labelFontSize / 2 + 1.5 * zoom,
+          2 * zoom,
+          0,
+          Math.PI * 2,
+        );
+        c.fill();
+
         c.fillStyle = isSelected ? "#fdba74" : "#d0d4e0";
-        c.fillText(labelText, labelX, labelY - 1 * zoom);
+        c.fillText(labelText, labelX + 2 * zoom, labelY - 1 * zoom);
         c.textAlign = "left";
 
         // Speech bubble for current task
         if (
-          char.currentTask &&
+          char.currentTask !== undefined &&
           (char.state === CharacterState.TYPE || char.bubbleTimer > 0)
         ) {
           drawSpeechBubble(
@@ -387,7 +582,10 @@ export function renderOffice(
     d.draw(ctx);
   }
 
-  // ─── Time-of-day overlay ────────────────────────────────
+  // ─── 7. Ambient lighting (PC glow, localized lights) ───
+  drawAmbientLighting(ctx, characters, furniture, activeDesks, ts, zoom, timeOfDay, now);
+
+  // ─── 8. Time-of-day overlay ────────────────────────────
   if (tc.overlayAlpha > 0) {
     ctx.fillStyle = tc.overlay;
     ctx.globalAlpha = tc.overlayAlpha;
@@ -396,6 +594,240 @@ export function renderOffice(
   }
 
   ctx.restore();
+}
+
+// ─── Room walls with depth ───────────────────────────────
+
+function drawRoomWalls(
+  ctx: CanvasRenderingContext2D,
+  room: OfficeRoom,
+  ts: number,
+  zoom: number,
+  tc: (typeof TIME_COLORS)[TimeOfDay],
+): void {
+  const rx = room.x * ts;
+  const ry = room.y * ts;
+  const rw = room.width * ts;
+  const rh = room.height * ts;
+  const wallThick = Math.max(3, 4 * zoom);
+  const bevelThick = Math.max(1, 1.5 * zoom);
+
+  const sides: Array<"north" | "south" | "east" | "west"> = [
+    "north",
+    "south",
+    "east",
+    "west",
+  ];
+
+  for (const side of sides) {
+    const hasDoor = roomHasDoorway(room, side);
+    let doorStart = 0;
+    let doorEnd = 0;
+    if (hasDoor) {
+      const [ds, de] = getDoorwayRange(room, side);
+      doorStart = ds;
+      doorEnd = de;
+    }
+
+    ctx.fillStyle = tc.wallFace;
+    const topColor = tc.wallTop;
+
+    switch (side) {
+      case "north": {
+        if (hasDoor) {
+          // Wall left of door
+          const leftEnd = doorStart * ts - rx;
+          if (leftEnd > 0) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx, ry - wallThick, leftEnd, wallThick);
+            ctx.fillStyle = topColor;
+            ctx.fillRect(rx, ry - wallThick, leftEnd, bevelThick);
+          }
+          // Wall right of door
+          const rightStart = (doorEnd + 1) * ts - rx;
+          if (rightStart < rw) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx + rightStart, ry - wallThick, rw - rightStart, wallThick);
+            ctx.fillStyle = topColor;
+            ctx.fillRect(rx + rightStart, ry - wallThick, rw - rightStart, bevelThick);
+          }
+        } else {
+          ctx.fillStyle = tc.wallFace;
+          ctx.fillRect(rx, ry - wallThick, rw, wallThick);
+          ctx.fillStyle = topColor;
+          ctx.fillRect(rx, ry - wallThick, rw, bevelThick);
+        }
+        break;
+      }
+      case "south": {
+        if (hasDoor) {
+          const leftEnd = doorStart * ts - rx;
+          if (leftEnd > 0) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx, ry + rh, leftEnd, wallThick);
+          }
+          const rightStart = (doorEnd + 1) * ts - rx;
+          if (rightStart < rw) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx + rightStart, ry + rh, rw - rightStart, wallThick);
+          }
+        } else {
+          ctx.fillStyle = tc.wallFace;
+          ctx.fillRect(rx, ry + rh, rw, wallThick);
+        }
+        break;
+      }
+      case "west": {
+        if (hasDoor) {
+          const topEnd = doorStart * ts - ry;
+          if (topEnd > 0) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx - wallThick, ry, wallThick, topEnd);
+            ctx.fillStyle = topColor;
+            ctx.fillRect(rx - wallThick, ry, bevelThick, topEnd);
+          }
+          const bottomStart = (doorEnd + 1) * ts - ry;
+          if (bottomStart < rh) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx - wallThick, ry + bottomStart, wallThick, rh - bottomStart);
+            ctx.fillStyle = topColor;
+            ctx.fillRect(rx - wallThick, ry + bottomStart, bevelThick, rh - bottomStart);
+          }
+        } else {
+          ctx.fillStyle = tc.wallFace;
+          ctx.fillRect(rx - wallThick, ry, wallThick, rh);
+          ctx.fillStyle = topColor;
+          ctx.fillRect(rx - wallThick, ry, bevelThick, rh);
+        }
+        break;
+      }
+      case "east": {
+        if (hasDoor) {
+          const topEnd = doorStart * ts - ry;
+          if (topEnd > 0) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx + rw, ry, wallThick, topEnd);
+          }
+          const bottomStart = (doorEnd + 1) * ts - ry;
+          if (bottomStart < rh) {
+            ctx.fillStyle = tc.wallFace;
+            ctx.fillRect(rx + rw, ry + bottomStart, wallThick, rh - bottomStart);
+          }
+        } else {
+          ctx.fillStyle = tc.wallFace;
+          ctx.fillRect(rx + rw, ry, wallThick, rh);
+        }
+        break;
+      }
+    }
+  }
+
+  // Corner blocks
+  ctx.fillStyle = tc.wallFace;
+  ctx.fillRect(rx - wallThick, ry - wallThick, wallThick, wallThick);
+  ctx.fillRect(rx + rw, ry - wallThick, wallThick, wallThick);
+  ctx.fillRect(rx - wallThick, ry + rh, wallThick, wallThick);
+  ctx.fillRect(rx + rw, ry + rh, wallThick, wallThick);
+}
+
+// ─── Sign plate ──────────────────────────────────────────
+
+function drawSignPlate(
+  ctx: CanvasRenderingContext2D,
+  room: OfficeRoom,
+  ts: number,
+  zoom: number,
+): void {
+  const fontSize = Math.max(8, 9 * zoom);
+  ctx.font = `bold ${fontSize}px monospace`;
+  const textWidth = ctx.measureText(room.label).width;
+  const padX = 6 * zoom;
+  const padY = 3 * zoom;
+  const plateW = textWidth + padX * 2;
+  const plateH = fontSize + padY * 2;
+
+  const rx = room.x * ts;
+  const ry = room.y * ts;
+  const plateX = rx + (room.width * ts) / 2 - plateW / 2;
+  const plateY = ry - plateH - Math.max(3, 4 * zoom) + 1;
+
+  // Plate background
+  ctx.fillStyle = "rgba(15, 17, 23, 0.88)";
+  ctx.beginPath();
+  ctx.roundRect(plateX, plateY, plateW, plateH, 3 * zoom);
+  ctx.fill();
+
+  // Plate border with room accent color
+  ctx.strokeStyle = room.labelColor;
+  ctx.lineWidth = Math.max(1, 1.5 * zoom);
+  ctx.globalAlpha = 0.6;
+  ctx.beginPath();
+  ctx.roundRect(plateX, plateY, plateW, plateH, 3 * zoom);
+  ctx.stroke();
+  ctx.globalAlpha = 1.0;
+
+  // Text
+  ctx.fillStyle = room.labelColor;
+  ctx.textAlign = "center";
+  ctx.fillText(room.label, rx + (room.width * ts) / 2, plateY + fontSize + padY - 1);
+  ctx.textAlign = "left";
+}
+
+// ─── Ambient lighting ────────────────────────────────────
+
+function drawAmbientLighting(
+  ctx: CanvasRenderingContext2D,
+  characters: OfficeCharacter[],
+  furniture: Furniture[],
+  activeDesks: Set<string>,
+  ts: number,
+  zoom: number,
+  timeOfDay: TimeOfDay,
+  now: number,
+): void {
+  // PC monitor glow for active desks
+  const glowIntensity = timeOfDay === "night" ? 0.12 : timeOfDay === "dusk" ? 0.08 : 0.04;
+  if (glowIntensity > 0) {
+    for (const f of furniture) {
+      if (f.type !== FurnitureType.PC) continue;
+      if (!activeDesks.has(`${f.x},${f.y}`)) continue;
+
+      const cx = (f.x + 0.5) * ts;
+      const cy = (f.y + 1.5) * ts;
+      const radius = ts * 2.5;
+
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, `rgba(110, 231, 183, ${glowIntensity})`);
+      gradient.addColorStop(1, "rgba(110, 231, 183, 0)");
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Lounge warm glow (from table/lamp area)
+  if (timeOfDay === "night" || timeOfDay === "dusk") {
+    for (const f of furniture) {
+      if (f.type !== FurnitureType.TABLE_ROUND) continue;
+
+      const cx = (f.x + 0.5) * ts;
+      const cy = (f.y + 0.5) * ts;
+      const radius = ts * 3;
+      const intensity = timeOfDay === "night" ? 0.10 : 0.06;
+      const pulse = 1 + Math.sin(now * 0.001) * 0.02;
+
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * pulse);
+      gradient.addColorStop(0, `rgba(252, 211, 77, ${intensity})`);
+      gradient.addColorStop(1, "rgba(252, 211, 77, 0)");
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * pulse, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 }
 
 // ─── Minimap renderer ─────────────────────────────────────
@@ -417,6 +849,20 @@ export function renderMinimap(
   ctx.fillStyle = "rgba(15, 17, 23, 0.88)";
   ctx.fillRect(0, 0, minimapWidth, minimapHeight);
 
+  // Corridors
+  ctx.fillStyle = "rgba(100, 90, 120, 0.4)";
+  for (let x = 0; x < cols; x++) {
+    for (let cy = CORRIDOR_H_START; cy <= CORRIDOR_H_END; cy++) {
+      ctx.fillRect(x * scale, cy * scale, scale, scale);
+    }
+  }
+  for (let y = 0; y < rows; y++) {
+    for (let cx = CORRIDOR_V_START; cx <= CORRIDOR_V_END; cx++) {
+      if (y >= CORRIDOR_H_START && y <= CORRIDOR_H_END) continue;
+      ctx.fillRect(cx * scale, y * scale, scale, scale);
+    }
+  }
+
   // Rooms
   for (const room of rooms) {
     ctx.fillStyle = room.color;
@@ -426,7 +872,7 @@ export function renderMinimap(
       room.width * scale,
       room.height * scale,
     );
-    ctx.strokeStyle = "#78583a";
+    ctx.strokeStyle = "rgba(120, 110, 140, 0.5)";
     ctx.lineWidth = 1;
     ctx.strokeRect(
       room.x * scale,
@@ -464,7 +910,7 @@ export function renderMinimap(
   ctx.globalAlpha = 1.0;
 
   // Border
-  ctx.strokeStyle = "#78583a";
+  ctx.strokeStyle = "rgba(120, 110, 140, 0.5)";
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, minimapWidth, minimapHeight);
 }
@@ -481,7 +927,7 @@ function drawSpeechBubble(
   const fontSize = Math.max(6, 7 * zoom);
   ctx.font = `${fontSize}px monospace`;
   const textWidth = ctx.measureText(text).width;
-  const padX = 4 * zoom;
+  const padX = 5 * zoom;
   const padY = 3 * zoom;
   const bubbleW = textWidth + padX * 2;
   const bubbleH = fontSize + padY * 2;
@@ -489,20 +935,20 @@ function drawSpeechBubble(
   const bubbleY = y - bubbleH;
 
   // Bubble background
-  ctx.fillStyle = "rgba(22, 27, 38, 0.88)";
+  ctx.fillStyle = "rgba(22, 27, 38, 0.90)";
   ctx.beginPath();
-  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 4 * zoom);
+  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 5 * zoom);
   ctx.fill();
 
   // Bubble border
-  ctx.strokeStyle = "rgba(251, 146, 60, 0.3)";
-  ctx.lineWidth = zoom;
+  ctx.strokeStyle = "rgba(251, 146, 60, 0.35)";
+  ctx.lineWidth = Math.max(1, 1.2 * zoom);
   ctx.beginPath();
-  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 4 * zoom);
+  ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 5 * zoom);
   ctx.stroke();
 
   // Tail
-  ctx.fillStyle = "rgba(22, 27, 38, 0.88)";
+  ctx.fillStyle = "rgba(22, 27, 38, 0.90)";
   ctx.beginPath();
   ctx.moveTo(x - 3 * zoom, bubbleY + bubbleH);
   ctx.lineTo(x, bubbleY + bubbleH + 4 * zoom);
@@ -558,7 +1004,7 @@ export function hitTestCharacter(
     const cx = char.gridX * tileSize;
     const cy = char.gridY * tileSize;
     const charW = tileSize;
-    const charH = tileSize * 1.5; // characters are taller than a tile
+    const charH = tileSize * 1.5;
 
     if (
       worldX >= cx &&

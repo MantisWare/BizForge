@@ -19,6 +19,21 @@
     void analyticsStore.fetchAnalytics(p);
   }
 
+  let showResetConfirm = $state(false);
+
+  function handleReset() {
+    showResetConfirm = true;
+  }
+
+  function confirmReset() {
+    showResetConfirm = false;
+    void analyticsStore.resetAnalytics();
+  }
+
+  function cancelReset() {
+    showResetConfirm = false;
+  }
+
   function formatCents(cents: number): string {
     return '$' + (cents / 100).toFixed(2);
   }
@@ -45,6 +60,18 @@
 
 <PageShell title="Analytics" subtitle="Observe">
   {#snippet actions()}
+    <button
+      class="an-reset-btn"
+      onclick={handleReset}
+      title="Reset all analytics data for this workspace"
+      aria-label="Reset analytics"
+    >
+      <svg class="an-reset-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2 8a6 6 0 0 1 10.89-3.48l.71-.71A7 7 0 0 0 1 8h1zm12 0a6 6 0 0 1-10.89 3.48l-.71.71A7 7 0 0 0 15 8h-1z" fill="currentColor"/>
+        <path d="M14 1v4h-4M2 15v-4h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Reset
+    </button>
     <div class="an-period-tabs" role="group" aria-label="Analytics period">
       {#each PERIOD_OPTIONS as opt (opt.value)}
         <button
@@ -251,9 +278,130 @@
       {/if}
     </section>
   {/if}
+
+  {#if showResetConfirm}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="an-modal-backdrop" role="presentation" onclick={cancelReset} onkeydown={(e) => { if (e.key === 'Escape') cancelReset(); }}>
+      <div class="an-modal" role="alertdialog" aria-labelledby="reset-title" aria-describedby="reset-desc" onclick={(e) => e.stopPropagation()}>
+        <h3 id="reset-title" class="an-modal-title">Reset Analytics</h3>
+        <p id="reset-desc" class="an-modal-desc">
+          This will clear all analytics data for this workspace. New data will be recorded from this point forward. This action cannot be undone.
+        </p>
+        <div class="an-modal-actions">
+          <button class="an-modal-btn an-modal-btn--cancel" onclick={cancelReset}>
+            Cancel
+          </button>
+          <button class="an-modal-btn an-modal-btn--danger" onclick={confirmReset}>
+            Reset Analytics
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </PageShell>
 
 <style>
+  /* ── Reset button ───────────────────────────────────────────────── */
+  .an-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    white-space: nowrap;
+  }
+
+  .an-reset-btn:hover {
+    color: var(--text-secondary);
+    border-color: var(--text-tertiary);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .an-reset-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* ── Reset confirmation modal ──────────────────────────────────── */
+  .an-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+  }
+
+  .an-modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md, 10px);
+    padding: 24px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  .an-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+
+  .an-modal-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+  }
+
+  .an-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .an-modal-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-xs, 6px);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-default);
+    transition: background 100ms ease, border-color 100ms ease;
+  }
+
+  .an-modal-btn--cancel {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+  }
+
+  .an-modal-btn--cancel:hover {
+    background: var(--bg-elevated);
+  }
+
+  .an-modal-btn--danger {
+    background: rgba(248, 81, 73, 0.15);
+    color: #f85149;
+    border-color: rgba(248, 81, 73, 0.3);
+  }
+
+  .an-modal-btn--danger:hover {
+    background: rgba(248, 81, 73, 0.25);
+    border-color: rgba(248, 81, 73, 0.5);
+  }
+
   /* ── Period selector ─────────────────────────────────────────────── */
   .an-period-tabs {
     display: flex;

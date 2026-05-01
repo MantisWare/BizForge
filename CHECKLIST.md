@@ -148,6 +148,7 @@ Active development phases and their progress.
 - [x] Harden footer resource monitor and environment page — null-safe access for all SystemResources and SystemHealth properties, fix crash when API returns partial/empty data, fix mock fallback `system_health` shape mismatch
 - [x] Add workspace delete from WorkspaceSwitcher dropdown — hover-reveal trash icon per workspace item, confirmation modal with "remove from list" vs "also delete .bizforge/ files" options, Rust `remove_dir_recursive` IPC command with .bizforge safety guard
 - [x] Fix Environment page system resources showing all zeros — API client now unwraps `{ resources: ... }` wrapper, environment store prefers real OS metrics from Tauri IPC (`get_system_resources`), added disk space (total/free) to Rust `SystemResourceInfo` via `sysinfo::Disks`
+- [x] Make Reports left panel resizable — drag handle between list panel and viewer, keyboard accessible (Arrow keys), min/max constraints (220–600px), centered empty state CTA, tabs wrap instead of scrolling off-screen
 
 ### 10b. Adapter Info & Footer Enhancements
 
@@ -201,6 +202,16 @@ Active development phases and their progress.
 - [x] Service cards show icon/initial, name, provider, description, feature tags, status pill, connect/disconnect button, docs link
 - [x] Category groups show header with connected count
 - [x] Context-aware PageShell subtitle (adapters count vs services connected)
+
+### 14. Analytics
+
+- [x] Add "Reset Analytics" button to analytics page header (positioned before period selector)
+- [x] Add confirmation modal before resetting (warns action cannot be undone)
+- [x] Add `DELETE /analytics/reset` backend endpoint — marks workspace analytics as reset via `:persistent_term`
+- [x] Backend `summary`, `agents`, `teams` endpoints return zeroed data after reset
+- [x] Add `analytics.reset()` to frontend API client
+- [x] Add `resetAnalytics()` method to analytics store
+- [x] Mock layer supports reset — returns zeroed analytics after reset called
 
 ---
 
@@ -378,6 +389,44 @@ Active development phases and their progress.
 - [x] Add health dot indicator to `WorkspaceSwitcher` (green/yellow/red based on report)
 - [x] Add "Workspace" tab to Settings page containing the health panel
 
+### 14. Virtual Office Pixel View Visual Upgrade
+
+- [x] Expand office grid from 21x15 to 26x19 for more breathing room between areas
+- [x] Reposition all rooms, furniture, and seats to use wider layout
+- [x] Widen corridors from 2 tiles to 3 tiles
+- [x] Add per-department floor patterns (grid for Engineering, checker for Product, herringbone for Operations, dot for Research, carpet for Lounge)
+- [x] Replace checkered void with stone/paving ground texture using seeded pseudo-random variation
+- [x] Add thick beveled walls with bevel highlight on north/west edges
+- [x] Implement doorway cutouts where corridors meet room walls
+- [x] Add inner floor shadow near walls for depth
+- [x] Add styled corridor tiles with edge lines and runner pattern
+- [x] Replace floating room labels with rendered sign plates (dark pill with accent border and department dot)
+- [x] Add drop shadow ellipse beneath characters for grounding
+- [x] Add department color pip to character name labels
+- [x] Add environmental decorations: rugs, water cooler, entrance mat, wall art, ceiling lights
+- [x] Add new FurnitureType enum values (RUG, WATERCOOLER, CEILING_LIGHT, WALL_ART, ENTRANCE_MAT)
+- [x] Add ambient PC monitor glow (radial gradient, intensity varies by time-of-day)
+- [x] Add warm Lounge lamp glow with subtle pulse animation
+- [x] Update minimap to show corridors and improved room borders
+- [x] Per-time-of-day themed wall/ground/corridor colors (dawn/day/dusk/night)
+
+### 14b. Virtual Office 3D View Visual Upgrade
+
+- [x] Restructure 3D scene zones to match pixel view departments (Engineering, Product, Operations, Research, Lounge)
+- [x] Add colored floor planes per department with accent-colored border edges
+- [x] Add zone sign plates (floating dark pill with accent border + label text)
+- [x] Add per-zone accent spot lights for colored ambient illumination
+- [x] Brighten overall lighting (ambient, directional, hemisphere light, point lights)
+- [x] Add corridor floor planes with center runner between zones
+- [x] Add environmental props: plants (pot + foliage), whiteboards, bookshelf with book spines, water cooler, coffee table
+- [x] Brighten desk materials (birch wood), add monitor bezel and base, chair legs
+- [x] Add department color pip sphere next to agent name labels
+- [x] Add monitor glow point light when agent is running
+- [x] Lighten fog density and background color
+- [x] Add front wall with entrance opening
+- [x] Zone-based agent positioning (agents distributed across department zones by index)
+- [x] Pass `zoneColor` prop from Scene3D to AgentDesk3D for per-zone theming
+
 ---
 
 > **Auto-updated by Cursor:** Fixed window size restore (non-maximized geometry preserved) and session persistence (auth token + onboarding state backed by Tauri disk store, token verification retries during cold start) on 2026-05-01.
@@ -420,3 +469,9 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Fixed startup CORS/500 console errors — CORS plug uses `register_before_send` to inject headers on all responses including 500 errors; HealthController gracefully handles DB unavailability (returns `degraded` status); Auth plug/controller rescue exceptions during cold start (returns 503 instead of unhandled 500) on 2026-05-01.
 > **Auto-updated by Cursor:** Added workspace deletion from WorkspaceSwitcher dropdown — hover-reveal trash icon on each workspace row, confirmation modal with two modes (remove from list only, or also delete `.bizforge/` files from disk), `remove_dir_recursive` Rust IPC command with `.bizforge` path safety guard on 2026-05-01.
 > **Auto-updated by Cursor:** Fixed Environment page system resources showing all zeros — API client wasn't unwrapping `{ resources: ... }` response wrapper; environment store now prefers real OS metrics from Tauri `get_system_resources` IPC; added disk total/free to Rust `SystemResourceInfo` via `sysinfo::Disks` on 2026-05-01.
+> **Auto-updated by Cursor:** Virtual Office pixel view visual upgrade — expanded grid (26x19), beveled walls with doorway cutouts, stone ground texture, styled corridors with runner, per-department floor patterns, sign plate labels, character shadows, environmental decorations (rugs, water cooler, wall art, ceiling lights), ambient lighting (PC glow, lounge lamp), and themed colors per time-of-day on 2026-05-01.
+> **Auto-updated by Cursor:** Virtual Office 3D view visual upgrade — restructured zones to match pixel departments (Engineering, Product, Operations, Research, Lounge), colored floor planes with accent borders, zone sign plates, per-zone accent lights, brighter materials (birch desks, upholstered chairs), environmental props (plants, whiteboards, bookshelf, water cooler), corridor with runner, monitor glow, department pip on labels, lighter fog/background on 2026-05-01.
+> **Auto-updated by Cursor:** Added "Reset Analytics" button to analytics page — confirmation modal, backend DELETE /analytics/reset endpoint (marks workspace as reset via persistent_term, returns zeroed data thereafter), frontend API client + store method, mock layer support on 2026-05-01.
+> **Auto-updated by Cursor:** Added playful lounge extras to Pixel and 3D views — second sofa facing first sofa, mini kitchen (counter, microwave, coffee machine, fridge), wall-mounted TV; pixel view has 5 new FurnitureType enums + sprites; 3D view has matching meshes with emissive TV screen and kitchen detail; lounge widened in both views on 2026-05-01.
+> **Auto-updated by Cursor:** Made Reports left panel resizable with drag handle, keyboard support, centered empty state CTA, and wrapping tabs on 2026-05-01.
+> **Auto-updated by Cursor:** Improved unauthorized error handling on Users and Organization pages — auth errors now show "Authentication required" with lock icon, session expiry explanation, and "Sign in" button linking to /auth; non-auth errors show generic message with retry; added /hierarchy mock route so mock mode returns valid hierarchy data instead of empty object on 2026-05-01.

@@ -2293,6 +2293,10 @@ export const analytics = {
     request<unknown>(`/analytics/agents?period=${period}`),
   teams: (period: string) =>
     request<unknown>(`/analytics/teams?period=${period}`),
+  reset: () =>
+    request<{ ok: boolean; reset_at: string }>(`/analytics/reset`, {
+      method: "DELETE",
+    }),
 };
 
 // ── Work Products ─────────────────────────────────────────────────────────────
