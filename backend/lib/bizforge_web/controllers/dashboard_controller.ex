@@ -193,6 +193,8 @@ defmodule BizforgeWeb.DashboardController do
 
     memory_info = :erlang.memory()
     memory_mb = div(memory_info[:total], 1_048_576)
+    heap_mb = Float.round(memory_info[:processes_used] / 1_048_576, 1)
+    heap_total_mb = Float.round(memory_info[:processes] / 1_048_576, 1)
 
     json(conn, %{
       kpis: %{
@@ -208,10 +210,8 @@ defmodule BizforgeWeb.DashboardController do
         today_cents: today_cost,
         week_cents: week_cost,
         month_cents: month_cost,
-        # daily_limit_cents: BudgetPolicy has no daily_limit_cents column yet
         daily_limit_cents: 0,
         monthly_limit_cents: monthly_limit_cents,
-        # cache_savings_pct: no cache token tracking in CostEvent yet
         cache_savings_pct: 0
       },
       system_health: %{
@@ -219,9 +219,55 @@ defmodule BizforgeWeb.DashboardController do
         primary_gateway: "anthropic",
         gateway_status: "ok",
         memory_mb: memory_mb,
-        # cpu_pct: no system metrics collection yet
+        heap_mb: heap_mb,
+        heap_total_mb: heap_total_mb,
         cpu_pct: 0
       }
     })
+  end
+
+  def recent_ai_calls(conn, params) do
+    workspace_id = params["workspace_id"]
+    user_workspace_ids = conn.assigns[:user_workspace_ids] || []
+    limit = min(String.to_integer(params["limit"] || "10"), 50)
+
+    base_query =
+      cond do
+        workspace_id ->
+          from ce in Bizforge.Schemas.CostEvent,
+            join: a in Agent,
+            on: ce.agent_id == a.id,
+            where: a.workspace_id == ^workspace_id
+
+        user_workspace_ids != [] ->
+          from ce in Bizforge.Schemas.CostEvent,
+            join: a in Agent,
+            on: ce.agent_id == a.id,
+            where: a.workspace_id in ^user_workspace_ids
+
+        true ->
+          from ce in Bizforge.Schemas.CostEvent,
+            join: a in Agent,
+            on: ce.agent_id == a.id
+      end
+
+    calls =
+      Repo.all(
+        from [ce, a] in base_query,
+          order_by: [desc: ce.inserted_at],
+          limit: ^limit,
+          select: %{
+            id: ce.id,
+            model: ce.model,
+            tokens_input: ce.tokens_input,
+            tokens_output: ce.tokens_output,
+            tokens_cache: ce.tokens_cache,
+            cost_cents: ce.cost_cents,
+            agent_name: a.name,
+            inserted_at: ce.inserted_at
+          }
+      )
+
+    json(conn, %{data: calls})
   end
 end

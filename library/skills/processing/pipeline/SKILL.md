@@ -101,9 +101,9 @@ Chain the full processing sequence in a single invocation: seed (initialize) →
 - Verification: `processed/run-2026-03-20-143000/verify.md`
 
 ### Action Items Extracted
-1. Roberto: Send revised pricing doc to Ed by Friday
+1. Waldo: Send revised pricing doc to Ed by Friday
 2. Ed: Confirm enterprise pilot with Acme Corp
-3. Roberto: Update money-revenue/context.md with new pricing
+3. Waldo: Update money-revenue/context.md with new pricing
 ```
 
 ## Dependencies

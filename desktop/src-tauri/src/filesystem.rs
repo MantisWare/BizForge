@@ -2,6 +2,15 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+fn expand_tilde(path: &str) -> PathBuf {
+    if path.starts_with("~/") || path == "~" {
+        if let Ok(home) = std::env::var("HOME") {
+            return PathBuf::from(home).join(path.strip_prefix("~/").unwrap_or(""));
+        }
+    }
+    PathBuf::from(path)
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,12 +75,19 @@ pub struct BizforgeSkillDef {
 
 // ── IPC Commands ─────────────────────────────────────────────────────────────
 
-/// Scan a .bizforge/ directory and return the full workspace definition
+/// Scan a .bizforge/ directory and return the full workspace definition.
+/// If the directory doesn't exist, auto-creates the required structure.
 #[tauri::command]
 pub async fn scan_bizforge_dir(path: String) -> Result<BizforgeWorkspace, String> {
-    let bizforge_path = PathBuf::from(&path);
+    let bizforge_path = expand_tilde(&path);
     if !bizforge_path.exists() {
-        return Err(format!(".bizforge directory not found: {}", path));
+        // Auto-create the .bizforge directory structure
+        std::fs::create_dir_all(&bizforge_path)
+            .map_err(|e| format!("Failed to create .bizforge directory at {}: {}", path, e))?;
+        for dir in REQUIRED_DIRS {
+            std::fs::create_dir_all(bizforge_path.join(dir))
+                .map_err(|e| format!("Failed to create {}: {}", dir, e))?;
+        }
     }
 
     let name = bizforge_path
@@ -80,8 +96,18 @@ pub async fn scan_bizforge_dir(path: String) -> Result<BizforgeWorkspace, String
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
+    // Ensure SYSTEM.md exists — create with defaults if missing
+    let system_md_path = bizforge_path.join("SYSTEM.md");
+    if !system_md_path.exists() {
+        let default_system = format!(
+            "---\nname: {}\ndescription: A Bizforge workspace\ncreated_at: {}\n---\n\n# {}\n\nA Bizforge workspace.\n",
+            name, chrono_now(), name
+        );
+        let _ = std::fs::write(&system_md_path, &default_system);
+    }
+
     // Read optional top-level markdown files
-    let system_md = std::fs::read_to_string(bizforge_path.join("SYSTEM.md")).ok();
+    let system_md = std::fs::read_to_string(&system_md_path).ok();
     let company_md = std::fs::read_to_string(bizforge_path.join("COMPANY.md")).ok();
 
     // Prefer the name from SYSTEM.md frontmatter over the directory name
@@ -111,21 +137,21 @@ pub async fn scan_bizforge_dir(path: String) -> Result<BizforgeWorkspace, String
 /// List all agent definitions from .bizforge/agents/*.md
 #[tauri::command]
 pub async fn list_bizforge_agents(path: String) -> Result<Vec<BizforgeAgentDef>, String> {
-    let bizforge_path = PathBuf::from(&path);
+    let bizforge_path = expand_tilde(&path);
     list_agents_internal(&bizforge_path)
 }
 
 /// List all projects from .bizforge/projects/*/
 #[tauri::command]
 pub async fn list_bizforge_projects(path: String) -> Result<Vec<BizforgeProjectDef>, String> {
-    let bizforge_path = PathBuf::from(&path);
+    let bizforge_path = expand_tilde(&path);
     list_projects_internal(&bizforge_path)
 }
 
 /// List all schedules from .bizforge/schedules/*.yaml
 #[tauri::command]
 pub async fn list_bizforge_schedules(path: String) -> Result<Vec<BizforgeScheduleDef>, String> {
-    let bizforge_path = PathBuf::from(&path);
+    let bizforge_path = expand_tilde(&path);
     list_schedules_internal(&bizforge_path)
 }
 
@@ -144,8 +170,9 @@ pub async fn watch_bizforge_dir(
     let mut watcher = RecommendedWatcher::new(tx, Config::default())
         .map_err(|e| format!("Failed to create watcher: {}", e))?;
 
+    let resolved_path = expand_tilde(&path);
     watcher
-        .watch(Path::new(&path), RecursiveMode::Recursive)
+        .watch(&resolved_path, RecursiveMode::Recursive)
         .map_err(|e| format!("Failed to watch directory: {}", e))?;
 
     // Spawn a thread to forward filesystem events to the frontend
@@ -200,7 +227,7 @@ pub async fn scaffold_bizforge_dir(
     description: Option<String>,
     agents: Vec<AgentTemplate>,
 ) -> Result<BizforgeWorkspace, String> {
-    let base = PathBuf::from(&path);
+    let base = expand_tilde(&path);
     let bizforge_dir = base.join(".bizforge");
 
     // Create directory structure
@@ -499,6 +526,333 @@ fn chrono_now() -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();
     format!("{}Z", dur.as_secs())
+}
+
+// ── Workspace Health ─────────────────────────────────────────────────────────
+
+const REQUIRED_DIRS: &[&str] = &["agents", "skills", "projects", "schedules", "reference"];
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthIssue {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+    pub path: String,
+    pub repairable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkspaceHealthReport {
+    pub healthy: bool,
+    pub issues: Vec<HealthIssue>,
+    pub checked_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepairResult {
+    pub repaired: Vec<String>,
+    pub failed: Vec<String>,
+    pub health_after: WorkspaceHealthReport,
+}
+
+/// Check workspace health: validate directory structure, required files, and content integrity
+#[tauri::command]
+pub async fn check_workspace_health(path: String) -> Result<WorkspaceHealthReport, String> {
+    let workspace_root = expand_tilde(&path);
+    let bizforge_dir = if workspace_root.ends_with(".bizforge") {
+        workspace_root.clone()
+    } else {
+        workspace_root.join(".bizforge")
+    };
+
+    let mut issues = Vec::new();
+
+    // 1. .bizforge/ root exists
+    if !bizforge_dir.exists() {
+        issues.push(HealthIssue {
+            severity: "error".to_string(),
+            code: "missing_root".to_string(),
+            message: ".bizforge directory does not exist".to_string(),
+            path: bizforge_dir.to_string_lossy().to_string(),
+            repairable: true,
+        });
+        return Ok(WorkspaceHealthReport {
+            healthy: false,
+            issues,
+            checked_at: chrono_now(),
+        });
+    }
+
+    if !bizforge_dir.is_dir() {
+        issues.push(HealthIssue {
+            severity: "error".to_string(),
+            code: "root_not_dir".to_string(),
+            message: ".bizforge exists but is not a directory".to_string(),
+            path: bizforge_dir.to_string_lossy().to_string(),
+            repairable: false,
+        });
+        return Ok(WorkspaceHealthReport {
+            healthy: false,
+            issues,
+            checked_at: chrono_now(),
+        });
+    }
+
+    // 2. Required subdirectories
+    for dir_name in REQUIRED_DIRS {
+        let dir_path = bizforge_dir.join(dir_name);
+        if !dir_path.exists() {
+            issues.push(HealthIssue {
+                severity: "error".to_string(),
+                code: "missing_dir".to_string(),
+                message: format!("Required directory '{}' is missing", dir_name),
+                path: dir_path.to_string_lossy().to_string(),
+                repairable: true,
+            });
+        } else if !dir_path.is_dir() {
+            issues.push(HealthIssue {
+                severity: "error".to_string(),
+                code: "not_a_dir".to_string(),
+                message: format!("'{}' exists but is not a directory", dir_name),
+                path: dir_path.to_string_lossy().to_string(),
+                repairable: false,
+            });
+        }
+    }
+
+    // 3. SYSTEM.md
+    let system_md_path = bizforge_dir.join("SYSTEM.md");
+    if !system_md_path.exists() {
+        issues.push(HealthIssue {
+            severity: "error".to_string(),
+            code: "missing_file".to_string(),
+            message: "SYSTEM.md is missing (workspace identity file)".to_string(),
+            path: system_md_path.to_string_lossy().to_string(),
+            repairable: true,
+        });
+    } else if let Ok(content) = std::fs::read_to_string(&system_md_path) {
+        if content.trim().is_empty() {
+            issues.push(HealthIssue {
+                severity: "warning".to_string(),
+                code: "empty_file".to_string(),
+                message: "SYSTEM.md is empty".to_string(),
+                path: system_md_path.to_string_lossy().to_string(),
+                repairable: true,
+            });
+        } else if parse_frontmatter_name(&content).is_none() {
+            issues.push(HealthIssue {
+                severity: "warning".to_string(),
+                code: "corrupt_frontmatter".to_string(),
+                message: "SYSTEM.md has missing or invalid YAML frontmatter (no 'name' field)".to_string(),
+                path: system_md_path.to_string_lossy().to_string(),
+                repairable: true,
+            });
+        }
+    } else {
+        issues.push(HealthIssue {
+            severity: "warning".to_string(),
+            code: "unreadable_file".to_string(),
+            message: "SYSTEM.md exists but cannot be read".to_string(),
+            path: system_md_path.to_string_lossy().to_string(),
+            repairable: false,
+        });
+    }
+
+    // 4. COMPANY.md
+    let company_md_path = bizforge_dir.join("COMPANY.md");
+    if !company_md_path.exists() {
+        issues.push(HealthIssue {
+            severity: "warning".to_string(),
+            code: "missing_file".to_string(),
+            message: "COMPANY.md is missing (organization config file)".to_string(),
+            path: company_md_path.to_string_lossy().to_string(),
+            repairable: true,
+        });
+    }
+
+    // 5. Validate agent files
+    let agents_dir = bizforge_dir.join("agents");
+    if agents_dir.is_dir() {
+        let mut agent_count = 0u32;
+        for entry in WalkDir::new(&agents_dir).max_depth(1).into_iter().flatten() {
+            let entry_path = entry.path();
+            if entry_path.extension().map_or(false, |ext| ext == "md" || ext == "yaml" || ext == "yml") {
+                agent_count += 1;
+                if let Ok(content) = std::fs::read_to_string(entry_path) {
+                    if content.trim().is_empty() {
+                        issues.push(HealthIssue {
+                            severity: "warning".to_string(),
+                            code: "empty_file".to_string(),
+                            message: format!("Agent file '{}' is empty", entry_path.file_name().unwrap_or_default().to_string_lossy()),
+                            path: entry_path.to_string_lossy().to_string(),
+                            repairable: false,
+                        });
+                    } else if parse_agent_frontmatter(&content, entry_path).is_none() {
+                        issues.push(HealthIssue {
+                            severity: "warning".to_string(),
+                            code: "corrupt_frontmatter".to_string(),
+                            message: format!("Agent file '{}' has invalid or missing YAML frontmatter", entry_path.file_name().unwrap_or_default().to_string_lossy()),
+                            path: entry_path.to_string_lossy().to_string(),
+                            repairable: false,
+                        });
+                    }
+                }
+            }
+        }
+        if agent_count == 0 {
+            issues.push(HealthIssue {
+                severity: "info".to_string(),
+                code: "empty_dir".to_string(),
+                message: "No agent definitions found in agents/ directory".to_string(),
+                path: agents_dir.to_string_lossy().to_string(),
+                repairable: false,
+            });
+        }
+    }
+
+    // 6. Validate schedule files
+    let schedules_dir = bizforge_dir.join("schedules");
+    if schedules_dir.is_dir() {
+        for entry in WalkDir::new(&schedules_dir).max_depth(1).into_iter().flatten() {
+            let entry_path = entry.path();
+            if entry_path.extension().map_or(false, |ext| ext == "yaml" || ext == "yml") {
+                if let Ok(content) = std::fs::read_to_string(entry_path) {
+                    if serde_yaml::from_str::<serde_yaml::Value>(&content).is_err() {
+                        issues.push(HealthIssue {
+                            severity: "warning".to_string(),
+                            code: "invalid_yaml".to_string(),
+                            message: format!("Schedule file '{}' contains invalid YAML", entry_path.file_name().unwrap_or_default().to_string_lossy()),
+                            path: entry_path.to_string_lossy().to_string(),
+                            repairable: false,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // 7. Validate skill files
+    let skills_dir = bizforge_dir.join("skills");
+    if skills_dir.is_dir() {
+        for entry in WalkDir::new(&skills_dir).max_depth(2).into_iter().flatten() {
+            let entry_path = entry.path();
+            if entry_path.extension().map_or(false, |ext| ext == "md" || ext == "yaml" || ext == "yml") {
+                if let Ok(content) = std::fs::read_to_string(entry_path) {
+                    if !content.trim().is_empty() && parse_skill_frontmatter(&content, entry_path).is_none() {
+                        issues.push(HealthIssue {
+                            severity: "info".to_string(),
+                            code: "corrupt_frontmatter".to_string(),
+                            message: format!("Skill file '{}' has missing or invalid frontmatter", entry_path.file_name().unwrap_or_default().to_string_lossy()),
+                            path: entry_path.to_string_lossy().to_string(),
+                            repairable: false,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    let healthy = issues.iter().all(|i| i.severity != "error");
+    Ok(WorkspaceHealthReport {
+        healthy,
+        issues,
+        checked_at: chrono_now(),
+    })
+}
+
+/// Repair workspace: fix repairable issues (missing dirs, missing template files)
+#[tauri::command]
+pub async fn repair_workspace(path: String) -> Result<RepairResult, String> {
+    let workspace_root = expand_tilde(&path);
+    let bizforge_dir = if workspace_root.ends_with(".bizforge") {
+        workspace_root.clone()
+    } else {
+        workspace_root.join(".bizforge")
+    };
+
+    let parent_name = bizforge_dir
+        .parent()
+        .and_then(|p| p.file_name())
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "Workspace".to_string());
+
+    let mut repaired = Vec::new();
+    let mut failed = Vec::new();
+
+    // 1. Create .bizforge/ root if missing
+    if !bizforge_dir.exists() {
+        match std::fs::create_dir_all(&bizforge_dir) {
+            Ok(()) => repaired.push("Created .bizforge/ directory".to_string()),
+            Err(e) => {
+                failed.push(format!("Failed to create .bizforge/: {}", e));
+                let health_after = check_workspace_health(path).await?;
+                return Ok(RepairResult { repaired, failed, health_after });
+            }
+        }
+    }
+
+    // 2. Create required subdirectories
+    for dir_name in REQUIRED_DIRS {
+        let dir_path = bizforge_dir.join(dir_name);
+        if !dir_path.exists() {
+            match std::fs::create_dir_all(&dir_path) {
+                Ok(()) => repaired.push(format!("Created {}/ directory", dir_name)),
+                Err(e) => failed.push(format!("Failed to create {}/: {}", dir_name, e)),
+            }
+        }
+    }
+
+    // 3. Create or repair SYSTEM.md
+    let system_md_path = bizforge_dir.join("SYSTEM.md");
+    let needs_system_md = if !system_md_path.exists() {
+        true
+    } else if let Ok(content) = std::fs::read_to_string(&system_md_path) {
+        if content.trim().is_empty() {
+            true
+        } else if parse_frontmatter_name(&content).is_none() {
+            // Back up the corrupt file
+            let backup_path = bizforge_dir.join("SYSTEM.md.bak");
+            match std::fs::copy(&system_md_path, &backup_path) {
+                Ok(_) => repaired.push(format!("Backed up corrupt SYSTEM.md to SYSTEM.md.bak")),
+                Err(e) => failed.push(format!("Failed to back up SYSTEM.md: {}", e)),
+            }
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    if needs_system_md {
+        let system_content = format!(
+            "---\nname: {}\ndescription: A Bizforge workspace\ncreated_at: {}\n---\n\n# {}\n\nA Bizforge workspace.\n",
+            parent_name, chrono_now(), parent_name
+        );
+        match std::fs::write(&system_md_path, &system_content) {
+            Ok(()) => repaired.push("Created SYSTEM.md with default template".to_string()),
+            Err(e) => failed.push(format!("Failed to write SYSTEM.md: {}", e)),
+        }
+    }
+
+    // 4. Create COMPANY.md if missing
+    let company_md_path = bizforge_dir.join("COMPANY.md");
+    if !company_md_path.exists() {
+        let company_content = "---\nname: My Organization\n---\n\n# Organization\n\nConfigure your organization details here.\n";
+        match std::fs::write(&company_md_path, company_content) {
+            Ok(()) => repaired.push("Created COMPANY.md with default template".to_string()),
+            Err(e) => failed.push(format!("Failed to write COMPANY.md: {}", e)),
+        }
+    }
+
+    // Re-check health after repairs
+    let health_after = check_workspace_health(path).await?;
+
+    Ok(RepairResult {
+        repaired,
+        failed,
+        health_after,
+    })
 }
 
 // ── Adapter Detection ───────────────────────────────────────────────────────
@@ -1138,4 +1492,158 @@ async fn check_port_listening(port: u16) -> bool {
     tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port))
         .await
         .is_ok()
+}
+
+// ── OSA Stop ─────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OsaStopResult {
+    pub success: bool,
+    pub message: String,
+}
+
+#[tauri::command]
+pub async fn stop_osa() -> Result<OsaStopResult, String> {
+    // Find the OSA process by checking which port it's on, then use lsof to get PID
+    let mut osa_port: Option<u16> = None;
+    for port in [9090u16, 9089] {
+        if osa_health_check(port).await.is_some() {
+            osa_port = Some(port);
+            break;
+        }
+    }
+
+    let port = match osa_port {
+        Some(p) => p,
+        None => {
+            return Ok(OsaStopResult {
+                success: false,
+                message: "OSA is not running (no health response on 9090 or 9089)".to_string(),
+            });
+        }
+    };
+
+    // Use lsof to find the PID listening on the port
+    let lsof_output = tokio::process::Command::new("lsof")
+        .args(["-ti", &format!(":{}", port)])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run lsof: {}", e))?;
+
+    let pids_str = String::from_utf8_lossy(&lsof_output.stdout).trim().to_string();
+    if pids_str.is_empty() {
+        return Ok(OsaStopResult {
+            success: false,
+            message: format!(
+                "OSA responds on port {} but could not find process PID via lsof",
+                port
+            ),
+        });
+    }
+
+    // Kill each PID (there may be parent + child)
+    let mut killed = false;
+    for pid_str in pids_str.lines() {
+        if let Ok(pid) = pid_str.trim().parse::<u32>() {
+            let kill_result = tokio::process::Command::new("kill")
+                .args(["-TERM", &pid.to_string()])
+                .output()
+                .await;
+
+            if kill_result.is_ok() {
+                killed = true;
+            }
+        }
+    }
+
+    if !killed {
+        return Ok(OsaStopResult {
+            success: false,
+            message: format!("Failed to terminate OSA processes on port {}", port),
+        });
+    }
+
+    // Brief wait then verify it's down
+    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+    let still_running = osa_health_check(port).await.is_some();
+
+    Ok(OsaStopResult {
+        success: !still_running,
+        message: if still_running {
+            "Sent SIGTERM but OSA is still responding — may need SIGKILL".to_string()
+        } else {
+            format!("OSA stopped (was on port {})", port)
+        },
+    })
+}
+
+// ── System Resources ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SystemResourceInfo {
+    pub memory_total_gb: f64,
+    pub memory_used_gb: f64,
+    pub memory_free_gb: f64,
+    pub memory_used_pct: f64,
+    pub cpu_usage_pct: f64,
+    pub cpu_cores: usize,
+    pub cpu_brand: String,
+    pub os_name: String,
+    pub os_arch: String,
+    pub hostname: String,
+    pub pid: u32,
+    pub app_memory_mb: f64,
+    pub uptime_seconds: u64,
+}
+
+#[tauri::command]
+pub async fn get_system_resources() -> Result<SystemResourceInfo, String> {
+    use sysinfo::System;
+
+    let mut sys = System::new_all();
+    // Brief pause to allow CPU measurement to stabilize
+    std::thread::sleep(std::time::Duration::from_millis(200));
+    sys.refresh_all();
+
+    let total_mem = sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
+    let used_mem = sys.used_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
+    let free_mem = total_mem - used_mem;
+    let used_pct = if total_mem > 0.0 {
+        (used_mem / total_mem) * 100.0
+    } else {
+        0.0
+    };
+
+    let cpu_usage = sys.global_cpu_usage() as f64;
+    let cpu_cores = sys.cpus().len();
+    let cpu_brand = sys
+        .cpus()
+        .first()
+        .map(|c| c.brand().to_string())
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    // Get current process memory
+    let current_pid = sysinfo::get_current_pid().unwrap_or(sysinfo::Pid::from(0));
+    let app_memory_mb = sys
+        .process(current_pid)
+        .map(|p| p.memory() as f64 / (1024.0 * 1024.0))
+        .unwrap_or(0.0);
+
+    let uptime = System::uptime();
+
+    Ok(SystemResourceInfo {
+        memory_total_gb: (total_mem * 10.0).round() / 10.0,
+        memory_used_gb: (used_mem * 10.0).round() / 10.0,
+        memory_free_gb: (free_mem * 10.0).round() / 10.0,
+        memory_used_pct: (used_pct * 10.0).round() / 10.0,
+        cpu_usage_pct: (cpu_usage * 10.0).round() / 10.0,
+        cpu_cores,
+        cpu_brand,
+        os_name: System::name().unwrap_or_else(|| "Unknown".to_string()),
+        os_arch: std::env::consts::ARCH.to_string(),
+        hostname: System::host_name().unwrap_or_else(|| "Unknown".to_string()),
+        pid: std::process::id(),
+        app_memory_mb: (app_memory_mb * 10.0).round() / 10.0,
+        uptime_seconds: uptime,
+    })
 }

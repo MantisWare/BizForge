@@ -14,10 +14,14 @@
   };
 
   const TEMPLATE_NAMES: Record<TeamTemplate, string> = {
-    'solo':     'Solo Developer',
-    'dev-team': 'Dev Team',
-    'research': 'Research Lab',
-    'custom':   'Custom',
+    'solo':           'Solo Developer',
+    'dev-team':       'Dev Team',
+    'research':       'Research Lab',
+    'sales-engine':   'Sales Engine',
+    'content-studio': 'Content Studio',
+    'ops-center':     'Ops Center',
+    'data-science':   'Data Science',
+    'custom':         'Custom',
   };
 
   interface ProviderSetup {

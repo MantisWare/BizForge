@@ -103,7 +103,7 @@ Analyze the structure of your knowledge graph to find hidden patterns, risks, an
 
 | Cluster | Nodes | Key Entities | Connected to Main? |
 |---------|-------|--------------|--------------------|
-| Main | 142 | Roberto, MIOSA, pricing, Ed | — (is main) |
+| Main | 142 | Waldo, MIOSA, pricing, Ed | — (is main) |
 | Island A | 8 | ContentOS, Tejas, podcast | weakly (1 edge via Bennett) |
 | Island B | 3 | Tom, consortium, political | disconnected |
 | Island C | 2 | George, hiring-plan | disconnected |
@@ -117,7 +117,7 @@ Analyze the structure of your knowledge graph to find hidden patterns, risks, an
 
 | Entity | Degree | Type | Top Connections |
 |--------|--------|------|-----------------|
-| Roberto | 47 | person | every node |
+| Waldo | 47 | person | every node |
 | pricing | 23 | concept | ai-masters, miosa, revenue, accelerants |
 | Ed Honour | 18 | person | ai-masters, pricing, revenue |
 | Bennett | 15 | person | accelerants, content, cliniciq |

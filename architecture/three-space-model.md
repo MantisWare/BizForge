@@ -216,7 +216,7 @@ The three-space model maps onto existing workspace structures.
 | Space | Workspace Protocol Mapping | OptimalOS Mapping |
 |-------|---------------------------|-------------------|
 | **Self** | `SYSTEM.md` + `agents/` definitions + `skills/` | `CLAUDE.md` + `agents/` + `skills/` |
-| **Knowledge** | `reference/` + `signals/` + numbered folders | Numbered folders (`01-roberto/` through `12-os-accelerator/`) |
+| **Knowledge** | `reference/` + `signals/` + numbered folders | Numbered folders (`01-waldo/` through `12-os-accelerator/`) |
 | **Ops** | `engine/` state + `tasks/` + `rhythm/` working files | `engine/` + `tasks/` + `rhythm/today.md` |
 
 ### Boundary Enforcement in Practice
@@ -228,7 +228,7 @@ SELF (loads at session start, rarely written):
   CLAUDE.md ──── operating instructions
 
 KNOWLEDGE (searched on demand, written by pipeline):
-  01-roberto/context.md ──── persistent facts
+  01-waldo/context.md ──── persistent facts
   04-ai-masters/signals/ ── temporal knowledge
   notes/**/*.md ─────────── processed knowledge graph
 

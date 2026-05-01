@@ -1,24 +1,15 @@
 <script lang="ts">
   import type { AdapterType } from '$lib/stores/onboarding.svelte';
+  import { ADAPTER_REGISTRY } from '$lib/constants/adapters';
+  import AdapterInfoPopover from '$lib/components/shared/AdapterInfoPopover.svelte';
 
-  interface AdapterDef {
-    id: AdapterType;
-    name: string;
-    description: string;
-    recommended?: boolean;
-    useLogoImg?: boolean;
-  }
-
-  const ADAPTERS: AdapterDef[] = [
-    { id: 'osa',         name: 'OSA',           description: 'Elixir/OTP agent runtime by MIOSA — full orchestration, tools, budgets', recommended: true, useLogoImg: true },
-    { id: 'claude-code', name: 'Claude Code',   description: "Anthropic's CLI coding agent — terminal-based pair programming" },
-    { id: 'codex',       name: 'Codex',         description: "OpenAI's autonomous coding agent" },
-    { id: 'openclaw',    name: 'OpenClaw',      description: 'Open-source multi-agent coordination framework' },
-    { id: 'jidoclaw',    name: 'JidoClaw',      description: 'Elixir-native agent framework — lightweight, composable workflows' },
-    { id: 'hermes',      name: 'Hermes Agent',  description: 'Fast message-passing agent runtime for real-time systems' },
-    { id: 'bash',        name: 'Bash',          description: 'Simple shell script executor — run commands directly' },
-    { id: 'http',        name: 'HTTP',          description: 'Generic HTTP/REST adapter — connect any API endpoint' },
+  const ONBOARDING_IDS: AdapterType[] = [
+    'osa', 'claude-code', 'codex', 'openclaw', 'jidoclaw', 'hermes', 'bash', 'http',
   ];
+
+  const ADAPTERS = ONBOARDING_IDS
+    .map((id) => ADAPTER_REGISTRY.find((a) => a.id === id))
+    .filter((a) => a !== undefined);
 
   interface Props {
     selectedAdapter: AdapterType;
@@ -45,7 +36,7 @@
       >
         <div class="ob-adapter-header">
           <span class="ob-adapter-icon">
-            {#if a.useLogoImg}
+            {#if a.id === 'osa'}
               <img src="/OSAIconLogo.png" alt="OSA" width="18" height="18" style="border-radius:3px;object-fit:contain;" />
             {:else if a.id === 'claude-code'}
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M6 7l-4 3 4 3M14 7l4 3-4 3M12 5l-4 10"/></svg>
@@ -69,6 +60,7 @@
           {#if a.recommended}
             <span class="ob-badge ob-badge--accent">Recommended</span>
           {/if}
+          <AdapterInfoPopover adapterId={a.id} anchor="below" />
         </div>
         <p class="ob-adapter-desc">{a.description}</p>
       </button>

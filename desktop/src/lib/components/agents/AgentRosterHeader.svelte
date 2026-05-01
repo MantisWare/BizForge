@@ -6,9 +6,10 @@
 
   interface Props {
     onHire: () => void;
+    onHireTeam: () => void;
   }
 
-  let { onHire }: Props = $props();
+  let { onHire, onHireTeam }: Props = $props();
 
   let searchValue = $state('');
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -104,7 +105,20 @@
 
   <div class="arh-spacer" aria-hidden="true"></div>
 
-  <!-- Hire button -->
+  <!-- Hire buttons -->
+  <button
+    class="arh-hire-team-btn"
+    onclick={onHireTeam}
+    aria-label="Hire an agent team"
+  >
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="9" cy="7" r="3" />
+      <circle cx="15" cy="7" r="3" />
+      <path d="M3 21v-2a4 4 0 0 1 4-4h2" />
+      <path d="M15 15a4 4 0 0 1 4 4v2" />
+    </svg>
+    Hire Team
+  </button>
   <button
     class="arh-hire-btn"
     onclick={onHire}
@@ -228,6 +242,36 @@
 
   .arh-spacer {
     flex: 1;
+  }
+
+  /* Hire Team button */
+  .arh-hire-team-btn {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .arh-hire-team-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+  }
+
+  .arh-hire-team-btn:active {
+    transform: scale(0.98);
   }
 
   /* Hire button */

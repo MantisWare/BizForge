@@ -114,7 +114,7 @@
       id="ob-name"
       class="ob-input"
       type="text"
-      placeholder="e.g. Roberto"
+      placeholder="e.g. Waldo"
       autocomplete="off"
       bind:value={displayName}
     />

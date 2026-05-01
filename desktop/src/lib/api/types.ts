@@ -919,7 +919,20 @@ export interface SystemHealth {
   primary_gateway: string | null;
   gateway_status: "healthy" | "degraded" | "down";
   memory_mb: number;
+  heap_mb?: number;
+  heap_total_mb?: number;
   cpu_pct: number;
+}
+
+export interface RecentAiCall {
+  id: string;
+  model: string;
+  tokens_input: number;
+  tokens_output: number;
+  tokens_cache: number;
+  cost_cents: number;
+  agent_name: string;
+  inserted_at: string;
 }
 
 // ── Signals ───────────────────────────────────────────────────────────────────

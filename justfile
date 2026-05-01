@@ -107,8 +107,28 @@ app: _ensure-dirs
     done
     printf "  Backend ready.\n"
 
+    # Start Vite dev server first and wait for it to be reachable.
+    # This prevents the Tauri webview from loading a blank page because
+    # WKWebView (macOS) doesn't auto-retry failed initial loads.
+    printf "Starting Vite dev server on :5200...\n"
+    cd {{desktop}} && npm run dev > {{log_dir}}/vite.log 2>&1 &
+    echo $! > {{pid_dir}}/vite.pid
+    printf "  Vite PID: %s\n" "$(cat {{pid_dir}}/vite.pid)"
+
+    for i in $(seq 1 30); do
+        if curl -sf http://127.0.0.1:5200 >/dev/null 2>&1; then
+            printf "  Vite ready.\n"
+            break
+        fi
+        if [ "$i" -eq 30 ]; then
+            printf "  Vite may still be starting (continuing anyway).\n"
+        fi
+        sleep 1
+    done
+
+    # Launch Tauri with beforeDevCommand blanked out (Vite is already running).
     printf "Starting Tauri desktop app...\n"
-    cd {{desktop}} && npm run tauri:dev > {{log_dir}}/desktop.log 2>&1 &
+    cd {{desktop}} && npx tauri dev --config '{"build":{"beforeDevCommand":""}}' > {{log_dir}}/desktop.log 2>&1 &
     echo $! > {{pid_dir}}/desktop.pid
     printf "  Tauri app launching (PID %s).\n" "$(cat {{pid_dir}}/desktop.pid)"
 
@@ -143,7 +163,7 @@ stop:
     #!/usr/bin/env bash
     set -euo pipefail
     stopped=0
-    for svc in backend desktop; do
+    for svc in backend desktop vite; do
         pidfile="{{pid_dir}}/${svc}.pid"
         if [ -f "$pidfile" ]; then
             pid=$(cat "$pidfile")
@@ -174,16 +194,18 @@ stop-backend:
     fi
     lsof -ti:9089 2>/dev/null | xargs kill 2>/dev/null || true
 
-# Stop desktop only
+# Stop desktop only (Tauri + Vite)
 stop-desktop:
     #!/usr/bin/env bash
     set -euo pipefail
-    pidfile="{{pid_dir}}/desktop.pid"
-    if [ -f "$pidfile" ]; then
-        pid=$(cat "$pidfile")
-        kill "$pid" 2>/dev/null && printf "  Stopped desktop (PID %s)\n" "$pid" || true
-        rm -f "$pidfile"
-    fi
+    for svc in desktop vite; do
+        pidfile="{{pid_dir}}/${svc}.pid"
+        if [ -f "$pidfile" ]; then
+            pid=$(cat "$pidfile")
+            kill "$pid" 2>/dev/null && printf "  Stopped %s (PID %s)\n" "$svc" "$pid" || true
+            rm -f "$pidfile"
+        fi
+    done
     lsof -ti:5200 2>/dev/null | xargs kill 2>/dev/null || true
 
 # Restart backend (stop + start)
@@ -197,7 +219,7 @@ status:
     #!/usr/bin/env bash
     set -euo pipefail
     printf "Services:\n"
-    for svc in backend desktop; do
+    for svc in backend desktop vite; do
         pidfile="{{pid_dir}}/${svc}.pid"
         if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
             printf "  %-10s running  (PID %s)\n" "$svc" "$(cat "$pidfile")"
@@ -342,9 +364,41 @@ headless-logs:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 
-# Production Tauri app bundle (.app on macOS)
+# Production Tauri app bundle (.app on macOS, unsigned)
 build:
     cd {{desktop}} && npm run tauri:build
+
+# Signed + notarized build (.app + .dmg ready for distribution)
+# Requires Apple signing vars in .env — see .env.example
+package:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Validate required signing environment
+    missing=()
+    [[ -z "${APPLE_SIGNING_IDENTITY:-}" ]] && missing+=("APPLE_SIGNING_IDENTITY")
+    [[ -z "${APPLE_CERTIFICATE:-}" ]]      && missing+=("APPLE_CERTIFICATE")
+    [[ -z "${APPLE_ID:-}" ]]               && missing+=("APPLE_ID")
+    [[ -z "${APPLE_PASSWORD:-}" ]]         && missing+=("APPLE_PASSWORD")
+    [[ -z "${APPLE_TEAM_ID:-}" ]]          && missing+=("APPLE_TEAM_ID")
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        printf "\033[31mError:\033[0m Missing required signing variables in .env:\n"
+        for v in "${missing[@]}"; do printf "  • %s\n" "$v"; done
+        printf "\nSee .env.example for setup instructions.\n"
+        exit 1
+    fi
+    printf "\033[36m▸ Building signed Bizforge package...\033[0m\n"
+    printf "  Identity : %s\n" "$APPLE_SIGNING_IDENTITY"
+    printf "  Team ID  : %s\n" "$APPLE_TEAM_ID"
+    printf "  Apple ID : %s\n" "$APPLE_ID"
+    cd {{desktop}} && npm run tauri:build
+    # Print output location
+    app_path=$(find src-tauri/target/release/bundle -name "*.dmg" 2>/dev/null | head -1)
+    if [[ -n "$app_path" ]]; then
+        printf "\n\033[32m✓ Package ready:\033[0m %s\n" "$app_path"
+        printf "  Size: %s\n" "$(du -h "$app_path" | cut -f1)"
+    else
+        printf "\n\033[33m⚠ Build completed but no .dmg found. Check build output above.\033[0m\n"
+    fi
 
 # Build and package the Tauri desktop app (alias for build)
 release: build

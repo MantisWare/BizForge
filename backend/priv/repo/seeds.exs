@@ -69,7 +69,7 @@ IO.puts("[1/27] Users...")
 
 Repo.insert(
   User.changeset(%User{}, %{
-    name: "Roberto Luna",
+    name: "Waldo Marais",
     email: "admin@bizforge.dev",
     password: "bizforge123",
     role: "admin"

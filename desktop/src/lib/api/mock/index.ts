@@ -78,7 +78,7 @@ import {
   testProvider as testMockProvider,
   setProviderDefault,
 } from "./providers";
-import { mockUsers } from "./users";
+import { mockUsers, mockUserById, mockCreateUser, mockUpdateUser, mockDeleteUser } from "./users";
 import { mockConfig } from "./config";
 import { mockTemplates } from "./templates";
 import { mockSecrets } from "./secrets";
@@ -1851,12 +1851,31 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   // ── Users ─────────────────────────────────────────────────────────────────────
   {
     pattern: /^\/users\/([^/]+)$/,
-    handler: (path) => {
+    handler: (path, options) => {
       const id = path.split("/")[2];
-      return mockUsers().find((u) => u.id === id) ?? mockUsers()[0];
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "DELETE") {
+        mockDeleteUser(id);
+        return undefined;
+      }
+      if (method === "PATCH" || method === "PUT") {
+        const body = options.body ? JSON.parse(options.body as string) : {};
+        const updated = mockUpdateUser(id, body);
+        return updated ?? mockUserById(id);
+      }
+      return mockUserById(id) ?? mockUsers()[0];
     },
   },
-  { pattern: /^\/users$/, handler: () => ({ users: mockUsers() }) },
+  {
+    pattern: /^\/users$/,
+    handler: (_path, options) => {
+      if ((options.method ?? "GET").toUpperCase() === "POST") {
+        const body = options.body ? JSON.parse(options.body as string) : {};
+        return mockCreateUser(body);
+      }
+      return { users: mockUsers() };
+    },
+  },
 
   // ── Secrets ──────────────────────────────────────────────────────────────────
   {
@@ -2063,8 +2082,13 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       return {
         id: "ra-1",
         user_id: "user-admin",
+        user_name: "Admin User",
+        user_email: "admin@bizforge.dev",
         role: "admin",
-        scope: "global",
+        entity_type: "global",
+        entity_id: null,
+        assigned_by: "system",
+        created_at: "2026-01-01T00:00:00Z",
       };
     },
   },
@@ -2072,11 +2096,16 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     pattern: /^\/access(\/assign)?$/,
     handler: (_path, options) => {
       if ((options.method ?? "GET").toUpperCase() === "POST") {
+        const body = options.body ? JSON.parse(options.body as string) : {};
         return {
           id: `ra-new-${Date.now()}`,
-          user_id: "user-admin",
-          role: "admin",
-          scope: "global",
+          user_id: body.user_id ?? "user-unknown",
+          user_name: body.user_name ?? "Unknown",
+          user_email: body.user_email ?? "",
+          role: body.role ?? "member",
+          entity_type: body.entity_type ?? "global",
+          entity_id: body.entity_id ?? null,
+          assigned_by: "current-user",
           created_at: new Date().toISOString(),
         };
       }
@@ -2086,20 +2115,22 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
             id: "ra-1",
             user_id: "user-admin",
             user_name: "Admin User",
+            user_email: "admin@bizforge.dev",
             role: "admin",
-            scope: "global",
-            resource_type: null,
-            resource_id: null,
+            entity_type: "global",
+            entity_id: null,
+            assigned_by: "system",
             created_at: "2026-01-01T00:00:00Z",
           },
           {
             id: "ra-2",
             user_id: "user-dev",
             user_name: "Dev User",
+            user_email: "dev@bizforge.dev",
             role: "member",
-            scope: "workspace",
-            resource_type: "workspace",
-            resource_id: "ws-osa-dev",
+            entity_type: "organization",
+            entity_id: "ws-osa-dev",
+            assigned_by: "user-admin",
             created_at: "2026-01-15T00:00:00Z",
           },
         ],

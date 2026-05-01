@@ -44,6 +44,7 @@ defmodule BizforgeWeb.Router do
     pipe_through [:api, :authenticated]
 
     get "/dashboard", DashboardController, :show
+    get "/dashboard/recent-ai-calls", DashboardController, :recent_ai_calls
     get "/adapters", AdapterController, :index
 
     # Workspaces

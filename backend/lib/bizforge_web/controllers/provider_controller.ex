@@ -256,7 +256,7 @@ defmodule BizforgeWeb.ProviderController do
     base = String.trim_trailing(endpoint || "", "/")
 
     case slug do
-      "anthropic" ->
+      slug when slug in ["anthropic", "claude-code"] ->
         {base <> "/v1/models",
          [{"x-api-key", api_key || ""}, {"anthropic-version", "2023-06-01"}]}
 

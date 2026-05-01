@@ -12,6 +12,15 @@
 
   let active = $derived(workspaceStore.activeWorkspace);
   let workspaces = $derived(workspaceStore.workspaces);
+  const healthReport = $derived(workspaceStore.healthReport);
+  const healthErrors = $derived(healthReport?.issues.filter((i) => i.severity === 'error').length ?? 0);
+  const healthWarnings = $derived(healthReport?.issues.filter((i) => i.severity === 'warning').length ?? 0);
+  const healthColor = $derived(
+    healthReport === null ? 'none'
+    : healthErrors > 0 ? 'error'
+    : healthWarnings > 0 ? 'warn'
+    : 'ok'
+  );
 
   /** Display-friendly name: if the stored name is just a path fragment like "~", derive a better label */
   function displayName(ws: { name: string; path: string }): string {
@@ -63,8 +72,7 @@
       if (!selected || typeof selected !== 'string') return;
 
       const scanned = await workspaceStore.scanWorkspace(selected);
-      if (!scanned) {
-        toastStore.error('Not a workspace', 'No .bizforge/ directory found.');
+      if (scanned === null) {
         return;
       }
       const wsEntry = {
@@ -145,6 +153,15 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
       </svg>
+      {#if healthColor !== 'none'}
+        <span
+          class="ws-health-dot"
+          class:ws-health-dot--ok={healthColor === 'ok'}
+          class:ws-health-dot--warn={healthColor === 'warn'}
+          class:ws-health-dot--error={healthColor === 'error'}
+          title={healthColor === 'ok' ? 'Workspace healthy' : `${healthErrors} error${healthErrors !== 1 ? 's' : ''}, ${healthWarnings} warning${healthWarnings !== 1 ? 's' : ''}`}
+        ></span>
+      {/if}
     </span>
     <span class="ws-trigger-label">
       {#if active}
@@ -266,6 +283,29 @@
     flex-shrink: 0;
     color: var(--text-tertiary);
     display: flex;
+    position: relative;
+  }
+
+  .ws-health-dot {
+    position: absolute;
+    top: -2px;
+    right: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid var(--bg-primary);
+  }
+
+  .ws-health-dot--ok {
+    background: #22c55e;
+  }
+
+  .ws-health-dot--warn {
+    background: #eab308;
+  }
+
+  .ws-health-dot--error {
+    background: #ef4444;
   }
 
   .ws-trigger-label {

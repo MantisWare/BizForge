@@ -80,10 +80,10 @@ class MonitorStore {
   taskCounts = $derived({
     total: this.issues.length,
     inProgress: this.issues.filter((i) => i.status === 'in_progress').length,
-    completed: this.issues.filter((i) => i.status === 'done' || i.status === 'closed').length,
-    blocked: this.issues.filter((i) => i.status === 'blocked').length,
-    failed: this.issues.filter((i) => i.status === 'failed').length,
-    open: this.issues.filter((i) => i.status === 'open' || i.status === 'backlog').length,
+    completed: this.issues.filter((i) => (i.status as string) === 'done' || (i.status as string) === 'closed').length,
+    blocked: this.issues.filter((i) => (i.status as string) === 'blocked').length,
+    failed: this.issues.filter((i) => (i.status as string) === 'failed').length,
+    open: this.issues.filter((i) => (i.status as string) === 'open' || i.status === 'backlog').length,
   });
 
   // Costs

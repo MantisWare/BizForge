@@ -1,12 +1,5 @@
-<script lang="ts">
-  import {
-    FEATURED_PROVIDERS,
-    MORE_PROVIDERS,
-    LOCAL_RUNTIMES,
-    findProvider,
-    getDefaultEndpoint,
-    type LocalRuntime,
-  } from '$lib/data/provider-catalog';
+<script lang="ts" module>
+  import type { LocalRuntime } from '$lib/data/provider-catalog';
 
   export interface ProviderSetup {
     slug: string;
@@ -14,6 +7,16 @@
     localRuntime?: LocalRuntime;
     endpoint?: string;
   }
+</script>
+
+<script lang="ts">
+  import {
+    FEATURED_PROVIDERS,
+    MORE_PROVIDERS,
+    LOCAL_RUNTIMES,
+    findProvider,
+    getDefaultEndpoint,
+  } from '$lib/data/provider-catalog';
 
   interface Props {
     selectedProviders: ProviderSetup[];

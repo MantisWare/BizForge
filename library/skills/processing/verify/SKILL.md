@@ -87,7 +87,7 @@ Ensure every piece of content in the knowledge base meets structural and semanti
 
 ### Warnings (should fix)
 4. **miosa/context.md** — L0 abstract fidelity: 0.52 (content has diverged significantly)
-5. **roberto/context.md** — Last updated 94 days ago (staleness threshold: 90 days)
+5. **waldo/context.md** — Last updated 94 days ago (staleness threshold: 90 days)
 6. **content-creators/signals/podcast-plan.md** — Duplicate content overlap (87%) with `content-creators/signals/mosaic-plan.md`
 
 ### Info

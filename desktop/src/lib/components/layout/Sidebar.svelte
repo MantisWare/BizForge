@@ -10,7 +10,6 @@
   import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
   import SidebarNavItem from './SidebarNavItem.svelte';
   import SidebarSection from './SidebarSection.svelte';
-  import { getIconDef } from '$lib/utils/agent-icons';
 
   interface User {
     name: string;
@@ -26,6 +25,7 @@
 
   let { isCollapsed = $bindable(), onToggle, user = null }: Props = $props();
 
+  let iconFailed = $state(false);
   let currentPath = $derived($page.url.pathname as string);
 
   const DIVISION_META: Record<string, { icon: string; label: string; order: number }> = {
@@ -95,14 +95,29 @@
 <aside class="sb-sidebar" class:collapsed={isCollapsed} aria-label="Main navigation">
   <!-- Toggle button -->
   <div class="sb-toggle-row">
-    <img
-      class="sb-brand-icon"
-      class:sb-brand-icon--expanded={!isCollapsed}
-      src="/OSAIconLogo.png"
-      alt="BizForge"
-      width={isCollapsed ? 28 : 34}
-      height={isCollapsed ? 28 : 34}
-    />
+    {#if iconFailed}
+      <div
+        class="sb-brand-icon sb-brand-fallback"
+        class:sb-brand-icon--expanded={!isCollapsed}
+        role="img"
+        aria-label="BizForge"
+      >
+        <svg viewBox="0 0 32 32" fill="none" width="100%" height="100%">
+          <rect width="32" height="32" rx="6" fill="#f26522" />
+          <text x="16" y="22" text-anchor="middle" font-size="18" font-weight="700" fill="#fff" font-family="system-ui">B</text>
+        </svg>
+      </div>
+    {:else}
+      <img
+        class="sb-brand-icon"
+        class:sb-brand-icon--expanded={!isCollapsed}
+        src="/OSAIconLogo.png"
+        alt="BizForge"
+        width={isCollapsed ? 28 : 34}
+        height={isCollapsed ? 28 : 34}
+        onerror={() => { iconFailed = true; }}
+      />
+    {/if}
     <span class="sb-toggle-spacer"></span>
     <button
       class="sb-toggle"
@@ -175,7 +190,6 @@
                 .flatMap(t => (t.agents ?? []).map(a => a.id))
             )}
             {#each tree.divisions as division (division.id)}
-              {@const divMeta = DIVISION_META[division.slug] ?? DIVISION_META[division.name?.toLowerCase()] ?? undefined}
               {@const divAgentCount = (division.departments ?? [])
                 .flatMap(dept => dept.teams ?? [])
                 .flatMap(t => t.agents ?? []).length}
@@ -400,6 +414,12 @@
     width: 34px;
     height: 34px;
     margin-left: 2px;
+  }
+
+  .sb-brand-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .sb-toggle-spacer {

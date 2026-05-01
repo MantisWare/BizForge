@@ -665,8 +665,8 @@ rules to materialize inferred triples:
 If: (Ed works_on AI-Masters) AND (AI-Masters is_part_of Lunivate)
 Then infer: (Ed works_on Lunivate)    ← transitive closure
 
-If: (Ed reports_to Roberto) AND (reports_to subPropertyOf works_with)
-Then infer: (Ed works_with Roberto)   ← property hierarchy
+If: (Ed reports_to Waldo) AND (reports_to subPropertyOf works_with)
+Then infer: (Ed works_with Waldo)   ← property hierarchy
 ```
 
 Semi-naive evaluation: only fires rules on NEW triples from the previous round.

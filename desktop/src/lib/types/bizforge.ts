@@ -127,6 +127,30 @@ export interface BizforgeSkillDef {
   file_path: string;
 }
 
+// ── Workspace Health ─────────────────────────────────────────────────────────
+
+export interface HealthIssue {
+  severity: "error" | "warning" | "info";
+  /** Machine-readable code: missing_root, missing_dir, missing_file, corrupt_frontmatter, etc. */
+  code: string;
+  message: string;
+  /** Affected file or directory path */
+  path: string;
+  repairable: boolean;
+}
+
+export interface WorkspaceHealthReport {
+  healthy: boolean;
+  issues: HealthIssue[];
+  checked_at: string;
+}
+
+export interface RepairResult {
+  repaired: string[];
+  failed: string[];
+  health_after: WorkspaceHealthReport;
+}
+
 // ── Filesystem Events (from Tauri IPC) ───────────────────────────────────────
 
 export interface BizforgeFsEvent {

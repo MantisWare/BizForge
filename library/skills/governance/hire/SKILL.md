@@ -99,7 +99,7 @@ Bring a new agent into the workspace by selecting from the agent library, custom
 | Adapter | claude-opus |
 | Budget | 80,000 tokens (~$12.00) |
 | Scope | node:miosa (read-only), processed/ (read-write) |
-| Approval | req-c3d4 (approved by Roberto) |
+| Approval | req-c3d4 (approved by Waldo) |
 | Status | onboarded, running |
 | Initial task | "Research AI patent landscape for MIOSA positioning" |
 

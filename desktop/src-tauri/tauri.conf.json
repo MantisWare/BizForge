@@ -50,7 +50,16 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null,
+      "minimumSystemVersion": "10.15"
+    },
+    "category": "DeveloperTool",
+    "shortDescription": "AI Workforce Command Center",
+    "longDescription": "Bizforge is a desktop command center for managing AI agent workforces — deploy, orchestrate, and monitor autonomous agents across any workspace."
   },
   "plugins": {}
 }

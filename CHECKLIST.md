@@ -127,6 +127,57 @@ Active development phases and their progress.
 - [x] Terminal store for tab state management and scrollback history
 - [x] Fix Organization/hierarchy page — guard against undefined divisions, add error state with retry, add empty state CTA button
 - [x] Add 15s fetch timeout to prevent indefinite API hangs
+- [x] Enforce single app instance — focus existing window instead of opening duplicates (`tauri-plugin-single-instance`)
+- [x] Fix window size restore — preserve non-maximized geometry when window is maximized, prevent fullscreen-on-restart
+- [x] Persist session state to Tauri disk store — auth token, onboarding status, display name survive webview localStorage resets
+- [x] Add retry logic to auth token verification — tolerate backend warm-up during cold start
+- [x] Fix workspace onboarding in browser mode — Choose button now opens prompt dialog, auto-detect existing backend workspaces, reuse instead of always creating
+- [x] Fix tilde (~) expansion in Rust IPC — all filesystem commands (scan, scaffold, list, watch) now resolve ~ to $HOME
+- [x] Fix workspace directory never created — scaffold runs when backend knows the workspace but disk directory is missing
+- [x] Fix duplicate org creation error on restart — check for existing org before creating
+- [x] Fix sidebar brand icon — add SVG fallback when image fails to load
+- [x] Fix blank white window on Tauri dev restart — Rust-side dev server readiness poller reloads webviews if Vite wasn't ready at launch; `just app` pre-starts Vite and waits before launching Tauri
+- [x] Fix auth bounce on restart — token verification now distinguishes 401 (clear token) from transient errors (trust stored token); increased retry attempts (4) with longer back-off; runtime 401s now clear persisted token from Tauri store + localStorage
+
+### 10b. Adapter Info & Footer Enhancements
+
+- [x] Add adapter comparison matrix to README (Sessions, Concurrent, Capabilities, Best For, Requires columns)
+- [x] Create centralized adapter registry (`desktop/src/lib/constants/adapters.ts`) — single source of truth for all adapter metadata
+- [x] Add per-adapter info icon popover to onboarding adapter picker and hire agent adapter picker (capabilities, session/concurrent support, install hint)
+- [x] Add OSA runtime indicator to app footer with StatusDot (green/red) and label
+- [x] Add OSA start/stop/restart dropdown from footer (start via `setup_osa`, stop via new `stop_osa` Tauri command)
+- [x] Add `stop_osa` Tauri command — finds OSA PID via lsof, sends SIGTERM, verifies shutdown
+- [x] Add `sysinfo` crate and `get_system_resources` Tauri command — real OS memory, CPU, cores, arch, hostname, PID, uptime
+- [x] Add Resource Monitor popover from footer memory label — system memory, BizForge memory (with heap breakdown), CPU usage, recent AI calls list
+- [x] Add `/dashboard/recent-ai-calls` backend endpoint — queries CostEvent with model, tokens, cost, agent name, timestamp
+- [x] Add heap breakdown (`heap_mb`, `heap_total_mb`) to dashboard system_health API response
+- [x] Add UI Zoom control to app footer — popover with slider (50%–150%), +/- buttons, numeric input, preset buttons (75/90/100/110/125%), Reset button, persisted to localStorage
+
+### 11. Hire Agent Team
+
+- [x] Extract shared team template data (`TEAM_TEMPLATES`, `TEMPLATE_AGENTS`) into `desktop/src/lib/data/team-templates.ts`
+- [x] Refactor onboarding `Team.svelte` to import from shared module
+- [x] Add `createAgentBatch` method to `AgentsStore` for bulk agent creation
+- [x] Create `TeamTemplateGrid.svelte` — template selection card grid (step 1)
+- [x] Create `TeamAgentReview.svelte` — agent list with inline edit/remove (step 2)
+- [x] Create `HireTeamDialog.svelte` — multi-step modal (template select → review agents → shared config → bulk hire)
+- [x] Add "Hire Team" button to `AgentRosterHeader` alongside existing "Hire Agent"
+- [x] Wire `HireTeamDialog` into agents roster page with open/close state
+- [x] Support optional backend Team entity creation and agent membership assignment
+- [x] Add 5 new team templates: Domo Platform (4 agents), Product Squad (4), Customer Success (3), Legal & Compliance (3), Creative Agency (4)
+- [x] Add SVG icon to each team template card (using agent-icons registry) in both Hire Team modal and onboarding
+- [x] Add embedded domain-tailored PM agent to all 9 execution teams (Dev, Domo, Ops, Data Science, Sales, Content, Creative, Customer Success, Legal)
+- [x] System prompt template quick-fill buttons: 8 categories (Engineering, PM, Research, Writing, Strategy, Design, Specialist, General) with 4-5 templates each, role-auto-matched in both Hire Agent and Hire Team dialogs
+
+### 12. User Management & Access Control
+
+- [x] Add "Add User" button and dialog to Users page (name, email, role, optional password)
+- [x] Add inline role selector (dropdown) per user row to elevate/reduce access levels
+- [x] Add "Edit" button per user with dialog for name/email changes
+- [x] Add "Delete" button with two-step confirmation per user
+- [x] Update mock/users.ts with localStorage-backed CRUD persistence for offline mode
+- [x] Update mock/index.ts to handle POST/PATCH/DELETE on `/users` routes
+- [x] Fix mock access assignments to return correct `RoleAssignment` shape (`entity_type`, `user_email`, `assigned_by`)
 
 ---
 
@@ -248,8 +299,67 @@ Active development phases and their progress.
 - [x] Auto-select first model if current model not in fetched list
 - [x] Show model count in hint text when models are available
 
+### 5. Provider Persistence & Startup Loading
+
+- [x] Load providers on app startup in `+layout.svelte` (fetched alongside agents/projects)
+- [x] Add localStorage cache to ProvidersStore — instant hydration on load, survives page refresh
+- [x] Persist provider state after every mutation (create, update, delete, test, model fetch)
+- [x] Mock API layer persists providers to localStorage (survives reload in dev/offline mode)
+- [x] Providers associated with workspace via `workspace_id` (user-scoped in backend)
+
 ---
 
+## Phase: Claude Code Provider Support
+
+> Add Claude Code (Anthropic's agentic coding assistant) as a supported AI provider in the provider catalog and mock layer.
+
+### 1. Provider Registration
+
+- [x] Add `claude-code` slug to `FEATURED_PROVIDERS` in `provider-catalog.ts` with Anthropic endpoint and default Claude models
+- [x] Add Claude Code mock provider entry in `mock/providers.ts` for dev/offline mode
+
+---
+
+## Phase: Workspace Health Check & Auto-Repair
+
+> Validate .bizforge/ directory structure, detect missing/corrupt files, and auto-repair them.
+
+### 1. Rust IPC Commands
+
+- [x] Add `WorkspaceHealthReport`, `HealthIssue`, `RepairResult` structs to `filesystem.rs`
+- [x] Implement `check_workspace_health` IPC — validates root, subdirs, SYSTEM.md, COMPANY.md, agent/schedule/skill files
+- [x] Implement `repair_workspace` IPC — creates missing dirs/files, backs up corrupt files, re-checks after repair
+- [x] Register both commands in `lib.rs` invoke_handler
+
+### 2. TypeScript Types
+
+- [x] Add `HealthIssue`, `WorkspaceHealthReport`, `RepairResult` interfaces to `bizforge.ts`
+
+### 3. Workspace Store Integration
+
+- [x] Add `healthReport` state to `WorkspaceStore`
+- [x] Add `checkHealth()` method — invokes IPC, updates state, logs results
+- [x] Add `repairWorkspace()` method — invokes IPC, updates health, shows toast, re-scans agents
+- [x] Auto-check health after every `scanAndLoadAgents` call (workspace switch, file watcher, startup)
+
+### 4. Auto-Scaffold on Scan
+
+- [x] `scan_bizforge_dir` (Rust) auto-creates `.bizforge/` directory structure and `SYSTEM.md` when path doesn't exist
+- [x] `scanWorkspace` (TS) auto-calls `repairWorkspace` on scan failure — creates dirs, retries scan, shows success toast
+- [x] `createWorkspace` (TS) calls `scaffold_bizforge_dir` IPC to create `.bizforge/` on disk when creating a new workspace
+- [x] `WorkspaceSwitcher` no longer shows redundant "Not a workspace" error — auto-repair handles it
+
+### 5. Desktop UI
+
+- [x] Create `WorkspaceHealth.svelte` panel — status summary, issue list with severity icons, repair button, re-check button
+- [x] Add health dot indicator to `WorkspaceSwitcher` (green/yellow/red based on report)
+- [x] Add "Workspace" tab to Settings page containing the health panel
+
+---
+
+> **Auto-updated by Cursor:** Fixed window size restore (non-maximized geometry preserved) and session persistence (auth token + onboarding state backed by Tauri disk store, token verification retries during cold start) on 2026-05-01.
+> **Auto-updated by Cursor:** Added single-instance enforcement via tauri-plugin-single-instance — duplicate launches now focus the existing window instead of opening a new one on 2026-05-01.
+> **Auto-updated by Cursor:** Added Claude Code as a featured AI provider — catalog entry with Anthropic endpoint/models and mock provider seed data on 2026-05-01.
 > **Auto-updated by Cursor:** Created headless phase checklist on 2026-04-30.
 > **Auto-updated by Cursor:** Implemented CLI Foundation, Headless Backend Runtime, Process Management, and initial Documentation on 2026-04-30.
 > **Auto-updated by Cursor:** Added Domo Developer Agent & Skills Suite — 4 agents, 12 skills, and desktop UI registration on 2026-04-30.
@@ -265,3 +375,14 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Rebranded all accent colors from purple/violet/indigo to orange — auth page buttons/halo, global CSS tokens (dark/glass/color/light themes), 40+ page and component files on 2026-04-30.
 > **Auto-updated by Cursor:** Fixed cloud provider CORS errors and connection failures — model discovery now fully proxied through backend with provider-specific paths (Groq /openai/v1, DeepSeek /models, Google /v1beta), correct auth (Anthropic x-api-key, Google ?key=, others Bearer), saved-provider key from DB via fetchModelsById, and fixed catalog endpoints (Together .ai, Cohere .com, Fireworks /inference) on 2026-04-30.
 > **Auto-updated by Cursor:** Fixed Organization/hierarchy page crash — divisions undefined guard, error state with retry button, empty state CTA, and 15s API fetch timeout on 2026-04-30.
+> **Auto-updated by Cursor:** Added provider persistence — providers load on app startup, localStorage cache for instant hydration and offline survival, mock layer persists CRUD to localStorage on 2026-04-30.
+> **Auto-updated by Cursor:** Fixed onboarding workspace selection in browser mode — Choose button now opens a prompt dialog (was silently failing without Tauri), existing workspaces are auto-detected from backend and pre-fill name/description, launch flow reuses existing workspace instead of always creating on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed blank white window on Tauri dev restart — added Rust-side dev server readiness poller that reloads webviews when Vite comes up late, and updated `just app` to pre-start Vite with readiness wait before launching Tauri (blanked `beforeDevCommand` to avoid double Vite) on 2026-05-01.
+> **Auto-updated by Cursor:** Added Workspace Health Check & Auto-Repair — Rust IPC commands (check_workspace_health, repair_workspace) validate .bizforge/ structure and auto-fix missing dirs/files, workspace store integration with auto-check on scan, WorkspaceHealth panel in Settings, and health dot indicator in WorkspaceSwitcher on 2026-05-01.
+> **Auto-updated by Cursor:** Added `just package` recipe for signed/notarized macOS distribution — validates APPLE_SIGNING_IDENTITY, APPLE_CERTIFICATE, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID from .env before building; created .env.example template with all signing/notarization/updater variables; added macOS bundle config (category, descriptions, minimumSystemVersion) to tauri.conf.json on 2026-05-01.
+> **Auto-updated by Cursor:** Workspace auto-scaffold on scan — scan_bizforge_dir (Rust) and scanWorkspace (TS) now auto-create .bizforge/ directory structure when missing instead of failing with error toast; createWorkspace scaffolds on disk via IPC on 2026-05-01.
+> **Auto-updated by Cursor:** Added Hire Agent Team feature — "Hire Team" button on agents page opens a multi-step modal to select a team template, review/customize agents, configure shared adapter/model/budget, and bulk-create all agents with optional team grouping on 2026-05-01.
+> **Auto-updated by Cursor:** Added full user management — Users page now supports add/edit/delete users and inline role elevation/reduction (admin/member/viewer); mock layer updated with localStorage-backed CRUD and correct RoleAssignment shape on 2026-05-01.
+> **Auto-updated by Cursor:** Expanded Hire Team templates from 7 to 12 — added Domo Platform (4 Domo-specialised agents with real skill references), Product Squad (PM, UX researcher, designer, tech writer), Customer Success (support, onboarding, retention), Legal & Compliance (contracts, compliance, policy), and Creative Agency (creative director, graphic designer, video producer, brand copywriter) on 2026-05-01.
+> **Auto-updated by Cursor:** Added adapter info icons, OSA footer indicator with start/stop/restart, Resource Monitor popover (system RAM, BizForge memory, CPU, recent AI calls), centralized adapter registry, adapter comparison matrix in README, sysinfo Tauri command for real OS metrics, and recent-ai-calls backend endpoint on 2026-05-01.
+> **Auto-updated by Cursor:** Added UI Zoom control to app footer — slider, +/- buttons, numeric input, preset quick-select, Reset button, persisted to localStorage, applied via document.documentElement.style.zoom on 2026-05-01.

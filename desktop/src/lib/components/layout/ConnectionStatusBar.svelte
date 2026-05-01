@@ -1,7 +1,6 @@
 <!-- src/lib/components/layout/ConnectionStatusBar.svelte -->
 <script lang="ts">
   import { connectionStore } from '$lib/stores/connection.svelte';
-  import { isMockEnabled } from '$api/client';
 
   interface Props {
     alwaysShow?: boolean;

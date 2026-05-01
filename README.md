@@ -453,6 +453,22 @@ The Command Center auto-detects installed adapters and provides one-click setup 
 
 All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
 
+### Adapter Comparison Matrix
+
+| Adapter | Sessions | Concurrent | Capabilities | Best For | Requires |
+|---------|----------|------------|--------------|----------|----------|
+| **OSA** | Yes | Yes | chat, tools, code execution, web search, memory, delegation | Full orchestration — native BizForge runtime with budgets, tool calls, memory, and agent-to-agent delegation | Running OSA instance |
+| **Claude Code** | Yes | Yes | chat, tools, code execution, file edit, web search | Terminal-based pair programming with rich token tracking and web search | `claude` CLI binary |
+| **Codex** | Yes | Yes | chat, tools, code execution, file edit | OpenAI's autonomous coding agent for isolated code generation/editing | `codex` CLI binary |
+| **Bash** | No | Yes | code execution, file edit | Deterministic shell tasks — scripts, builds, health checks; zero AI overhead | Nothing (built-in) |
+| **HTTP** | No | Yes | chat | Universal API glue — wrap any REST endpoint, webhook, or microservice as an agent | A `url` in agent config |
+| **OpenClaw** | Yes | No | code edit, file read/write, shell execution, web search | Open-source multi-agent coordination with code editing and web search | `openclaw` binary |
+| **Cursor** | Yes | No | code edit, file read/write, code completion | IDE-grade context-aware code editing via Cursor's AI engine | Cursor IDE + CLI in PATH |
+| **Gemini** | Yes | Yes | text generation, multimodal, code generation, analysis | Google's multimodal AI (text + images); API-key only, no binary install | `GEMINI_API_KEY` env var |
+| **Aider** | No | Yes | code edit, file read/write, git operations | Git-aware code editing with repo structure understanding and diff context | `aider` binary via pip |
+| **JidoClaw** | Yes | Yes | code edit, file read/write, shell execution, elixir native | Elixir-native in-process execution without spawning external processes | `jido_claw` mix dep or CLI |
+| **Windsurf** | Yes | No | code edit, file read/write, code completion | Codeium's Windsurf IDE AI capabilities for code completion and editing | Windsurf IDE + CLI in PATH |
+
 ---
 
 ## Pre-Built Workspaces

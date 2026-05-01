@@ -28,7 +28,7 @@ The entry point for all external knowledge. Takes raw inputs — URLs, files, pa
 /seed --text "Ed mentioned that enterprise pricing should be $2K/seat"
 
 # Seed with explicit metadata
-/seed path/to/notes.md --source "Team sync call" --author "Roberto" --reason "Pricing decision"
+/seed path/to/notes.md --source "Team sync call" --author "Waldo" --reason "Pricing decision"
 
 # Seed multiple files
 /seed path/to/inbox/*.md --batch

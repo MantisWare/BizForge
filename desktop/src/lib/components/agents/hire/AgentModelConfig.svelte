@@ -1,12 +1,15 @@
 <!-- src/lib/components/agents/hire/AgentModelConfig.svelte -->
 <script lang="ts">
   import { providersStore } from '$lib/stores/providers.svelte';
+  import { getTemplatesForRole, ALL_PROMPT_GROUPS } from '$lib/data/prompt-templates';
+  import type { PromptTemplateGroup } from '$lib/data/prompt-templates';
 
   interface Props {
     model: string;
     systemPrompt: string;
     selectedSkills: string[];
     displayName: string;
+    role: string;
     errors: Record<string, string>;
     providerId: string;
     temperature: string;
@@ -22,6 +25,7 @@
     systemPrompt,
     selectedSkills,
     displayName,
+    role,
     errors,
     providerId,
     temperature,
@@ -31,6 +35,18 @@
     onProviderId,
     onTemperature,
   }: Props = $props();
+
+  let showAllGroups = $state(false);
+
+  const matchedGroup: PromptTemplateGroup = $derived(getTemplatesForRole(role));
+
+  const visibleGroups: readonly PromptTemplateGroup[] = $derived(
+    showAllGroups ? ALL_PROMPT_GROUPS : [matchedGroup],
+  );
+
+  function applyTemplate(prompt: string) {
+    onSystemPrompt(prompt);
+  }
 
   const SKILL_OPTIONS = [
     'code-review', 'security-scan', 'dependency-audit', 'doc-writer',
@@ -204,6 +220,35 @@
       </svg>
     </span>
   </h3>
+
+  <div class="hmc-templates">
+    <div class="hmc-templates-header">
+      <span class="hmc-templates-label">Quick-fill from template</span>
+      <button
+        type="button"
+        class="hmc-templates-toggle"
+        onclick={() => showAllGroups = !showAllGroups}
+      >
+        {showAllGroups ? 'Show matched' : 'Show all categories'}
+      </button>
+    </div>
+    {#each visibleGroups as group (group.category)}
+      {#if showAllGroups}
+        <span class="hmc-templates-category">{group.category}</span>
+      {/if}
+      <div class="hmc-templates-row">
+        {#each group.templates as tpl (tpl.id)}
+          <button
+            type="button"
+            class="hmc-tpl-btn"
+            onclick={() => applyTemplate(tpl.prompt)}
+            title={tpl.prompt}
+          >{tpl.label}</button>
+        {/each}
+      </div>
+    {/each}
+  </div>
+
   <div class="hmc-field">
     <label class="hmc-label" for="hmc-system-prompt">Instructions</label>
     <textarea
@@ -413,6 +458,82 @@
 
   @keyframes hmc-spin {
     to { transform: rotate(360deg); }
+  }
+
+  .hmc-templates {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .hmc-templates-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .hmc-templates-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .hmc-templates-toggle {
+    font-size: 10px;
+    color: var(--accent-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--font-sans);
+    opacity: 0.8;
+    transition: opacity 120ms ease;
+  }
+
+  .hmc-templates-toggle:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+
+  .hmc-templates-category {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  .hmc-templates-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .hmc-tpl-btn {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 120ms ease;
+  }
+
+  .hmc-tpl-btn:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--text-primary);
+  }
+
+  .hmc-tpl-btn:active {
+    transform: scale(0.97);
   }
 
   .hmc-textarea {

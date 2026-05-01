@@ -1,6 +1,8 @@
 <!-- src/lib/components/agents/hire/AgentAdapterPicker.svelte -->
 <script lang="ts">
   import type { AdapterType } from '$api/types';
+  import { ADAPTER_REGISTRY } from '$lib/constants/adapters';
+  import AdapterInfoPopover from '$lib/components/shared/AdapterInfoPopover.svelte';
 
   interface Props {
     adapter: AdapterType;
@@ -9,17 +11,20 @@
 
   let { adapter, onAdapter }: Props = $props();
 
-  const ADAPTERS: { value: AdapterType; label: string; description: string }[] = [
-    { value: 'osa',         label: 'OSA',         description: 'Native OSA agent runtime' },
-    { value: 'claude_code', label: 'Claude Code',  description: 'Anthropic Claude Code CLI' },
-    { value: 'codex',       label: 'Codex',        description: 'OpenAI Codex adapter' },
-    { value: 'openclaw',    label: 'OpenClaw',      description: 'OpenClaw coding agent' },
-    { value: 'jidoclaw',    label: 'JidoClaw',      description: 'Elixir-native agent framework' },
-    { value: 'hermes',      label: 'Hermes',        description: 'Fast message-passing runtime' },
-    { value: 'bash',        label: 'Bash',          description: 'Shell command executor' },
-    { value: 'http',        label: 'HTTP',          description: 'HTTP webhook adapter' },
-    { value: 'custom',      label: 'Custom',        description: 'Custom adapter config' },
+  const PICKER_IDS: AdapterType[] = [
+    'osa', 'claude_code', 'codex', 'openclaw', 'jidoclaw', 'hermes', 'bash', 'http', 'custom',
   ];
+
+  const ADAPTERS = PICKER_IDS.map((id) => {
+    const def = ADAPTER_REGISTRY.find(
+      (a) => a.id === id || a.id.replace(/-/g, '_') === id,
+    );
+    return {
+      value: id,
+      label: def?.name ?? id,
+      description: def?.description ?? '',
+    };
+  });
 </script>
 
 <section class="hap-section">
@@ -47,7 +52,10 @@
           class="hap-radio-hidden"
           aria-label={a.label}
         />
-        <span class="hap-name">{a.label}</span>
+        <span class="hap-name-row">
+          <span class="hap-name">{a.label}</span>
+          <AdapterInfoPopover adapterId={a.value} anchor="below" />
+        </span>
         <span class="hap-desc">{a.description}</span>
       </label>
     {/each}
@@ -127,6 +135,12 @@
     opacity: 0;
     width: 0;
     height: 0;
+  }
+
+  .hap-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .hap-name {

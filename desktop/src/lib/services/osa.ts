@@ -91,6 +91,31 @@ export async function installOsa(): Promise<{
   }
 }
 
+// ── Stop / Restart ───────────────────────────────────────────────────────────
+
+export interface OsaStopResult {
+  success: boolean;
+  message: string;
+}
+
+/** Stop the running OSA instance via Tauri IPC (sends SIGTERM) */
+export async function stopOsa(): Promise<OsaStopResult> {
+  if (!isTauri()) {
+    return { success: false, message: 'Requires Bizforge desktop app' };
+  }
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<OsaStopResult>('stop_osa');
+}
+
+/** Restart OSA: stop then start */
+export async function restartOsa(osaPath?: string): Promise<{ stopped: OsaStopResult; started: OsaSetupStep[] }> {
+  const stopped = await stopOsa();
+  // Brief pause to allow port release
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const started = await setupOsa(osaPath);
+  return { stopped, started };
+}
+
 // ── Onboarding ───────────────────────────────────────────────────────────────
 
 /** Check what OSA's onboarding has detected */

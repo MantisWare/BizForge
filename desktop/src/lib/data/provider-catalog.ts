@@ -80,6 +80,18 @@ export const FEATURED_PROVIDERS: readonly ProviderCatalogEntry[] = [
     defaultEndpoint: "https://api.deepseek.com",
     defaultModels: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat"],
   },
+  {
+    slug: "claude-code",
+    name: "Claude Code",
+    description: "Anthropic's agentic coding assistant — terminal-native AI",
+    category: "cloud",
+    defaultEndpoint: "https://api.anthropic.com",
+    defaultModels: [
+      "claude-sonnet-4-6",
+      "claude-opus-4-6",
+      "claude-haiku-4-5-20251001",
+    ],
+  },
 ] as const;
 
 export const MORE_PROVIDERS: readonly ProviderCatalogEntry[] = [

@@ -20,6 +20,11 @@ export type TeamTemplate =
   | "ops-center"
   | "sales-engine"
   | "data-science"
+  | "domo-platform"
+  | "product-squad"
+  | "customer-success"
+  | "legal-compliance"
+  | "creative-agency"
   | "custom";
 
 export type AdapterType =

@@ -1,45 +1,164 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { isTauri } from '$lib/utils/platform';
+  import { workspaces as workspacesApi, getToken } from '$api/client';
+  import type { Workspace as BackendWorkspace } from '$api/types';
+  import type { BizforgeWorkspace } from '$lib/types/bizforge';
 
   interface Props {
     workspacePath: string;
     workspaceName: string;
     workspaceDesc: string;
+    existingWorkspaceId?: string;
+    existsOnDisk?: boolean;
   }
 
   let {
     workspacePath = $bindable(),
     workspaceName = $bindable(),
     workspaceDesc = $bindable(),
+    existingWorkspaceId = $bindable(''),
+    existsOnDisk = $bindable(false),
   }: Props = $props();
 
-  // Auto-fill workspace name from path only when the path actually changes
-  // (not on the initial render). Using $state so the guard persists across
-  // reactive re-runs within the same component instance.
+  // Bindable props consumed by parent via bind: — suppress TS "declared but never read"
+  void existingWorkspaceId;
+  void existsOnDisk;
+
+  let foundOnDisk = $state(false);
+  let foundOnBackend = $state(false);
+  let checkingWorkspace = $state(false);
+
   let lastAutoPath = $state(workspacePath);
+
+  function parseFrontmatterField(md: string, field: string): string | undefined {
+    const trimmed = md.trim();
+    if (!trimmed.startsWith('---')) return undefined;
+    const afterFirst = trimmed.slice(3);
+    const end = afterFirst.indexOf('---');
+    if (end === -1) return undefined;
+    const yaml = afterFirst.slice(0, end);
+    const match = yaml.match(new RegExp(`^${field}:\\s*(.+)$`, 'm'));
+    return match?.[1]?.trim() ?? undefined;
+  }
+
+  async function resolveHomePath(p: string): Promise<string> {
+    if (!p.startsWith('~')) return p;
+    if (isTauri()) {
+      try {
+        const { homeDir } = await import('@tauri-apps/api/path');
+        const home = await homeDir();
+        return p.replace('~', home.replace(/\/$/, ''));
+      } catch { /* fallback */ }
+    }
+    return p;
+  }
+
+  async function checkExistingWorkspace(path: string): Promise<void> {
+    checkingWorkspace = true;
+    foundOnDisk = false;
+    foundOnBackend = false;
+    existingWorkspaceId = '';
+    existsOnDisk = false;
+
+    try {
+      // ── Tauri-first: scan the filesystem directly ──────────────────────
+      if (isTauri()) {
+        const resolved = await resolveHomePath(path);
+        const bizforgePath = resolved.endsWith('.bizforge')
+          ? resolved
+          : resolved + '/.bizforge';
+
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const scan = await invoke<BizforgeWorkspace>('scan_bizforge_dir', {
+            path: bizforgePath,
+          });
+
+          foundOnDisk = true;
+          existsOnDisk = true;
+          workspaceName = scan.name ?? workspaceName;
+
+          const desc = scan.system_md !== null
+            ? (parseFrontmatterField(scan.system_md, 'description') ?? '')
+            : '';
+          if (desc) workspaceDesc = desc;
+        } catch {
+          // .bizforge dir doesn't exist — that's fine, will create later
+        }
+      }
+
+      // ── Backend lookup: match by path to get the workspace ID ──────────
+      if (getToken() !== null) {
+        try {
+          const all = await workspacesApi.list();
+          const resolved = await resolveHomePath(path);
+          const normalizedPath = resolved.replace(/\/+$/, '');
+          const match = all.find((w: BackendWorkspace) => {
+            const wsPath = (w.path ?? w.directory ?? '').replace(/\/+$/, '');
+            return wsPath === normalizedPath
+              || wsPath === normalizedPath + '/.bizforge'
+              || wsPath + '/.bizforge' === normalizedPath;
+          }) ?? null;
+
+          if (match !== null) {
+            foundOnBackend = true;
+            existingWorkspaceId = match.id;
+            if (!foundOnDisk) {
+              workspaceName = match.name;
+              workspaceDesc = match.description ?? '';
+            }
+          }
+        } catch {
+          // Backend unavailable — rely on disk scan
+        }
+      }
+    } finally {
+      checkingWorkspace = false;
+    }
+  }
+
+  const existingFound = $derived(foundOnDisk || foundOnBackend);
+
   $effect(() => {
     const p = workspacePath;
     if (p === lastAutoPath) return;
     lastAutoPath = p;
-    const parts = p.split('/');
-    const last = parts[parts.length - 1];
-    if (last && last !== '~' && last !== '.bizforge') {
-      workspaceName = last.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    } else if (p.includes('.bizforge') || p === '~/.bizforge') {
-      workspaceName = 'My Workspace';
+
+    if (!existingFound) {
+      const parts = p.split('/');
+      const last = parts[parts.length - 1];
+      if (last && last !== '~' && last !== '.bizforge') {
+        workspaceName = last.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      } else if (p.includes('.bizforge') || p === '~/.bizforge') {
+        workspaceName = 'My Workspace';
+      }
     }
+
+    checkExistingWorkspace(p);
+  });
+
+  onMount(() => {
+    checkExistingWorkspace(workspacePath);
   });
 
   async function choosePath() {
-    if (!isTauri()) return;
-    try {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const selected = await open({ directory: true, multiple: false, title: 'Choose Workspace Directory' });
-      if (selected && typeof selected === 'string') {
-        workspacePath = selected;
+    if (isTauri()) {
+      try {
+        const { open } = await import('@tauri-apps/plugin-dialog');
+        const selected = await open({ directory: true, multiple: false, title: 'Choose Workspace Directory' });
+        if (selected && typeof selected === 'string') {
+          workspacePath = selected;
+        }
+      } catch {
+        // Dialog cancelled or unavailable
       }
-    } catch {
-      // Dialog cancelled or unavailable — no action needed
+      return;
+    }
+
+    const entered = prompt('Enter the full directory path for your workspace:', workspacePath);
+    if (entered !== null && entered.trim().length > 0) {
+      workspacePath = entered.trim();
     }
   }
 
@@ -85,6 +204,7 @@
       placeholder="My Workspace"
       autocomplete="off"
       bind:value={workspaceName}
+      disabled={existingFound}
     />
   </div>
 
@@ -97,19 +217,38 @@
       placeholder="What this workspace is for..."
       autocomplete="off"
       bind:value={workspaceDesc}
+      disabled={existingFound}
     />
   </div>
 
-  <div class="ob-tree-wrap">
-    <p class="ob-label">WILL CREATE</p>
-    <pre class="ob-tree">{dirBaseName(workspacePath) || '.bizforge'}/
+  {#if checkingWorkspace}
+    <div class="ob-status ob-status--checking">
+      <span class="ob-status-dot ob-status-dot--checking"></span>
+      Checking for existing workspace…
+    </div>
+  {:else if existingFound}
+    <div class="ob-status ob-status--found">
+      <span class="ob-status-dot ob-status-dot--found"></span>
+      {#if foundOnDisk && foundOnBackend}
+        Existing workspace found on disk and backend — will reconnect
+      {:else if foundOnDisk}
+        Existing .bizforge directory found — will register with backend
+      {:else}
+        Workspace found on backend — will reconnect
+      {/if}
+    </div>
+  {:else}
+    <div class="ob-tree-wrap">
+      <p class="ob-label">WILL CREATE</p>
+      <pre class="ob-tree">{dirBaseName(workspacePath) || '.bizforge'}/
 ├── .bizforge/
 │   ├── workspace.json
 │   ├── agents/
 │   │   └── (agent configs)
 │   ├── sessions/
 │   └── logs/</pre>
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -248,5 +387,55 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
     flex-shrink: 0;
+  }
+
+  .ob-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-top: 0.25rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ob-status--checking {
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .ob-status--found {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.06);
+    border: 1px solid rgba(74, 222, 128, 0.15);
+  }
+
+  .ob-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ob-status-dot--checking {
+    background: rgba(255, 255, 255, 0.3);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .ob-status-dot--found {
+    background: #4ade80;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .ob-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

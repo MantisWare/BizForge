@@ -302,19 +302,40 @@ async function saveTokenToStore(token: string): Promise<void> {
   }
 }
 
-async function verifyToken(token: string): Promise<boolean> {
-  try {
-    // Use /agents (requires auth) rather than /health (no auth required).
-    // /health returns 200 for any request regardless of token validity, so
-    // using it here would make verifyToken() return true for stale or
-    // invalid tokens, skipping re-login and sending unauthenticated requests.
-    const res = await fetch(`${BASE_URL}${API_PREFIX}/agents`, {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
-  } catch {
-    return false;
+type VerifyResult = "valid" | "unauthorized" | "unreachable";
+
+async function verifyToken(token: string): Promise<VerifyResult> {
+  // Use /agents (requires auth) rather than /health (no auth required).
+  // /health returns 200 for any request regardless of token validity, so
+  // using it here would make verifyToken() return "valid" for stale or
+  // invalid tokens, skipping re-login and sending unauthenticated requests.
+  //
+  // Retry with increasing back-off — the backend may have passed its health
+  // probe but still be warming up routes when this fires on cold start.
+  // Only a definitive 401 should invalidate the token; transient errors
+  // (503, timeout, network) return "unreachable" so callers can trust the
+  // stored token rather than bouncing the user to the login page.
+  const maxAttempts = 4;
+  const delays = [1500, 2500, 3500];
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL}${API_PREFIX}/agents`, {
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) return "valid";
+      if (res.status === 401) return "unauthorized";
+      // Non-401 error (503, 500, etc.) — retry after a brief wait
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, delays[attempt] ?? 3500));
+      }
+    } catch {
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, delays[attempt] ?? 3500));
+      }
+    }
   }
+  return "unreachable";
 }
 
 export async function login(email: string, password: string): Promise<string> {
@@ -344,7 +365,12 @@ async function _doInitializeAuth(): Promise<void> {
   logInfo("auth", "Initializing auth — probing backend health...");
   const authStartMs = performance.now();
 
-  // 0. Probe backend health — if it responds, disable mock mode
+  // 0a. Restore session state from Tauri disk store → localStorage.
+  // Webview localStorage can be cleared by the OS between launches; the Tauri
+  // plugin-store persists to the app data directory and survives restarts.
+  await restoreSessionFromStore();
+
+  // 0b. Probe backend health — if it responds, disable mock mode
   try {
     const probe = await fetch(`${BASE_URL}${API_PREFIX}/health`, {
       signal: AbortSignal.timeout(3000),
@@ -415,17 +441,26 @@ async function _doInitializeAuth(): Promise<void> {
     }
   }
 
-  // 4. If we have a token, verify it is still valid
+  // 4. If we have a token, verify it is still valid.
+  // Three outcomes: "valid" (200), "unauthorized" (401 — clear token),
+  // "unreachable" (transient errors — trust the stored token so the user
+  // isn't bounced to the login page on every cold-start race condition).
   if (_token) {
     logInfo("auth", "Verifying stored token...");
-    const valid = await verifyToken(_token);
-    if (valid) {
+    const result = await verifyToken(_token);
+    if (result === "valid") {
       logInfo("auth", `Auth complete — token valid (${Math.round(performance.now() - authStartMs)}ms total)`);
       resolveAuthGate();
       return;
     }
-    logWarn("auth", "Stored token is invalid/expired — clearing");
+    if (result === "unreachable") {
+      logWarn("auth", "Token verification inconclusive (backend routes not ready) — trusting stored token");
+      resolveAuthGate();
+      return;
+    }
+    logWarn("auth", "Stored token is invalid/expired (401) — clearing");
     _token = null;
+    await clearToken();
   }
 
   // 5. No valid stored token — try dev auto-login as FALLBACK (dev mode only)
@@ -653,8 +688,8 @@ async function doFetch<T>(
   const elapsed = Math.round(performance.now() - fetchStart);
 
   if (response.status === 401 && !retried && _token) {
-    logWarn("auth", `401 on ${path} — token expired, retrying without token`);
-    _token = null;
+    logWarn("auth", `401 on ${path} — token expired, clearing persisted token and retrying`);
+    void clearToken();
     return doFetch<T>(path, options, true);
   }
 
@@ -876,6 +911,9 @@ export async function persistToken(token: string): Promise<void> {
   } catch {
     // Non-fatal
   }
+  // Mirror critical session state to the Tauri disk store so it survives
+  // webview localStorage resets between app launches.
+  await saveSessionToStore();
 }
 
 /**
@@ -900,6 +938,53 @@ export async function clearToken(): Promise<void> {
     // Non-fatal
   }
 }
+
+// ── Session State Persistence (Tauri Store) ──────────────────────────────────
+// Critical session state (onboarding, display name) must survive webview
+// localStorage resets. These helpers mirror the data to the Tauri disk-backed
+// store alongside the auth token.
+
+const SESSION_KEYS = [
+  "bizforge-onboarding-complete",
+  "bizforge-onboarding",
+  "bizforge-display-name",
+  "bizforge-mock-mode",
+] as const;
+
+async function saveSessionToStore(): Promise<void> {
+  try {
+    const { load: loadStore } = await import("@tauri-apps/plugin-store");
+    const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+    for (const key of SESSION_KEYS) {
+      const val = localStorage.getItem(key);
+      if (val !== null) {
+        await store.set(key, val);
+      }
+    }
+    await store.save();
+  } catch {
+    // Not in Tauri or store unavailable
+  }
+}
+
+async function restoreSessionFromStore(): Promise<void> {
+  try {
+    const { load: loadStore } = await import("@tauri-apps/plugin-store");
+    const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+    for (const key of SESSION_KEYS) {
+      const existing = localStorage.getItem(key);
+      if (existing !== null) continue;
+      const val = await store.get<string>(key);
+      if (val !== null && val !== undefined) {
+        localStorage.setItem(key, val);
+      }
+    }
+  } catch {
+    // Not in Tauri or store unavailable
+  }
+}
+
+export { saveSessionToStore, restoreSessionFromStore };
 
 // ── Health ────────────────────────────────────────────────────────────────────
 
@@ -937,6 +1022,10 @@ export const health = {
 
 export const dashboard = {
   get: () => request<DashboardData>("/dashboard"),
+  recentAiCalls: (limit = 10) =>
+    request<{ data: import("$api/types").RecentAiCall[] }>(
+      `/dashboard/recent-ai-calls?limit=${limit}`,
+    ),
 };
 
 // ── Agents ────────────────────────────────────────────────────────────────────

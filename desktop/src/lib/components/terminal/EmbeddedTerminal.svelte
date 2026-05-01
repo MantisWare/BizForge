@@ -12,7 +12,6 @@
 
   let containerEl: HTMLDivElement | undefined = $state();
   let xtermInstance: import('@xterm/xterm').Terminal | undefined;
-  let fitAddon: import('@xterm/addon-fit').FitAddon | undefined;
   let resizeObserver: ResizeObserver | undefined;
   let childProcess: { write: (data: string) => Promise<void>; kill: () => Promise<void> } | undefined;
   let inputBuffer = '';
@@ -67,7 +66,6 @@
     });
 
     const fit = new FitAddon();
-    fitAddon = fit;
     term.loadAddon(fit);
     term.loadAddon(new WebLinksAddon());
     term.loadAddon(new SearchAddon());
@@ -111,8 +109,8 @@
         terminalStore.appendScrollback(tabId, data);
       });
 
-      command.on('close', (payload: { code: number; signal: number | null }) => {
-        term.write(`\r\n\x1b[90m[Process exited with code ${payload.code}]\x1b[0m\r\n`);
+      command.on('close', (payload: { code: number | null; signal: number | null }) => {
+        term.write(`\r\n\x1b[90m[Process exited with code ${payload.code ?? 0}]\x1b[0m\r\n`);
         childProcess = undefined;
       });
 

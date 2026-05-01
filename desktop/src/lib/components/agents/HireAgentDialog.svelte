@@ -167,6 +167,7 @@
             {systemPrompt}
             {selectedSkills}
             {displayName}
+            {role}
             {errors}
             {providerId}
             temperature={agentTemperature}

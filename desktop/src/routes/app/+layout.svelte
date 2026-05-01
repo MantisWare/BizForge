@@ -19,8 +19,9 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { organizationsStore } from '$lib/stores/organizations.svelte';
   import { approvalsStore } from '$lib/stores/approvals.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
+  import { providersStore } from '$lib/stores/providers.svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
-  import { initializeAuth, getToken, isMockEnabled, workspaces, agents } from '$api/client';
+  import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
 
   let { children } = $props();
 
@@ -85,24 +86,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
           JSON.stringify({ completed: true }),
         );
         onboardingDone = true;
-      } else if (!isMockEnabled() && getToken()) {
-        // Backend reachable with token — check for existing data.
-        try {
-          const wsList = await workspaces.list();
-          if (wsList.length > 0) {
-            const agentList = await agents.list(wsList[0].id);
-            if (agentList.length > 0) {
-              localStorage.setItem('bizforge-onboarding-complete', 'true');
-              localStorage.setItem(
-                'bizforge-onboarding',
-                JSON.stringify({ completed: true }),
-              );
-              onboardingDone = true;
-            }
-          }
-        } catch {
-          // Non-fatal: fall through to localStorage check
-        }
+        void saveSessionToStore();
       }
 
       if (!onboardingDone) {
@@ -159,11 +143,12 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
         void hierarchyStore.fetchDepartments();
         void hierarchyStore.fetchTeams();
       }
-      // 8. Load agents & projects: resolve workspace context first
+      // 8. Load agents, projects, providers: resolve workspace context first
       const ws = workspaceStore.activeWorkspace;
       const wsId = workspaceStore.activeWorkspaceId ?? undefined;
 
       void approvalsStore.fetchApprovals(wsId);
+      void providersStore.fetch(wsId);
 
       // 9. Pre-fetch projects so goals and other project-dependent pages work
       void projectsStore.fetchProjects(wsId);

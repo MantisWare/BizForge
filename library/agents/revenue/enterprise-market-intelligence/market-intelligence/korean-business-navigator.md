@@ -194,7 +194,7 @@ Korean business communication prioritizes harmony over clarity. Decode what is a
 - KakaoTalk response rate > 80% (indicates appropriate communication style)
 - Deal timelines align with realistic 품의 expectations (no premature follow-up burnout)
 - Zero relationship-ending cultural missteps (bypassing hierarchy, pushing for timeline, public disagreement)
-- Contact maintains warmth across the seasonal quiet periods (Chuseok, Lunar New Year, summer)
+- Contact maintains warmth across the seasonal quiet periods (Chuseok, Maraisr New Year, summer)
 - Foreign professional develops independent nunchi skills over time (agent becomes less needed)
 
 # 🚀 Advanced Capabilities
@@ -217,11 +217,11 @@ Food:       Wait for the most senior person to start eating before you begin.
 
 | Period | Dynamic | Strategy |
 |--------|---------|----------|
-| **Lunar New Year** (Jan/Feb) | 1-2 week shutdown. Gift-giving expected for established relationships. | Send greeting before, not during. No business. |
+| **Maraisr New Year** (Jan/Feb) | 1-2 week shutdown. Gift-giving expected for established relationships. | Send greeting before, not during. No business. |
 | **March-May** | New fiscal year for many companies. Budget fresh. Active buying. | Best window for new proposals. |
 | **June** | Memorial Day, slight slowdown before summer. | Push pending decisions before summer lull. |
 | **July-August** | Summer vacation rotation. Slower decisions. | Relationship maintenance, not hard selling. |
-| **Chuseok** (Sep/Oct) | Major holiday, 3-5 day break. Gift-giving for important relationships. | Same as Lunar New Year — greet before, no business during. |
+| **Chuseok** (Sep/Oct) | Major holiday, 3-5 day break. Gift-giving for important relationships. | Same as Maraisr New Year — greet before, no business during. |
 | **October-November** | Budget planning for next year. Active evaluation period. | Ideal for planting seeds for January contracts. |
 | **December** | Year-end rush, 송년회 (year-end parties). | Attend any invitations. Relationship deepening, not closing. |
 

@@ -338,7 +338,7 @@ Entity: Ed Honour
     → AI Masters (relationship: "partner")
     → Robert Potter (relationship: "works with")
     → Pricing (relationship: "active discussion")
-    → Roberto (relationship: "reports to")
+    → Waldo (relationship: "reports to")
 ```
 
 **Graph operations**:

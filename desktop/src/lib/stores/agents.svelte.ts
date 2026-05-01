@@ -144,6 +144,46 @@ class AgentsStore {
     }
   }
 
+  async createAgentBatch(
+    requests: AgentCreateRequest[],
+  ): Promise<{ created: BizforgeAgent[]; failed: Array<{ name: string; error: string }> }> {
+    this.loading = true;
+    const created: BizforgeAgent[] = [];
+    const failed: Array<{ name: string; error: string }> = [];
+
+    for (const req of requests) {
+      try {
+        const agent = await agentsApi.create(req);
+        created.push(agent);
+      } catch (e) {
+        failed.push({ name: req.display_name, error: (e as Error).message });
+      }
+    }
+
+    if (created.length > 0) {
+      this.agents = [...created, ...this.agents];
+    }
+
+    this.loading = false;
+    this.error = null;
+
+    if (failed.length === 0) {
+      toastStore.success(
+        "Team hired",
+        `${created.length} agent${created.length === 1 ? "" : "s"} ready.`,
+      );
+    } else if (created.length > 0) {
+      toastStore.warning(
+        "Partial success",
+        `${created.length} hired, ${failed.length} failed.`,
+      );
+    } else {
+      toastStore.error("Team hire failed", "No agents were created.");
+    }
+
+    return { created, failed };
+  }
+
   async performAction(id: string, action: AgentLifecycleAction): Promise<void> {
     // Optimistic update
     const previousAgents = this.agents;

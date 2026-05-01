@@ -4,7 +4,7 @@ import { isTauri } from "$lib/utils/platform";
 import type { Workspace as BackendWorkspace } from "$api/types";
 import { toastStore } from "./toasts.svelte";
 import { workspaces as workspacesApi, isMockEnabled } from "$api/client";
-import type { BizforgeWorkspace } from "$lib/types/bizforge";
+import type { BizforgeWorkspace, WorkspaceHealthReport, RepairResult } from "$lib/types/bizforge";
 
 /**
  * Extract the `description` field from YAML frontmatter in a markdown file.
@@ -56,6 +56,7 @@ class WorkspaceStore {
   isLoading = $state(false);
   error = $state<string | null>(null);
   lastScan = $state<BizforgeWorkspaceScan | null>(null);
+  healthReport = $state<WorkspaceHealthReport | null>(null);
 
   get activeWorkspace(): LocalWorkspace | null {
     return (
@@ -92,7 +93,7 @@ class WorkspaceStore {
     }
   }
 
-  /** Scan a directory via Tauri IPC — returns null if .bizforge/ doesn't exist */
+  /** Scan a directory via Tauri IPC — auto-repairs (creates) .bizforge/ if missing */
   async scanWorkspace(path: string): Promise<BizforgeWorkspaceScan | null> {
     if (!isTauri()) return null;
     console.log(`[bizforge:workspace] Scanning ${path}...`);
@@ -107,9 +108,32 @@ class WorkspaceStore {
       return result;
     } catch (e) {
       console.warn(`[bizforge:workspace] Scan failed for ${path}:`, e);
+
+      // Auto-repair: create the .bizforge directory structure and retry
+      console.log(`[bizforge:workspace] Attempting auto-repair for ${path}...`);
+      try {
+        const repairResult = await this.repairWorkspace(path);
+        if (repairResult !== null && repairResult.repaired.length > 0) {
+          console.log(`[bizforge:workspace] Auto-repair succeeded (${repairResult.repaired.length} fixes), retrying scan...`);
+          toastStore.success(
+            "Workspace created",
+            `.bizforge directory initialized at ${path}`,
+          );
+          const { invoke } = await import("@tauri-apps/api/core");
+          const bizforgePath = path.endsWith(".bizforge") ? path : path + "/.bizforge";
+          const result = await invoke<BizforgeWorkspaceScan>("scan_bizforge_dir", {
+            path: bizforgePath,
+          });
+          this.lastScan = result;
+          return result;
+        }
+      } catch (repairErr) {
+        console.warn(`[bizforge:workspace] Auto-repair also failed:`, repairErr);
+      }
+
       toastStore.warning(
         "Workspace scan failed",
-        `.bizforge directory not found at ${path}`,
+        `Could not initialize .bizforge directory at ${path}`,
       );
       return null;
     }
@@ -185,6 +209,9 @@ class WorkspaceStore {
       }
     }
 
+    // Run health check after scan so report is always current
+    await this.checkHealth(path);
+
     if (scan.agents.length === 0) return;
 
     // Dynamic import to avoid circular deps
@@ -198,6 +225,75 @@ class WorkspaceStore {
         [...agents, ...agentsStore.agents].map((a) => [a.id, a]),
       ).values(),
     ];
+  }
+
+  /** Check workspace health via Tauri IPC — validates .bizforge/ structure and content */
+  async checkHealth(path?: string): Promise<WorkspaceHealthReport | null> {
+    const ws = this.activeWorkspace;
+    const targetPath = path ?? ws?.path;
+    if (!targetPath || !isTauri()) return null;
+
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const report = await invoke<WorkspaceHealthReport>("check_workspace_health", {
+        path: targetPath,
+      });
+      this.healthReport = report;
+
+      if (!report.healthy) {
+        const errorCount = report.issues.filter((i) => i.severity === "error").length;
+        const warnCount = report.issues.filter((i) => i.severity === "warning").length;
+        const parts: string[] = [];
+        if (errorCount > 0) parts.push(`${errorCount} error${errorCount > 1 ? "s" : ""}`);
+        if (warnCount > 0) parts.push(`${warnCount} warning${warnCount > 1 ? "s" : ""}`);
+        console.warn(`[bizforge:workspace] Health check: ${parts.join(", ")}`);
+      } else {
+        console.log("[bizforge:workspace] Health check: OK");
+      }
+
+      return report;
+    } catch (e) {
+      console.warn("[bizforge:workspace] Health check failed:", e);
+      return null;
+    }
+  }
+
+  /** Repair workspace issues via Tauri IPC — fixes missing dirs/files */
+  async repairWorkspace(path?: string): Promise<RepairResult | null> {
+    const ws = this.activeWorkspace;
+    const targetPath = path ?? ws?.path;
+    if (!targetPath || !isTauri()) return null;
+
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const result = await invoke<RepairResult>("repair_workspace", {
+        path: targetPath,
+      });
+      this.healthReport = result.health_after;
+
+      if (result.repaired.length > 0) {
+        toastStore.success(
+          "Workspace repaired",
+          `Fixed ${result.repaired.length} issue${result.repaired.length > 1 ? "s" : ""}`,
+        );
+      }
+      if (result.failed.length > 0) {
+        toastStore.warning(
+          "Some repairs failed",
+          result.failed.join("; "),
+        );
+      }
+
+      // Re-scan agents after repair
+      if (result.repaired.length > 0) {
+        await this.scanAndLoadAgents(targetPath);
+      }
+
+      return result;
+    } catch (e) {
+      toastStore.error("Repair failed", String(e));
+      return null;
+    }
   }
 
   /** Watch active workspace for file changes via Tauri IPC */
@@ -294,7 +390,7 @@ class WorkspaceStore {
     }
   }
 
-  /** Create workspace (for API compatibility) */
+  /** Create workspace — scaffolds .bizforge/ on disk and registers with backend */
   async createWorkspace(
     name: string,
     directory?: string,
@@ -302,6 +398,22 @@ class WorkspaceStore {
     const rawPath =
       directory ?? `~/.bizforge/${name.toLowerCase().replace(/\s+/g, "-")}`;
     const resolvedPath = await resolveHomePath(rawPath);
+
+    // Scaffold the .bizforge directory structure on disk (Tauri only)
+    if (isTauri()) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("scaffold_bizforge_dir", {
+          path: resolvedPath,
+          name,
+          description: `Workspace: ${name}`,
+          agents: [],
+        });
+        console.log(`[bizforge:workspace] Scaffolded .bizforge/ at ${resolvedPath}`);
+      } catch (e) {
+        console.warn(`[bizforge:workspace] Scaffold failed for ${resolvedPath}:`, e);
+      }
+    }
 
     let backendId: string | null = null;
 

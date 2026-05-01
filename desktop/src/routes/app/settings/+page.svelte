@@ -14,11 +14,13 @@
   import IntegrationsSettings from './tabs/IntegrationsSettings.svelte';
   import McpSettings from './tabs/McpSettings.svelte';
   import AdvancedSettings from './tabs/AdvancedSettings.svelte';
+  import WorkspaceHealth from '$lib/components/workspace/WorkspaceHealth.svelte';
 
-  type TabId = 'general' | 'providers' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'mcp' | 'advanced';
+  type TabId = 'general' | 'workspace' | 'providers' | 'appearance' | 'agents' | 'budget' | 'notifications' | 'integrations' | 'mcp' | 'advanced';
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'general',       label: 'General' },
+    { id: 'workspace',     label: 'Workspace' },
     { id: 'providers',     label: 'AI Providers' },
     { id: 'appearance',    label: 'Appearance' },
     { id: 'agents',        label: 'Agents' },
@@ -66,6 +68,8 @@
     <div class="stg-panel">
       {#if activeTab === 'general'}
         <GeneralSettings />
+      {:else if activeTab === 'workspace'}
+        <WorkspaceHealth />
       {:else if activeTab === 'providers'}
         <ProvidersSettings />
       {:else if activeTab === 'appearance'}

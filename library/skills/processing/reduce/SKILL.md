@@ -86,7 +86,7 @@ topics: [pricing, enterprise, ai-masters]
 ### 2. Current conversion rate from free tier is 3.2%
 - **type:** fact
 - **confidence:** 0.7
-- **speaker:** Roberto
+- **speaker:** Waldo
 - **context:** Referenced but not sourced — verify against analytics
 - **tags:** [metrics, conversion, funnel]
 ```

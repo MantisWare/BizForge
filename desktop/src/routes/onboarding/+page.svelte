@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { onboardingStore } from '$lib/stores/onboarding.svelte';
   import type { AdapterType, TeamTemplate, AgentTemplateData } from '$lib/stores/onboarding.svelte';
-  import { initializeAuth, getToken, isMockEnabled } from '$api/client';
+  import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
   import { isTauri } from '$lib/utils/platform';
   import { workspaceStore, type LocalWorkspace } from '$lib/stores/workspace.svelte';
   import { connectionStore } from '$lib/stores/connection.svelte';
@@ -78,6 +78,8 @@
     'My Workspace'
   );
   let workspaceDesc      = $state(onboardingStore.data.workspace?.description ?? '');
+  let existingWorkspaceId = $state('');
+  let existsOnDisk        = $state(false);
   let teamTemplate       = $state<TeamTemplate>(onboardingStore.data.teamTemplate ?? 'dev-team');
   let miosaCloud         = $state(onboardingStore.data.miosaCloud);
   let isLaunching        = $state(false);
@@ -230,6 +232,7 @@
       localStorage.setItem('bizforge-onboarding-complete', 'true');
       localStorage.setItem('bizforge-onboarding', JSON.stringify({ completed: true }));
     }
+    await saveSessionToStore();
 
     const needsLogin = !isMockEnabled() && getToken() === null;
     goto(needsLogin ? '/auth' : '/app');
@@ -259,33 +262,84 @@
     }
 
     try {
-      if (isTauri() && workspacePath.trim()) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const agents = TEMPLATE_AGENTS[teamTemplate].map(a => ({
-          id: a.id,
-          name: a.name,
-          emoji: a.emoji,
-          role: a.role,
-          adapter: a.adapter,
-          model: a.model ?? null,
-          skills: a.skills,
-          system_prompt: a.system_prompt ?? null,
-        }));
+      const { workspaceStore } = await import('$lib/stores/workspace.svelte');
+      const hasAuth = getToken() !== null || isMockEnabled();
 
-        try {
-          await withTimeout(invoke('scaffold_bizforge_dir', {
-            path: workspacePath,
-            name: workspaceName,
-            description: workspaceDesc || null,
-            agents,
-          }), 10000);
-        } catch (e) {
-          console.warn('Scaffold warning:', e);
+      if (existingWorkspaceId) {
+        // Backend knows this workspace — scaffold the directory if it's missing on disk
+        if (isTauri() && !existsOnDisk) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const agents = TEMPLATE_AGENTS[teamTemplate].map(a => ({
+            id: a.id,
+            name: a.name,
+            emoji: a.emoji,
+            role: a.role,
+            adapter: a.adapter,
+            model: a.model ?? null,
+            skills: a.skills,
+            system_prompt: a.system_prompt ?? null,
+          }));
+
+          try {
+            await withTimeout(invoke('scaffold_bizforge_dir', {
+              path: workspacePath,
+              name: workspaceName,
+              description: workspaceDesc || null,
+              agents,
+            }), 10000);
+          } catch (e) {
+            console.warn('Scaffold warning:', e);
+          }
         }
 
-        const { workspaceStore } = await import('$lib/stores/workspace.svelte');
+        const wsEntry = {
+          id: existingWorkspaceId,
+          path: workspacePath,
+          name: workspaceName,
+          description: workspaceDesc,
+          addedAt: new Date().toISOString(),
+        };
+        workspaceStore.addWorkspace(wsEntry);
 
-        const hasAuth = getToken() !== null || isMockEnabled();
+        if (hasAuth) {
+          try {
+            await withTimeout(workspaceStore.setActiveWorkspace(existingWorkspaceId), 8000);
+          } catch (e) {
+            console.warn('Workspace activation timed out:', e);
+          }
+        } else {
+          workspaceStore.activeWorkspaceId = existingWorkspaceId;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('bizforge-active-workspace', existingWorkspaceId);
+          }
+        }
+      } else if (workspacePath.trim()) {
+        // Only scaffold if the .bizforge directory doesn't already exist on disk
+        if (isTauri() && !existsOnDisk) {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const agents = TEMPLATE_AGENTS[teamTemplate].map(a => ({
+            id: a.id,
+            name: a.name,
+            emoji: a.emoji,
+            role: a.role,
+            adapter: a.adapter,
+            model: a.model ?? null,
+            skills: a.skills,
+            system_prompt: a.system_prompt ?? null,
+          }));
+
+          try {
+            await withTimeout(invoke('scaffold_bizforge_dir', {
+              path: workspacePath,
+              name: workspaceName,
+              description: workspaceDesc || null,
+              agents,
+            }), 10000);
+          } catch (e) {
+            console.warn('Scaffold warning:', e);
+          }
+        }
+
         let wsId = registeredWorkspaceId || '';
 
         if (!wsId && hasAuth) {
@@ -342,52 +396,54 @@
         }
       }
 
-      const hasAuth = getToken() !== null || isMockEnabled();
       if (hasAuth) {
         try {
           const { organizations } = await import('$api/client');
           const { organizationsStore } = await import('$lib/stores/organizations.svelte');
-          const orgName = workspaceName || 'My Organization';
-          const orgSlug = orgName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '');
-          const org = await withTimeout(
-            organizations.create({ name: orgName, slug: orgSlug }),
-            5000,
-          );
-          if (org) organizationsStore.setCurrent(org);
+
+          const existing = await withTimeout(organizations.list(), 5000);
+          if (existing.length > 0) {
+            organizationsStore.setCurrent(existing[0]);
+          } else {
+            const orgName = workspaceName || 'My Organization';
+            const orgSlug = orgName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            const org = await withTimeout(
+              organizations.create({ name: orgName, slug: orgSlug }),
+              5000,
+            );
+            if (org) organizationsStore.setCurrent(org);
+          }
         } catch (e) {
-          console.warn('Org creation skipped:', e);
+          console.warn('Org setup skipped:', e);
         }
       }
 
       onboardingStore.complete();
 
       // Persist providers via API
-      if (selectedProviders.length > 0) {
-        const hasAuth = getToken() !== null || isMockEnabled();
-        if (hasAuth) {
-          try {
-            const { providers: providersApi } = await import('$api/client');
-            for (let i = 0; i < selectedProviders.length; i++) {
-              const sp = selectedProviders[i];
-              const { findProvider } = await import('$lib/data/provider-catalog');
-              const catalogEntry = findProvider(sp.slug);
-              await withTimeout(providersApi.create({
-                slug: sp.slug,
-                name: catalogEntry?.name ?? sp.slug,
-                category: sp.slug === 'local' ? 'local' : 'cloud',
-                api_key: sp.apiKey || undefined,
-                endpoint: sp.endpoint ?? catalogEntry?.defaultEndpoint ?? undefined,
-                config: sp.localRuntime ? { local_runtime: sp.localRuntime, local_endpoint: sp.endpoint } : {},
-                models: catalogEntry?.defaultModels ?? [],
-                is_default: i === 0,
-              }), 5000);
-            }
-          } catch (e) {
-            console.warn('Provider persistence failed:', e);
+      if (selectedProviders.length > 0 && hasAuth) {
+        try {
+          const { providers: providersApi } = await import('$api/client');
+          for (let i = 0; i < selectedProviders.length; i++) {
+            const sp = selectedProviders[i];
+            const { findProvider } = await import('$lib/data/provider-catalog');
+            const catalogEntry = findProvider(sp.slug);
+            await withTimeout(providersApi.create({
+              slug: sp.slug,
+              name: catalogEntry?.name ?? sp.slug,
+              category: sp.slug === 'local' ? 'local' : 'cloud',
+              api_key: sp.apiKey || undefined,
+              endpoint: sp.endpoint ?? catalogEntry?.defaultEndpoint ?? undefined,
+              config: sp.localRuntime ? { local_runtime: sp.localRuntime, local_endpoint: sp.endpoint } : {},
+              models: catalogEntry?.defaultModels ?? [],
+              is_default: i === 0,
+            }), 5000);
           }
+        } catch (e) {
+          console.warn('Provider persistence failed:', e);
         }
       }
 
@@ -434,6 +490,8 @@
           console.warn('Settings save failed:', e);
         }
       }
+
+      await saveSessionToStore();
 
       const needsLogin = !isMockEnabled() && getToken() === null;
       goto(needsLogin ? '/auth' : '/app');
@@ -518,6 +576,8 @@
       }
     }
 
+    await saveSessionToStore();
+
     const needsLogin = !isMockEnabled() && getToken() === null;
     goto(needsLogin ? '/auth' : '/app');
   }
@@ -560,7 +620,7 @@
     {:else if step === 2}
       <Adapter bind:selectedAdapter />
     {:else if step === 3}
-      <Workspace bind:workspacePath bind:workspaceName bind:workspaceDesc />
+      <Workspace bind:workspacePath bind:workspaceName bind:workspaceDesc bind:existingWorkspaceId bind:existsOnDisk />
     {:else if step === 4}
       <Team bind:teamTemplate />
     {:else if step === 5}

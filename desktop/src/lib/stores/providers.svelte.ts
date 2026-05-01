@@ -7,8 +7,27 @@ import type {
 import { providers as providersApi } from "$api/client";
 import { toastStore } from "./toasts.svelte";
 
+const CACHE_KEY = "bizforge-providers-cache";
+
+function loadCache(): AIProvider[] {
+  if (typeof localStorage === "undefined") return [];
+  const raw = localStorage.getItem(CACHE_KEY);
+  if (raw === null) return [];
+  try {
+    const parsed = JSON.parse(raw) as AIProvider[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCache(data: AIProvider[]): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+}
+
 class ProvidersStore {
-  providers = $state<AIProvider[]>([]);
+  providers = $state<AIProvider[]>(loadCache());
   loading = $state(false);
   error = $state<string | null>(null);
 
@@ -23,10 +42,15 @@ class ProvidersStore {
     this.providers.find((p) => p.is_default) ?? null,
   );
 
+  private persist(): void {
+    saveCache(this.providers);
+  }
+
   async fetch(workspaceId?: string): Promise<void> {
     this.loading = true;
     try {
       this.providers = await providersApi.list(workspaceId);
+      this.persist();
       this.error = null;
     } catch (e) {
       const msg = (e as Error).message;
@@ -46,6 +70,7 @@ class ProvidersStore {
     try {
       const created = await providersApi.create(req);
       this.providers = [created, ...this.providers];
+      this.persist();
       this.error = null;
       toastStore.success("Provider added", created.name);
       return created;
@@ -72,6 +97,7 @@ class ProvidersStore {
       this.providers = this.providers.map((p) =>
         p.id === id ? updated : p,
       );
+      this.persist();
       this.error = null;
       toastStore.success("Provider updated", updated.name);
       return updated;
@@ -89,6 +115,7 @@ class ProvidersStore {
     this.providers = this.providers.filter((p) => p.id !== id);
     try {
       await providersApi.delete(id);
+      this.persist();
       this.error = null;
       toastStore.success("Provider removed");
     } catch (e) {
@@ -107,6 +134,7 @@ class ProvidersStore {
       this.providers = this.providers.map((p) =>
         p.id === id ? provider : p,
       );
+      this.persist();
       this.error = null;
       if (test_result.status === "connected") {
         toastStore.success(
@@ -136,6 +164,7 @@ class ProvidersStore {
     }));
     try {
       await providersApi.update(id, { is_default: true });
+      this.persist();
       this.error = null;
     } catch (e) {
       this.providers = previous;
@@ -188,6 +217,7 @@ class ProvidersStore {
       this.providers = this.providers.map((p) =>
         p.id === id ? { ...p, models: result.models } : p,
       );
+      this.persist();
     } else {
       toastStore.error("No models found", "The provider returned an empty model list");
     }

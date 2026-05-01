@@ -5,6 +5,7 @@
   import AgentCard from '$lib/components/agents/AgentCard.svelte';
   import AgentTable from '$lib/components/agents/AgentTable.svelte';
   import HireAgentDialog from '$lib/components/agents/HireAgentDialog.svelte';
+  import HireTeamDialog from '$lib/components/agents/HireTeamDialog.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
@@ -25,6 +26,7 @@
   });
 
   let showHireDialog = $state(false);
+  let showHireTeamDialog = $state(false);
 </script>
 
 <PageShell
@@ -38,7 +40,7 @@
         <span>Loading agents…</span>
       </div>
     {:else}
-      <AgentRosterHeader onHire={() => showHireDialog = true} />
+      <AgentRosterHeader onHire={() => showHireDialog = true} onHireTeam={() => showHireTeamDialog = true} />
 
       {#if agentsStore.viewMode === 'grid'}
         {#if agentsStore.filteredAgents.length === 0}
@@ -74,6 +76,7 @@
 </PageShell>
 
 <HireAgentDialog open={showHireDialog} onClose={() => showHireDialog = false} />
+<HireTeamDialog open={showHireTeamDialog} onClose={() => showHireTeamDialog = false} />
 
 <style>
   .ar-loading {
