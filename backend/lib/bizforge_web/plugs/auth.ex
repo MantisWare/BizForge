@@ -16,16 +16,24 @@ defmodule BizforgeWeb.Plugs.Auth do
         |> halt()
 
       token ->
-        with {:ok, claims} <- Bizforge.Guardian.decode_and_verify(token),
-             {:ok, user} <- Bizforge.Guardian.resource_from_claims(claims) do
-          conn
-          |> assign(:current_user, user)
-          |> assign(:claims, claims)
-        else
+        try do
+          with {:ok, claims} <- Bizforge.Guardian.decode_and_verify(token),
+               {:ok, user} <- Bizforge.Guardian.resource_from_claims(claims) do
+            conn
+            |> assign(:current_user, user)
+            |> assign(:claims, claims)
+          else
+            _ ->
+              conn
+              |> put_status(401)
+              |> json(%{error: "unauthorized", code: "INVALID_TOKEN"})
+              |> halt()
+          end
+        rescue
           _ ->
             conn
-            |> put_status(401)
-            |> json(%{error: "unauthorized", code: "INVALID_TOKEN"})
+            |> put_status(503)
+            |> json(%{error: "service_unavailable", message: "Auth service initializing"})
             |> halt()
         end
     end

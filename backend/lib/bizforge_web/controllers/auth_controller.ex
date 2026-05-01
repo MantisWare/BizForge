@@ -104,8 +104,20 @@ defmodule BizforgeWeb.AuthController do
       })
     else
       _ ->
-        json(conn, %{authenticated: false})
+        has_users =
+          try do
+            Repo.exists?(from u in User, limit: 1)
+          rescue
+            _ -> false
+          end
+
+        json(conn, %{authenticated: false, has_users: has_users, registration_open: !has_users})
     end
+  rescue
+    _ ->
+      conn
+      |> put_status(503)
+      |> json(%{error: "service_unavailable", message: "Auth service initializing"})
   end
 
   def refresh(conn, _params) do

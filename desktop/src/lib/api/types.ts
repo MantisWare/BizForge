@@ -759,16 +759,39 @@ export type IntegrationCategory =
   | "monitoring"
   | "storage"
   | "auth"
+  | "project_management"
+  | "analytics"
+  | "design"
+  | "cloud"
+  | "database"
   | "custom";
+
+export const INTEGRATION_CATEGORY_LABELS: Record<IntegrationCategory, string> = {
+  version_control: "Version Control",
+  communication: "Communication & Chat",
+  ci_cd: "CI/CD & Deployment",
+  monitoring: "Monitoring & Observability",
+  storage: "Storage & Documents",
+  auth: "AI Providers & Auth",
+  project_management: "Project Management",
+  analytics: "Analytics & Data",
+  design: "Design & Creative",
+  cloud: "Cloud Infrastructure",
+  database: "Databases",
+  custom: "Custom & Other",
+};
 
 export interface Integration {
   id: string;
   name: string;
   category: IntegrationCategory;
   provider: string;
+  description: string;
+  features: readonly string[];
   icon_url: string | null;
   status: "connected" | "disconnected" | "error";
   config: Record<string, unknown>;
+  docs_url: string | null;
   last_sync_at: string | null;
   created_at: string;
 }

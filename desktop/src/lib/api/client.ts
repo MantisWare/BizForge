@@ -2262,7 +2262,10 @@ export const environment = {
     );
     return data.agent_apps ?? [];
   },
-  resources: () => request<unknown>("/environment/resources"),
+  resources: async (): Promise<unknown> => {
+    const data = await request<{ resources?: unknown }>("/environment/resources");
+    return (data as Record<string, unknown>).resources ?? data;
+  },
   capabilities: async (): Promise<unknown[]> => {
     const data = await request<{ capabilities: unknown[] }>(
       "/environment/capabilities",

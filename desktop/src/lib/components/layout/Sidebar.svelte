@@ -93,8 +93,8 @@
 </script>
 
 <aside class="sb-sidebar" class:collapsed={isCollapsed} aria-label="Main navigation">
-  <!-- Toggle button -->
-  <div class="sb-toggle-row">
+  <!-- Brand icon row -->
+  <div class="sb-brand-row" class:sb-brand-row--collapsed={isCollapsed}>
     {#if iconFailed}
       <div
         class="sb-brand-icon sb-brand-fallback"
@@ -113,23 +113,41 @@
         class:sb-brand-icon--expanded={!isCollapsed}
         src="/OSAIconLogo.png"
         alt="BizForge"
-        width={isCollapsed ? 28 : 34}
-        height={isCollapsed ? 28 : 34}
+        width={isCollapsed ? 28 : 50}
+        height={isCollapsed ? 28 : 50}
         onerror={() => { iconFailed = true; }}
       />
     {/if}
-    <span class="sb-toggle-spacer"></span>
-    <button
-      class="sb-toggle"
-      onclick={onToggle}
-      aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d={isCollapsed ? ICONS.hamburger : ICONS.chevronLeft} />
-      </svg>
-    </button>
+    {#if !isCollapsed}
+      <span class="sb-toggle-spacer"></span>
+      <button
+        class="sb-toggle"
+        onclick={onToggle}
+        aria-label="Collapse sidebar"
+        title="Collapse sidebar"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ICONS.chevronLeft} />
+        </svg>
+      </button>
+    {/if}
   </div>
+
+  <!-- Collapsed: hamburger toggle below brand icon, aligned with nav icons -->
+  {#if isCollapsed}
+    <div class="sb-toggle-row-collapsed">
+      <button
+        class="sb-toggle"
+        onclick={onToggle}
+        aria-label="Expand sidebar"
+        title="Expand sidebar"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ICONS.hamburger} />
+        </svg>
+      </button>
+    </div>
+  {/if}
 
   {#if !isCollapsed}
     <!-- Workspace Switcher -->
@@ -333,7 +351,6 @@
         <SidebarNavItem href="/app/integrations" label="Integrations" icon={ICONS.integrations} active={isActive('/app/integrations') || isActive('/app/webhooks') || isActive('/app/plugins')} description="Connect AI adapters, external services, webhooks, and plugins. Install and manage backends." />
         <SidebarNavItem href="/app/secrets" label="Secrets" icon={ICONS.secrets} active={isActive('/app/secrets')} description="Secure vault for API keys, tokens, passwords, and certificates. Agents reference secrets by name." />
         <SidebarNavItem href="/app/environment" label="Environment" icon={ICONS.terminal} active={isActive('/app/environment')} description="Detected local runtime: installed apps, system resources, and agent capabilities on your machine." />
-        <SidebarNavItem href="/app/config" label="Config" icon={ICONS.config} active={isActive('/app/config') || isActive('/app/gateways') || isActive('/app/execution-workspaces') || isActive('/app/audit')} description="Gateways, execution workspaces, and audit log. Advanced system configuration and compliance." />
       </SidebarSection>
     {:else}
       <!-- Collapsed icon-only mode -->
@@ -395,11 +412,24 @@
     width: var(--sidebar-collapsed-width);
   }
 
-  /* Toggle row */
-  .sb-toggle-row {
+  /* Brand row */
+  .sb-brand-row {
     display: flex;
     align-items: center;
     padding: 12px 8px 4px;
+    flex-shrink: 0;
+  }
+
+  .sb-brand-row--collapsed {
+    justify-content: center;
+    padding: 12px 0 4px;
+  }
+
+  /* Collapsed hamburger toggle */
+  .sb-toggle-row-collapsed {
+    display: flex;
+    justify-content: center;
+    padding: 2px 0 4px;
     flex-shrink: 0;
   }
 
@@ -411,8 +441,8 @@
   }
 
   .sb-brand-icon--expanded {
-    width: 34px;
-    height: 34px;
+    width: 50px;
+    height: 50px;
     margin-left: 2px;
   }
 

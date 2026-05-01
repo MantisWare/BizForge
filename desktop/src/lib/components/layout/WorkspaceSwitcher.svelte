@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/WorkspaceSwitcher.svelte -->
 <script lang="ts">
-  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { workspaceStore, type LocalWorkspace } from '$lib/stores/workspace.svelte';
   import { toastStore } from '$lib/stores/toasts.svelte';
   import { isTauri } from '$lib/utils/platform';
 
@@ -9,6 +9,11 @@
   let newName = $state('');
   let triggerEl = $state<HTMLButtonElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+
+  // Delete confirmation modal state
+  let deleteTarget = $state<LocalWorkspace | null>(null);
+  let deleteAlsoFiles = $state(false);
+  let isDeleting = $state(false);
 
   let active = $derived(workspaceStore.activeWorkspace);
   let workspaces = $derived(workspaceStore.workspaces);
@@ -123,6 +128,58 @@
     }
   }
 
+  function promptDelete(e: MouseEvent, ws: LocalWorkspace) {
+    e.stopPropagation();
+    deleteTarget = ws;
+    deleteAlsoFiles = false;
+    isDeleting = false;
+  }
+
+  function cancelDelete() {
+    deleteTarget = null;
+    deleteAlsoFiles = false;
+    isDeleting = false;
+  }
+
+  async function confirmDelete() {
+    if (deleteTarget === null || isDeleting) return;
+    isDeleting = true;
+    const wsName = displayName(deleteTarget);
+
+    try {
+      if (deleteAlsoFiles && isTauri()) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const bizforgePath = deleteTarget.path.endsWith('.bizforge')
+          ? deleteTarget.path
+          : deleteTarget.path + '/.bizforge';
+        try {
+          await invoke('remove_dir_recursive', { path: bizforgePath });
+        } catch (fsErr) {
+          console.warn('[bizforge:workspace] Could not delete .bizforge/ directory:', fsErr);
+          toastStore.warning('Files not deleted', `Could not remove .bizforge/ at ${deleteTarget.path}. The workspace was still removed from the list.`);
+        }
+      }
+
+      await workspaceStore.removeWorkspace(deleteTarget.id);
+      toastStore.success(
+        'Workspace removed',
+        deleteAlsoFiles
+          ? `"${wsName}" removed and .bizforge/ files deleted`
+          : `"${wsName}" removed from list (files kept on disk)`,
+      );
+    } catch (err) {
+      toastStore.error('Delete failed', String(err));
+    } finally {
+      deleteTarget = null;
+      deleteAlsoFiles = false;
+      isDeleting = false;
+    }
+  }
+
+  function handleDeleteKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') cancelDelete();
+  }
+
   function handleCreateKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') { e.preventDefault(); void submitCreate(); }
     if (e.key === 'Escape') { isCreating = false; }
@@ -179,6 +236,63 @@
     </span>
   </button>
 
+  {#if deleteTarget !== null}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="ws-modal-backdrop" role="dialog" aria-modal="true" aria-label="Delete workspace confirmation" onkeydown={handleDeleteKeydown}>
+      <div class="ws-modal" onclick={(e) => e.stopPropagation()}>
+        <div class="ws-modal-header">
+          <svg class="ws-modal-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <h3 class="ws-modal-title">Remove Workspace</h3>
+        </div>
+
+        <p class="ws-modal-body">
+          Are you sure you want to remove <strong>{displayName(deleteTarget)}</strong>?
+        </p>
+        <p class="ws-modal-path">{deleteTarget.path}</p>
+
+        <label class="ws-modal-checkbox">
+          <input type="checkbox" bind:checked={deleteAlsoFiles} />
+          <span class="ws-modal-checkbox-label">
+            Also delete <code>.bizforge/</code> files from disk
+          </span>
+        </label>
+
+        {#if deleteAlsoFiles}
+          <div class="ws-modal-warning">
+            This will permanently delete the <code>.bizforge/</code> directory including all agent definitions, schedules, skills, and workspace configuration. Your project files outside <code>.bizforge/</code> will not be touched.
+          </div>
+        {:else}
+          <div class="ws-modal-info">
+            The workspace will be removed from BizForge's list. All files on disk will remain untouched — you can re-open it later.
+          </div>
+        {/if}
+
+        <div class="ws-modal-actions">
+          <button class="ws-modal-btn ws-modal-btn--cancel" onclick={cancelDelete} disabled={isDeleting}>
+            Cancel
+          </button>
+          <button
+            class="ws-modal-btn"
+            class:ws-modal-btn--danger={deleteAlsoFiles}
+            class:ws-modal-btn--confirm={!deleteAlsoFiles}
+            onclick={confirmDelete}
+            disabled={isDeleting}
+          >
+            {#if isDeleting}
+              Removing…
+            {:else if deleteAlsoFiles}
+              Delete Workspace & Files
+            {:else}
+              Remove from List
+            {/if}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   {#if isOpen}
     <div
       bind:this={panelEl}
@@ -189,29 +303,39 @@
       {#if workspaces.length > 0}
         <div class="ws-list">
           {#each workspaces as ws (ws.id)}
-            <button
-              class="ws-item"
-              class:active={ws.id === active?.id}
-              onclick={() => selectWorkspace(ws.id)}
-              role="option"
-              aria-selected={ws.id === active?.id}
-            >
-              <span class="ws-item-row">
-                {#if ws.id === active?.id}
-                  <span class="ws-item-check" aria-hidden="true">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M5 13l4 4L19 7" />
-                    </svg>
+            <div class="ws-item-wrapper" role="option" aria-selected={ws.id === active?.id}>
+              <button
+                class="ws-item"
+                class:active={ws.id === active?.id}
+                onclick={() => selectWorkspace(ws.id)}
+              >
+                <span class="ws-item-row">
+                  {#if ws.id === active?.id}
+                    <span class="ws-item-check" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  {:else}
+                    <span class="ws-item-check-placeholder" aria-hidden="true"></span>
+                  {/if}
+                  <span class="ws-item-text">
+                    <span class="ws-item-name">{displayName(ws)}</span>
+                    <span class="ws-item-path">{shortPath(ws.path)}</span>
                   </span>
-                {:else}
-                  <span class="ws-item-check-placeholder" aria-hidden="true"></span>
-                {/if}
-                <span class="ws-item-text">
-                  <span class="ws-item-name">{displayName(ws)}</span>
-                  <span class="ws-item-path">{shortPath(ws.path)}</span>
                 </span>
-              </span>
-            </button>
+              </button>
+              <button
+                class="ws-item-delete"
+                title="Remove workspace"
+                aria-label="Remove workspace {displayName(ws)}"
+                onclick={(e) => promptDelete(e, ws)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+              </button>
+            </div>
           {/each}
         </div>
       {:else}
@@ -516,5 +640,223 @@
   .ws-create-btn:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  /* Workspace item wrapper — holds the item button + hover-reveal delete */
+  .ws-item-wrapper {
+    display: flex;
+    align-items: stretch;
+    border-radius: var(--radius-xs);
+    transition: background 100ms ease;
+    position: relative;
+  }
+
+  .ws-item-wrapper:hover {
+    background: var(--bg-surface);
+  }
+
+  .ws-item-wrapper .ws-item {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ws-item-wrapper .ws-item:hover {
+    background: transparent;
+  }
+
+  .ws-item-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    opacity: 0;
+    transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
+  }
+
+  .ws-item-wrapper:hover .ws-item-delete {
+    opacity: 1;
+  }
+
+  .ws-item-delete:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Confirmation modal */
+  .ws-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .ws-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg, 12px);
+    padding: 20px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ws-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ws-modal-icon {
+    color: #eab308;
+    flex-shrink: 0;
+  }
+
+  .ws-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .ws-modal-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .ws-modal-path {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono, monospace);
+    margin: -4px 0 0;
+    word-break: break-all;
+  }
+
+  .ws-modal-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-xs);
+    transition: background 100ms ease;
+    margin: 4px 0;
+  }
+
+  .ws-modal-checkbox:hover {
+    background: var(--bg-surface);
+  }
+
+  .ws-modal-checkbox input[type="checkbox"] {
+    accent-color: #ef4444;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .ws-modal-checkbox-label {
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .ws-modal-checkbox-label code {
+    font-size: 12px;
+    padding: 1px 4px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    color: var(--text-secondary);
+  }
+
+  .ws-modal-warning {
+    font-size: 12px;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: var(--radius-xs);
+    padding: 8px 10px;
+    line-height: 1.5;
+  }
+
+  .ws-modal-warning code {
+    font-size: 11px;
+    padding: 1px 3px;
+    background: rgba(251, 191, 36, 0.12);
+    border-radius: 3px;
+  }
+
+  .ws-modal-info {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    padding: 8px 10px;
+    line-height: 1.5;
+  }
+
+  .ws-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .ws-modal-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--radius-xs);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms ease, opacity 120ms ease;
+  }
+
+  .ws-modal-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .ws-modal-btn--cancel {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+  }
+
+  .ws-modal-btn--cancel:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+
+  .ws-modal-btn--confirm {
+    background: var(--accent-primary, #f26522);
+    color: #fff;
+  }
+
+  .ws-modal-btn--confirm:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .ws-modal-btn--danger {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .ws-modal-btn--danger:hover:not(:disabled) {
+    background: #dc2626;
   }
 </style>

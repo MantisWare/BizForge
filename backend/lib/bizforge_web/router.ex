@@ -27,6 +27,12 @@ defmodule BizforgeWeb.Router do
     plug BizforgeWeb.Plugs.ApiKeyAuth
   end
 
+  # Root-level health check — convenience alias so /health works without /api/v1 prefix
+  scope "/", BizforgeWeb do
+    pipe_through :api
+    get "/health", HealthController, :show
+  end
+
   # Health check — no auth
   scope "/api/v1", BizforgeWeb do
     pipe_through :api

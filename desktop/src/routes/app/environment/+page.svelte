@@ -205,35 +205,41 @@
 
       {#if environmentStore.resources}
         {@const r = environmentStore.resources}
+        {@const cpu = r.cpu_percent ?? 0}
+        {@const memUsed = r.memory_used_gb ?? 0}
+        {@const memTotal = r.memory_total_gb ?? 0}
+        {@const diskFree = r.disk_free_gb ?? 0}
+        {@const diskTotal = r.disk_total_gb ?? 0}
+        {@const netConns = r.network_connections ?? 0}
         <div class="env-resources-row">
           <div class="env-resource-stat">
             <span class="env-resource-label">CPU</span>
             <div class="env-resource-bar-wrap">
               <div class="env-resource-bar">
-                <div class="env-resource-fill env-resource-fill--cpu" style="width: {cpuBarWidth(r.cpu_percent)}"></div>
+                <div class="env-resource-fill env-resource-fill--cpu" style="width: {cpuBarWidth(cpu)}"></div>
               </div>
             </div>
-            <span class="env-resource-value">{r.cpu_percent.toFixed(1)}%</span>
+            <span class="env-resource-value">{cpu.toFixed(1)}%</span>
           </div>
 
           <div class="env-resource-stat">
             <span class="env-resource-label">Memory</span>
             <div class="env-resource-bar-wrap">
               <div class="env-resource-bar">
-                <div class="env-resource-fill env-resource-fill--mem" style="width: {memBarWidth(r.memory_used_gb, r.memory_total_gb)}"></div>
+                <div class="env-resource-fill env-resource-fill--mem" style="width: {memBarWidth(memUsed, memTotal)}"></div>
               </div>
             </div>
-            <span class="env-resource-value">{r.memory_used_gb.toFixed(1)} / {r.memory_total_gb.toFixed(0)} GB</span>
+            <span class="env-resource-value">{memUsed.toFixed(1)} / {memTotal.toFixed(0)} GB</span>
           </div>
 
           <div class="env-resource-stat env-resource-stat--plain">
             <span class="env-resource-label">Disk Free</span>
-            <span class="env-resource-value">{r.disk_free_gb.toFixed(1)} / {r.disk_total_gb.toFixed(0)} GB</span>
+            <span class="env-resource-value">{diskFree.toFixed(1)} / {diskTotal.toFixed(0)} GB</span>
           </div>
 
           <div class="env-resource-stat env-resource-stat--plain">
             <span class="env-resource-label">Network</span>
-            <span class="env-resource-value">{r.network_connections} connections</span>
+            <span class="env-resource-value">{netConns} connections</span>
           </div>
         </div>
       {:else}

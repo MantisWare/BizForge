@@ -129,7 +129,9 @@
 
 <PageShell
   title="Integrations"
-  subtitle="{installedCount} adapters installed, {runningCount} running"
+  subtitle={activeTab === 'adapters'
+    ? `${installedCount} adapters installed, ${runningCount} running`
+    : `${integrationsStore.connectedCount} of ${integrationsStore.totalCount} services connected`}
 >
   <div class="int-tabs">
     <button
@@ -294,31 +296,149 @@
     {/if}
 
   {:else}
-    <!-- Services / Generic Integrations -->
+    <!-- Services / External Integrations -->
     {#if integrationsStore.loading && integrationsStore.integrations.length === 0}
       <div class="int-loading" role="status">
         <div class="int-spinner"></div>
-        <span>Loading integrations...</span>
+        <span>Loading services...</span>
       </div>
     {:else if integrationsStore.integrations.length === 0}
       <div class="int-empty" role="status">
-        <p>No service integrations configured yet.</p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <p>No service integrations available yet.</p>
       </div>
     {:else}
-      <div class="int-grid" role="list">
-        {#each integrationsStore.integrations as integration (integration.id)}
-          <div class="int-card" role="listitem">
-            {#if integration.icon_url}
-              <img class="int-icon" src={integration.icon_url} alt="{integration.name} icon" />
-            {/if}
-            <div class="int-info">
-              <div class="int-name">{integration.name}</div>
-              <div class="int-provider">{integration.provider}</div>
-            </div>
-            <span class="int-status int-status--{integration.status}">{integration.status}</span>
-          </div>
+      <!-- Search & Filter Bar -->
+      <div class="svc-toolbar">
+        <div class="svc-search">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
+          <input
+            type="text"
+            class="svc-search-input"
+            placeholder="Search services..."
+            bind:value={integrationsStore.searchQuery}
+          />
+          {#if integrationsStore.searchQuery.length > 0}
+            <button class="svc-search-clear" onclick={() => integrationsStore.searchQuery = ''} aria-label="Clear search">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </button>
+          {/if}
+        </div>
+        <div class="svc-summary">
+          <span class="svc-summary-count">{integrationsStore.connectedCount}</span> of <span class="svc-summary-count">{integrationsStore.totalCount}</span> connected
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="svc-filters">
+        <button
+          class="svc-pill"
+          class:svc-pill--active={integrationsStore.filterCategory === 'all'}
+          onclick={() => integrationsStore.filterCategory = 'all'}
+        >
+          All
+          <span class="svc-pill-count">{integrationsStore.totalCount}</span>
+        </button>
+        {#each integrationsStore.categories as cat (cat.value)}
+          <button
+            class="svc-pill"
+            class:svc-pill--active={integrationsStore.filterCategory === cat.value}
+            onclick={() => integrationsStore.filterCategory = cat.value}
+          >
+            {cat.label}
+            <span class="svc-pill-count">{cat.count}</span>
+          </button>
         {/each}
       </div>
+
+      <!-- Grouped Service Cards -->
+      {#if integrationsStore.filtered.length === 0}
+        <div class="int-empty" role="status">
+          <p>No services match your search.</p>
+        </div>
+      {:else}
+        {#each integrationsStore.grouped as group (group.category)}
+          <div class="svc-category">
+            <div class="svc-category-header">
+              <h3 class="svc-category-title">{group.label}</h3>
+              <span class="svc-category-stat">
+                {group.connectedCount}/{group.integrations.length} connected
+              </span>
+            </div>
+            <div class="svc-grid" role="list">
+              {#each group.integrations as integration (integration.id)}
+                <div class="svc-card" class:svc-card--connected={integration.status === 'connected'} class:svc-card--error={integration.status === 'error'} role="listitem">
+                  <div class="svc-card-top">
+                    <div class="svc-card-identity">
+                      <div class="svc-card-icon" class:svc-card-icon--connected={integration.status === 'connected'}>
+                        {#if integration.icon_url}
+                          <img src={integration.icon_url} alt="" width="20" height="20" />
+                        {:else}
+                          <span class="svc-card-initial">{integration.name.charAt(0)}</span>
+                        {/if}
+                      </div>
+                      <div class="svc-card-meta">
+                        <span class="svc-card-name">{integration.name}</span>
+                        <span class="svc-card-provider">{integration.provider}</span>
+                      </div>
+                    </div>
+                    <span class="svc-status svc-status--{integration.status}">
+                      {#if integration.status === 'connected'}
+                        <span class="svc-status-dot svc-status-dot--connected"></span>
+                        Connected
+                      {:else if integration.status === 'error'}
+                        <span class="svc-status-dot svc-status-dot--error"></span>
+                        Error
+                      {:else}
+                        Available
+                      {/if}
+                    </span>
+                  </div>
+
+                  <p class="svc-card-desc">{integration.description}</p>
+
+                  {#if integration.features.length > 0}
+                    <div class="svc-card-features">
+                      {#each integration.features as feature}
+                        <span class="svc-feature-tag">{feature}</span>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  <div class="svc-card-footer">
+                    {#if integration.status === 'connected'}
+                      <button
+                        class="svc-btn svc-btn--disconnect"
+                        onclick={() => integrationsStore.disconnect(integration.provider)}
+                      >
+                        Disconnect
+                      </button>
+                      {#if integration.last_sync_at}
+                        <span class="svc-card-sync">
+                          Synced {new Date(integration.last_sync_at).toLocaleDateString()}
+                        </span>
+                      {/if}
+                    {:else}
+                      <button
+                        class="svc-btn svc-btn--connect"
+                        onclick={() => integrationsStore.connect(integration.provider)}
+                      >
+                        Connect
+                      </button>
+                    {/if}
+                    {#if integration.docs_url}
+                      <a class="svc-docs-link" href={integration.docs_url} target="_blank" rel="noopener noreferrer" aria-label="View {integration.name} docs">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 9v4H3V4h4"/><path d="M8 8L14 2"/><path d="M10 2h4v4"/></svg>
+                        Docs
+                      </a>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      {/if}
     {/if}
   {/if}
 </PageShell>
@@ -450,23 +570,180 @@
   .int-spinner--sm { width: 14px; height: 14px; border-width: 1.5px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .int-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px; padding: 0 24px 24px;
+  /* ─── Service Toolbar ──────────────────────────────────────────────────── */
+  .svc-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 0 24px 12px;
   }
-  .int-card {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 16px; border-radius: 10px;
-    background: var(--dbg2, #141414); border: 1px solid var(--dbd, rgba(255,255,255,0.06));
+  .svc-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px;
+    background: var(--dbg2, #141414); border: 1px solid var(--dbd, rgba(255,255,255,0.08));
+    flex: 1; max-width: 320px;
+    color: var(--dt3, #777);
   }
-  .int-icon { width: 32px; height: 32px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
-  .int-info { flex: 1; min-width: 0; }
-  .int-name { font-size: 14px; font-weight: 500; color: var(--dt, #fff); margin-bottom: 2px; }
-  .int-provider { font-size: 12px; color: var(--dt3, #777); }
-  .int-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
-  .int-status--connected { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); }
-  .int-status--disconnected { background: var(--dbg3, rgba(255,255,255,0.04)); color: var(--dt3, #777); }
-  .int-status--error { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+  .svc-search:focus-within { border-color: rgba(255,255,255,0.15); }
+  .svc-search-input {
+    background: none; border: none; outline: none; flex: 1; min-width: 0;
+    font-size: 13px; color: var(--dt, #fff);
+  }
+  .svc-search-input::placeholder { color: var(--dt4, #555); }
+  .svc-search-clear {
+    background: none; border: none; cursor: pointer; padding: 2px;
+    color: var(--dt4, #555); display: flex;
+  }
+  .svc-search-clear:hover { color: var(--dt2, #aaa); }
+  .svc-summary { font-size: 12px; color: var(--dt3, #777); white-space: nowrap; }
+  .svc-summary-count { font-weight: 600; color: var(--dt2, #aaa); }
+
+  /* ─── Category Filter Pills ──────────────────────────────────────────── */
+  .svc-filters {
+    display: flex; gap: 6px; padding: 0 24px 16px;
+    overflow-x: auto; flex-wrap: wrap;
+  }
+  .svc-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 9999px; border: 1px solid var(--dbd, rgba(255,255,255,0.08));
+    background: transparent; color: var(--dt3, #777); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 150ms; white-space: nowrap;
+  }
+  .svc-pill:hover { background: var(--dbg2, rgba(255,255,255,0.04)); color: var(--dt2, #aaa); }
+  .svc-pill--active {
+    background: rgba(255, 255, 255, 0.08); color: var(--dt, #fff);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .svc-pill-count {
+    font-size: 10px; padding: 0 5px; border-radius: 9999px;
+    background: var(--dbg3, rgba(255,255,255,0.06)); color: var(--dt4, #555);
+  }
+  .svc-pill--active .svc-pill-count {
+    background: rgba(255, 255, 255, 0.12); color: var(--dt2, #aaa);
+  }
+
+  /* ─── Category Groups ────────────────────────────────────────────────── */
+  .svc-category { margin-bottom: 24px; }
+  .svc-category-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px 10px; gap: 8px;
+  }
+  .svc-category-title {
+    font-size: 13px; font-weight: 600; color: var(--dt2, #aaa);
+    text-transform: uppercase; letter-spacing: 0.5px; margin: 0;
+  }
+  .svc-category-stat {
+    font-size: 11px; color: var(--dt4, #555);
+  }
+
+  /* ─── Service Grid ───────────────────────────────────────────────────── */
+  .svc-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px; padding: 0 24px;
+  }
+
+  /* ─── Service Card ───────────────────────────────────────────────────── */
+  .svc-card {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 16px; border-radius: 12px;
+    background: var(--dbg2, #141414);
+    border: 1px solid var(--dbd, rgba(255,255,255,0.06));
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+  .svc-card:hover { border-color: rgba(255, 255, 255, 0.1); }
+  .svc-card--connected { border-color: rgba(255, 255, 255, 0.1); }
+  .svc-card--error { border-color: rgba(239, 68, 68, 0.25); }
+
+  .svc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .svc-card-identity { display: flex; align-items: center; gap: 10px; }
+  .svc-card-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--dbg3, rgba(255,255,255,0.04));
+    border: 1px solid var(--dbd, rgba(255,255,255,0.06));
+    color: var(--dt3, #777); font-weight: 600; font-size: 15px;
+  }
+  .svc-card-icon--connected {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--dt, #fff);
+  }
+  .svc-card-icon img { border-radius: 4px; }
+  .svc-card-initial { line-height: 1; }
+  .svc-card-meta { display: flex; flex-direction: column; gap: 1px; }
+  .svc-card-name { font-size: 14px; font-weight: 600; color: var(--dt, #fff); }
+  .svc-card-provider { font-size: 11px; color: var(--dt4, #555); text-transform: capitalize; }
+
+  .svc-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; padding: 3px 10px; border-radius: 9999px;
+    white-space: nowrap; flex-shrink: 0; font-weight: 500;
+  }
+  .svc-status--connected {
+    background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .svc-status--disconnected {
+    background: transparent; color: var(--dt4, #555);
+    border: 1px solid var(--dbd, rgba(255,255,255,0.06));
+  }
+  .svc-status--error {
+    background: rgba(239, 68, 68, 0.12); color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .svc-status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .svc-status-dot--connected {
+    background: #4ade80;
+    box-shadow: 0 0 4px rgba(74, 222, 128, 0.4);
+  }
+  .svc-status-dot--error { background: #f87171; }
+
+  .svc-card-desc {
+    font-size: 12px; line-height: 1.55; color: var(--dt3, #777);
+    margin: 0; display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .svc-card-features {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .svc-feature-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: var(--dbg3, rgba(255,255,255,0.04));
+    color: var(--dt3, #777);
+    border: 1px solid var(--dbd, rgba(255,255,255,0.04));
+  }
+
+  .svc-card-footer {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: auto; padding-top: 4px;
+  }
+  .svc-btn {
+    padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: none; transition: all 150ms;
+  }
+  .svc-btn--connect {
+    background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .svc-btn--connect:hover {
+    background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.8);
+  }
+  .svc-btn--disconnect {
+    background: transparent; color: var(--dt3, #777);
+    border: 1px solid var(--dbd, rgba(255,255,255,0.08));
+  }
+  .svc-btn--disconnect:hover {
+    background: rgba(239, 68, 68, 0.08); color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+  .svc-card-sync { font-size: 10px; color: var(--dt4, #555); }
+  .svc-docs-link {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; color: var(--dt4, #555); text-decoration: none;
+    margin-left: auto; transition: color 150ms;
+  }
+  .svc-docs-link:hover { color: var(--dt2, #aaa); }
 
   /* ─── OSA Connected Banner ──────────────────────────────────────────────── */
   .osa-connected {

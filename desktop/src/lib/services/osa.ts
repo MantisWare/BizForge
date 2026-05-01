@@ -22,17 +22,20 @@ export interface OsaHealth {
 
 /** Check if OSA is reachable on port 9090 or 9089, return health payload */
 export async function checkOsaHealth(): Promise<OsaHealth | null> {
-  // Try direct OSA health endpoint on both ports
-  for (const port of [9090, 9089]) {
-    for (const path of ["/health", "/api/v1/health"]) {
-      try {
-        const res = await fetch(`http://127.0.0.1:${port}${path}`, {
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) return await res.json();
-      } catch {
-        /* try next */
-      }
+  // Port 9090 = standalone OSA (headless), 9089 = Phoenix backend
+  const probes: Array<{ port: number; path: string }> = [
+    { port: 9090, path: "/health" },
+    { port: 9089, path: "/api/v1/health" },
+    { port: 9089, path: "/health" },
+  ];
+  for (const { port, path } of probes) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}${path}`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) return await res.json();
+    } catch {
+      /* try next */
     }
   }
   return null;
@@ -40,9 +43,14 @@ export async function checkOsaHealth(): Promise<OsaHealth | null> {
 
 /** Determine which port OSA is responding on */
 export async function findOsaPort(): Promise<number | null> {
-  for (const port of [9090, 9089]) {
+  const probes: Array<{ port: number; path: string }> = [
+    { port: 9090, path: "/health" },
+    { port: 9089, path: "/api/v1/health" },
+    { port: 9089, path: "/health" },
+  ];
+  for (const { port, path } of probes) {
     try {
-      const res = await fetch(`http://127.0.0.1:${port}/health`, {
+      const res = await fetch(`http://127.0.0.1:${port}${path}`, {
         signal: AbortSignal.timeout(2000),
       });
       if (res.ok) return port;
@@ -120,9 +128,13 @@ export async function restartOsa(osaPath?: string): Promise<{ stopped: OsaStopRe
 
 /** Check what OSA's onboarding has detected */
 export async function getOsaOnboardingStatus(): Promise<unknown | null> {
-  for (const port of [9090, 9089]) {
+  const probes: Array<{ port: number; path: string }> = [
+    { port: 9090, path: "/onboarding/status" },
+    { port: 9089, path: "/api/v1/onboarding/status" },
+  ];
+  for (const { port, path } of probes) {
     try {
-      const res = await fetch(`http://127.0.0.1:${port}/onboarding/status`, {
+      const res = await fetch(`http://127.0.0.1:${port}${path}`, {
         signal: AbortSignal.timeout(2000),
       });
       if (res.ok) return await res.json();

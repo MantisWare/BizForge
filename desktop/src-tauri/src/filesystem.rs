@@ -1594,14 +1594,15 @@ pub struct SystemResourceInfo {
     pub pid: u32,
     pub app_memory_mb: f64,
     pub uptime_seconds: u64,
+    pub disk_total_gb: f64,
+    pub disk_free_gb: f64,
 }
 
 #[tauri::command]
 pub async fn get_system_resources() -> Result<SystemResourceInfo, String> {
-    use sysinfo::System;
+    use sysinfo::{Disks, System};
 
     let mut sys = System::new_all();
-    // Brief pause to allow CPU measurement to stabilize
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_all();
 
@@ -1622,7 +1623,6 @@ pub async fn get_system_resources() -> Result<SystemResourceInfo, String> {
         .map(|c| c.brand().to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
-    // Get current process memory
     let current_pid = sysinfo::get_current_pid().unwrap_or(sysinfo::Pid::from(0));
     let app_memory_mb = sys
         .process(current_pid)
@@ -1630,6 +1630,17 @@ pub async fn get_system_resources() -> Result<SystemResourceInfo, String> {
         .unwrap_or(0.0);
 
     let uptime = System::uptime();
+
+    // Aggregate disk space across all mounted disks
+    let disks = Disks::new_with_refreshed_list();
+    let mut disk_total: u64 = 0;
+    let mut disk_free: u64 = 0;
+    for disk in disks.list() {
+        disk_total += disk.total_space();
+        disk_free += disk.available_space();
+    }
+    let disk_total_gb = disk_total as f64 / (1024.0 * 1024.0 * 1024.0);
+    let disk_free_gb = disk_free as f64 / (1024.0 * 1024.0 * 1024.0);
 
     Ok(SystemResourceInfo {
         memory_total_gb: (total_mem * 10.0).round() / 10.0,
@@ -1645,5 +1656,32 @@ pub async fn get_system_resources() -> Result<SystemResourceInfo, String> {
         pid: std::process::id(),
         app_memory_mb: (app_memory_mb * 10.0).round() / 10.0,
         uptime_seconds: uptime,
+        disk_total_gb: (disk_total_gb * 10.0).round() / 10.0,
+        disk_free_gb: (disk_free_gb * 10.0).round() / 10.0,
     })
+}
+
+// ── Remove directory recursively ─────────────────────────────────────────────
+
+#[tauri::command]
+pub fn remove_dir_recursive(path: String) -> Result<(), String> {
+    let resolved = expand_tilde(&path);
+
+    if !resolved.exists() {
+        return Ok(());
+    }
+
+    if !resolved.is_dir() {
+        return Err(format!("Path is not a directory: {}", resolved.display()));
+    }
+
+    // Safety: only allow deleting directories that look like a .bizforge/ directory
+    // or are inside one, to prevent accidental deletion of unrelated paths.
+    let path_str = resolved.to_string_lossy();
+    if !path_str.contains(".bizforge") {
+        return Err("Refusing to delete a directory that is not a .bizforge path".to_string());
+    }
+
+    std::fs::remove_dir_all(&resolved)
+        .map_err(|e| format!("Failed to remove {}: {}", resolved.display(), e))
 }

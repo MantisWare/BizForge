@@ -1,5 +1,6 @@
 // src/lib/stores/environment.svelte.ts
 import { environment as envApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
 import { toastStore } from "./toasts.svelte";
 
 interface DetectedApp {
@@ -33,12 +34,12 @@ interface AgentApp {
 }
 
 interface SystemResources {
-  cpu_percent: number;
-  memory_used_gb: number;
-  memory_total_gb: number;
-  disk_free_gb: number;
-  disk_total_gb: number;
-  network_connections: number;
+  cpu_percent?: number;
+  memory_used_gb?: number;
+  memory_total_gb?: number;
+  disk_free_gb?: number;
+  disk_total_gb?: number;
+  network_connections?: number;
 }
 
 interface Capability {
@@ -109,9 +110,41 @@ class EnvironmentStore {
   }
 
   async fetchResources(): Promise<void> {
+    // Prefer real OS metrics from Tauri IPC when running as a desktop app
+    if (isTauri()) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const info = await invoke<{
+          cpu_usage_pct: number;
+          memory_used_gb: number;
+          memory_total_gb: number;
+          memory_free_gb: number;
+          disk_total_gb: number;
+          disk_free_gb: number;
+        }>("get_system_resources");
+
+        this.resources = {
+          cpu_percent: info.cpu_usage_pct,
+          memory_used_gb: info.memory_used_gb,
+          memory_total_gb: info.memory_total_gb,
+          disk_free_gb: info.disk_free_gb,
+          disk_total_gb: info.disk_total_gb,
+          network_connections: 0,
+        };
+        this.error = null;
+        return;
+      } catch {
+        // Fall through to HTTP API
+      }
+    }
+
     try {
       const data = await envApi.resources();
-      this.resources = data as SystemResources;
+      if (data !== null && data !== undefined && typeof data === "object") {
+        this.resources = data as SystemResources;
+      } else {
+        this.resources = null;
+      }
       this.error = null;
     } catch (e) {
       const msg = (e as Error).message;

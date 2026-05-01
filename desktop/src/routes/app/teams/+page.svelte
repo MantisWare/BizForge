@@ -2,11 +2,17 @@
 <script lang="ts">
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
+  import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
   import { organizationsStore } from '$lib/stores/organizations.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
+  import { settingsStore } from '$lib/stores/settings.svelte';
+  import { providersStore } from '$lib/stores/providers.svelte';
+  import { toastStore } from '$lib/stores/toasts.svelte';
   import { teams as teamsApi } from '$api/client';
-  import type { Team, BizforgeAgent } from '$api/types';
+  import { HIREABLE_TEAM_TEMPLATES, TEMPLATE_AGENTS } from '$lib/data/team-templates';
+  import type { TeamTemplateId } from '$lib/data/team-templates';
+  import type { Team, BizforgeAgent, AgentCreateRequest, AdapterType } from '$api/types';
 
   $effect(() => {
     const orgId = organizationsStore.current?.id;
@@ -145,6 +151,105 @@
       createDepartmentId = '';
     }
   }
+
+  // ── From Template dialog ──────────────────────────────────────────────────
+  let showFromTemplate = $state(false);
+  let tplStep = $state<'pick' | 'configure'>('pick');
+  let selectedTplId = $state<TeamTemplateId | null>(null);
+  let tplDepartmentId = $state('');
+  let tplTeamName = $state('');
+  let tplCreating = $state(false);
+  let tplProgress = $state('');
+
+  function openFromTemplate(): void {
+    tplStep = 'pick';
+    selectedTplId = null;
+    tplDepartmentId = '';
+    tplTeamName = '';
+    tplProgress = '';
+    showFromTemplate = true;
+    if (providersStore.totalCount === 0) void providersStore.fetch();
+  }
+
+  function selectTpl(id: TeamTemplateId): void {
+    selectedTplId = id;
+    const meta = HIREABLE_TEAM_TEMPLATES.find((t) => t.id === id);
+    tplTeamName = meta?.name ?? '';
+    tplStep = 'configure';
+  }
+
+  function tplGoBack(): void {
+    tplStep = 'pick';
+    selectedTplId = null;
+  }
+
+  async function handleCreateFromTemplate(): Promise<void> {
+    if (selectedTplId === null || !tplTeamName.trim() || !tplDepartmentId) return;
+
+    tplCreating = true;
+    const agentTemplates = TEMPLATE_AGENTS[selectedTplId];
+    const meta = HIREABLE_TEAM_TEMPLATES.find((t) => t.id === selectedTplId);
+    const adapter: AdapterType = settingsStore.data.default_adapter ?? 'osa';
+    const defaultProvider = providersStore.defaultProvider?.id ?? '';
+
+    tplProgress = 'Creating team…';
+    const team = await hierarchyStore.createTeam({
+      name: tplTeamName.trim(),
+      slug: slugify(tplTeamName.trim()),
+      description: meta?.description ?? null,
+      department_id: tplDepartmentId,
+    });
+
+    if (team === null) {
+      tplCreating = false;
+      tplProgress = '';
+      return;
+    }
+
+    tplProgress = `Creating ${agentTemplates.length} agents…`;
+    const requests: AgentCreateRequest[] = agentTemplates.map((a) => ({
+      name: slugify(a.name),
+      display_name: a.name,
+      avatar_emoji: a.emoji,
+      role: a.role,
+      adapter,
+      model: 'claude-sonnet-4-6',
+      provider_id: defaultProvider || undefined,
+      system_prompt: a.system_prompt ?? undefined,
+      skills: a.skills.length > 0 ? a.skills : undefined,
+      budget_policy: {
+        daily_limit_cents: 1000,
+        monthly_limit_cents: 10000,
+        warning_threshold: 0.8,
+        hard_stop: true,
+      },
+    }));
+
+    const result = await agentsStore.createAgentBatch(requests);
+
+    if (result.created.length > 0) {
+      tplProgress = 'Assigning agents to team…';
+      for (const created of result.created) {
+        try {
+          await teamsApi.addMember(team.id, created.id);
+        } catch {
+          // best-effort membership assignment
+        }
+      }
+    }
+
+    tplCreating = false;
+    tplProgress = '';
+    showFromTemplate = false;
+
+    toastStore.success(
+      `Team "${tplTeamName}" created`,
+      `${result.created.length} agent${result.created.length !== 1 ? 's' : ''} hired and assigned`,
+    );
+
+    void hierarchyStore.fetchTeams();
+    void agentsStore.fetchAgents();
+  }
 </script>
 
 <PageShell
@@ -152,6 +257,16 @@
   badge={hierarchyStore.teamCount}
 >
   {#snippet actions()}
+    <button
+      class="tm-btn tm-btn--ghost"
+      onclick={openFromTemplate}
+      aria-label="Create team from template"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+      </svg>
+      From Template
+    </button>
     <button
       class="tm-btn tm-btn--primary"
       onclick={() => (showCreate = true)}
@@ -445,6 +560,134 @@
               {addingMember ? 'Adding…' : 'Add Member'}
             </button>
           </footer>
+        </div>
+      </div>
+    {/if}
+
+    <!-- From Template dialog -->
+    {#if showFromTemplate}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tm-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create team from template"
+        onclick={(e) => { if ((e.target as HTMLElement).classList.contains('tm-overlay')) showFromTemplate = false; }}
+      >
+        <div class="tm-tpl-dialog">
+          <header class="tm-dialog-header">
+            {#if tplStep === 'configure'}
+              <button class="tm-tpl-back" onclick={tplGoBack} aria-label="Back to templates">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+            {/if}
+            <h2 class="tm-dialog-title">
+              {tplStep === 'pick' ? 'Create Team from Template' : `Create ${tplTeamName}`}
+            </h2>
+            <button class="tm-dialog-close" onclick={() => (showFromTemplate = false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </header>
+
+          {#if tplStep === 'pick'}
+            <div class="tm-tpl-body">
+              <p class="tm-tpl-subtext">Pick a template to instantly create a team with pre-configured agents.</p>
+              <div class="tm-tpl-grid" role="listbox" aria-label="Team templates">
+                {#each HIREABLE_TEAM_TEMPLATES as t (t.id)}
+                  <button
+                    class="tm-tpl-card"
+                    role="option"
+                    aria-selected="false"
+                    onclick={() => selectTpl(t.id)}
+                  >
+                    <div class="tm-tpl-card-top">
+                      <span class="tm-tpl-card-name">
+                        <AgentIcon value={t.icon} size={15} />
+                        {t.name}
+                      </span>
+                      <span class="tm-tpl-card-count">{t.count} agents</span>
+                    </div>
+                    <p class="tm-tpl-card-desc">{t.description}</p>
+                    <div class="tm-tpl-card-agents">
+                      {#each TEMPLATE_AGENTS[t.id] as agent (agent.id)}
+                        <span class="tm-tpl-chip">
+                          <AgentIcon value={agent.emoji} size={10} />
+                          {agent.name}
+                        </span>
+                      {/each}
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+          {:else if tplStep === 'configure' && selectedTplId !== null}
+            <div class="tm-tpl-body">
+              <div class="tm-tpl-config">
+                <label class="tm-field">
+                  <span class="tm-label">Department <span class="tm-required" aria-hidden="true">*</span></span>
+                  <select
+                    class="tm-input"
+                    bind:value={tplDepartmentId}
+                    aria-required="true"
+                    aria-label="Department"
+                  >
+                    <option value="" disabled selected>Select a department…</option>
+                    {#each hierarchyStore.departments as dept (dept.id)}
+                      <option value={dept.id}>{dept.name}</option>
+                    {/each}
+                  </select>
+                </label>
+
+                <label class="tm-field">
+                  <span class="tm-label">Team Name</span>
+                  <input
+                    class="tm-input"
+                    type="text"
+                    bind:value={tplTeamName}
+                    placeholder="e.g. Dev Team"
+                  />
+                </label>
+
+                <div class="tm-tpl-preview">
+                  <span class="tm-tpl-preview-label">Agents to be created ({TEMPLATE_AGENTS[selectedTplId].length})</span>
+                  <ul class="tm-tpl-preview-list">
+                    {#each TEMPLATE_AGENTS[selectedTplId] as agent (agent.id)}
+                      <li class="tm-tpl-preview-item">
+                        <AgentIcon value={agent.emoji} size={14} />
+                        <span class="tm-tpl-preview-name">{agent.name}</span>
+                        <span class="tm-tpl-preview-role">{agent.role}</span>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+
+                {#if tplProgress}
+                  <div class="tm-tpl-progress" aria-live="polite">
+                    <LoadingSpinner size="sm" />
+                    <span>{tplProgress}</span>
+                  </div>
+                {/if}
+              </div>
+            </div>
+
+            <footer class="tm-dialog-footer">
+              <button class="tm-btn tm-btn--ghost" onclick={() => (showFromTemplate = false)}>Cancel</button>
+              <button
+                class="tm-btn tm-btn--primary"
+                onclick={handleCreateFromTemplate}
+                disabled={tplCreating || !tplDepartmentId || !tplTeamName.trim()}
+                aria-busy={tplCreating}
+              >
+                {tplCreating ? 'Creating…' : `Create Team & ${TEMPLATE_AGENTS[selectedTplId].length} Agents`}
+              </button>
+            </footer>
+          {/if}
         </div>
       </div>
     {/if}
@@ -924,5 +1167,200 @@
   .tm-textarea {
     resize: vertical;
     min-height: 72px;
+  }
+
+  /* ── From Template dialog ──────────────────────────────────────────────── */
+  .tm-tpl-dialog {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl, 12px);
+    width: min(720px, 90vw);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+
+  .tm-tpl-back {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs, 4px);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 120ms ease;
+    flex-shrink: 0;
+  }
+
+  .tm-tpl-back:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+
+  .tm-tpl-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .tm-tpl-body::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .tm-tpl-body::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 3px;
+  }
+
+  .tm-tpl-subtext {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+  }
+
+  .tm-tpl-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .tm-tpl-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    cursor: pointer;
+    text-align: left;
+    transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  }
+
+  .tm-tpl-card:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.06);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+  }
+
+  .tm-tpl-card:active {
+    transform: scale(0.99);
+  }
+
+  .tm-tpl-card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .tm-tpl-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tm-tpl-card-count {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+
+  .tm-tpl-card-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .tm-tpl-card-agents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .tm-tpl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px 2px 4px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .tm-tpl-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tm-tpl-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tm-tpl-preview-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+  }
+
+  .tm-tpl-preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tm-tpl-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+  }
+
+  .tm-tpl-preview-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .tm-tpl-preview-role {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .tm-tpl-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm, 6px);
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    font-size: 12px;
+    color: var(--text-secondary);
   }
 </style>

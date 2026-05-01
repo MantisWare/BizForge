@@ -129,6 +129,7 @@ Active development phases and their progress.
 - [x] Add 15s fetch timeout to prevent indefinite API hangs
 - [x] Enforce single app instance — focus existing window instead of opening duplicates (`tauri-plugin-single-instance`)
 - [x] Fix window size restore — preserve non-maximized geometry when window is maximized, prevent fullscreen-on-restart
+- [x] Improve window state persistence — debounced saves (500ms) to avoid excessive disk writes during drag/resize, multi-monitor awareness with overlap validation on restore, fullscreen state tracking, explicit store flush for crash safety
 - [x] Persist session state to Tauri disk store — auth token, onboarding status, display name survive webview localStorage resets
 - [x] Add retry logic to auth token verification — tolerate backend warm-up during cold start
 - [x] Fix workspace onboarding in browser mode — Choose button now opens prompt dialog, auto-detect existing backend workspaces, reuse instead of always creating
@@ -136,8 +137,17 @@ Active development phases and their progress.
 - [x] Fix workspace directory never created — scaffold runs when backend knows the workspace but disk directory is missing
 - [x] Fix duplicate org creation error on restart — check for existing org before creating
 - [x] Fix sidebar brand icon — add SVG fallback when image fails to load
+- [x] Fix sidebar collapsed layout — brand icon stacked above hamburger toggle (was side-by-side), hamburger now aligned with nav icons
 - [x] Fix blank white window on Tauri dev restart — Rust-side dev server readiness poller reloads webviews if Vite wasn't ready at launch; `just app` pre-starts Vite and waits before launching Tauri
 - [x] Fix auth bounce on restart — token verification now distinguishes 401 (clear token) from transient errors (trust stored token); increased retry attempts (4) with longer back-off; runtime 401s now clear persisted token from Tauri store + localStorage
+- [x] Fix settings save "no_valid_keys" error — split client-only settings (theme, font_size, sidebar, notifications) into localStorage/Tauri store, only send server-recognized keys to PATCH /config
+- [x] Fix CORS 404 on /health — added root-level `/health` route to Phoenix router, fixed frontend OSA probes to try `/api/v1/health` before bare `/health` on port 9089
+- [x] Remove redundant "Config" nav item from System section — `/app/config` was just a redirect to Settings, which is already pinned in the sidebar footer
+- [x] Fix "not_found" error on page load (alerts, etc.) — WorkspaceAuth plug now falls back to user's workspaces instead of 404-ing when workspace_id is missing from DB (mock/stale IDs)
+- [x] Fix startup CORS/500 errors — CORS plug now uses `register_before_send` to guarantee headers on error responses; HealthController resilient to DB unavailability; Auth plug/controller rescue exceptions during cold start (503 instead of 500)
+- [x] Harden footer resource monitor and environment page — null-safe access for all SystemResources and SystemHealth properties, fix crash when API returns partial/empty data, fix mock fallback `system_health` shape mismatch
+- [x] Add workspace delete from WorkspaceSwitcher dropdown — hover-reveal trash icon per workspace item, confirmation modal with "remove from list" vs "also delete .bizforge/ files" options, Rust `remove_dir_recursive` IPC command with .bizforge safety guard
+- [x] Fix Environment page system resources showing all zeros — API client now unwraps `{ resources: ... }` wrapper, environment store prefers real OS metrics from Tauri IPC (`get_system_resources`), added disk space (total/free) to Rust `SystemResourceInfo` via `sysinfo::Disks`
 
 ### 10b. Adapter Info & Footer Enhancements
 
@@ -168,6 +178,7 @@ Active development phases and their progress.
 - [x] Add SVG icon to each team template card (using agent-icons registry) in both Hire Team modal and onboarding
 - [x] Add embedded domain-tailored PM agent to all 9 execution teams (Dev, Domo, Ops, Data Science, Sales, Content, Creative, Customer Success, Legal)
 - [x] System prompt template quick-fill buttons: 8 categories (Engineering, PM, Research, Writing, Strategy, Design, Specialist, General) with 4-5 templates each, role-auto-matched in both Hire Agent and Hire Team dialogs
+- [x] "From Template" button on Teams page: pick a team template, select department, instantly create team entity + batch-create all agents + assign them as members
 
 ### 12. User Management & Access Control
 
@@ -178,6 +189,18 @@ Active development phases and their progress.
 - [x] Update mock/users.ts with localStorage-backed CRUD persistence for offline mode
 - [x] Update mock/index.ts to handle POST/PATCH/DELETE on `/users` routes
 - [x] Fix mock access assignments to return correct `RoleAssignment` shape (`entity_type`, `user_email`, `assigned_by`)
+
+### 13. Services / Integration Catalog
+
+- [x] Expand `Integration` type with `description`, `features[]`, `docs_url` fields
+- [x] Add 12 new `IntegrationCategory` values (project_management, analytics, design, cloud, database)
+- [x] Add `INTEGRATION_CATEGORY_LABELS` constant for human-readable category names
+- [x] Enrich mock integrations — 28 services across 12 categories with descriptions, feature tags, and docs links
+- [x] Add search and category filter to IntegrationsStore (`searchQuery`, `filterCategory`, `filtered`, `grouped`, `categories` derived state)
+- [x] Redesign Services tab — search bar, category filter pills, grouped sections with rich service cards
+- [x] Service cards show icon/initial, name, provider, description, feature tags, status pill, connect/disconnect button, docs link
+- [x] Category groups show header with connected count
+- [x] Context-aware PageShell subtitle (adapters count vs services connected)
 
 ---
 
@@ -386,3 +409,14 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Expanded Hire Team templates from 7 to 12 — added Domo Platform (4 Domo-specialised agents with real skill references), Product Squad (PM, UX researcher, designer, tech writer), Customer Success (support, onboarding, retention), Legal & Compliance (contracts, compliance, policy), and Creative Agency (creative director, graphic designer, video producer, brand copywriter) on 2026-05-01.
 > **Auto-updated by Cursor:** Added adapter info icons, OSA footer indicator with start/stop/restart, Resource Monitor popover (system RAM, BizForge memory, CPU, recent AI calls), centralized adapter registry, adapter comparison matrix in README, sysinfo Tauri command for real OS metrics, and recent-ai-calls backend endpoint on 2026-05-01.
 > **Auto-updated by Cursor:** Added UI Zoom control to app footer — slider, +/- buttons, numeric input, preset quick-select, Reset button, persisted to localStorage, applied via document.documentElement.style.zoom on 2026-05-01.
+> **Auto-updated by Cursor:** Improved window state persistence — debounced saves (500ms tokio task) to reduce disk writes during drag/resize, multi-monitor intersection check on restore (prevents off-screen windows), fullscreen state tracking, explicit store.save() flush for crash safety on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed sidebar collapsed layout — brand icon now stacks above hamburger toggle instead of side-by-side, hamburger aligned with nav icons on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed settings save "no_valid_keys" error — settings store now separates client-only keys (theme, font_size, sidebar, notifications) persisted to localStorage/Tauri store from server config keys sent to PATCH /config on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed CORS 404 on /health — added root-level `/health` convenience route to Phoenix router, reordered frontend OSA health probes to try `/api/v1/health` before bare `/health` on port 9089 on 2026-05-01.
+> **Auto-updated by Cursor:** Removed redundant "Config" nav item from sidebar System section — /app/config was a redirect to Settings which is already pinned at the sidebar bottom on 2026-05-01.
+> **Auto-updated by Cursor:** Redesigned Services tab on Integrations page — 28 services across 12 categories (AI Providers, Version Control, Communication, CI/CD, Monitoring, Project Management, Analytics, Design, Cloud, Databases, Storage, Custom) with rich cards showing descriptions, feature tags, connect/disconnect buttons, docs links, search, and category filter pills on 2026-05-01.
+> **Auto-updated by Cursor:** Hardened footer resource monitor and environment page — all SystemResources and SystemHealth properties now use nullish coalescing (`?? 0`) before `.toFixed()`, fixed mock fallback `system_health` shape to match `SystemHealth` interface, and made `SystemResources` fields optional to tolerate partial API responses on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed "not_found" error on first page load (alerts, sessions, costs, etc.) — WorkspaceAuth plug now falls back to all user workspaces instead of returning 404 when workspace_id is not found in DB; also handles non-UUID mock IDs gracefully on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed startup CORS/500 console errors — CORS plug uses `register_before_send` to inject headers on all responses including 500 errors; HealthController gracefully handles DB unavailability (returns `degraded` status); Auth plug/controller rescue exceptions during cold start (returns 503 instead of unhandled 500) on 2026-05-01.
+> **Auto-updated by Cursor:** Added workspace deletion from WorkspaceSwitcher dropdown — hover-reveal trash icon on each workspace row, confirmation modal with two modes (remove from list only, or also delete `.bizforge/` files from disk), `remove_dir_recursive` Rust IPC command with `.bizforge` path safety guard on 2026-05-01.
+> **Auto-updated by Cursor:** Fixed Environment page system resources showing all zeros — API client wasn't unwrapping `{ resources: ... }` response wrapper; environment store now prefers real OS metrics from Tauri `get_system_resources` IPC; added disk total/free to Rust `SystemResourceInfo` via `sysinfo::Disks` on 2026-05-01.

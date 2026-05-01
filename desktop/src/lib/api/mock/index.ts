@@ -1846,7 +1846,35 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   },
 
   // ── Config ────────────────────────────────────────────────────────────────────
-  { pattern: /^\/config/, handler: () => ({ config: mockConfig() }) },
+  {
+    pattern: /^\/config$/,
+    handler: (_path, options) => {
+      const base = {
+        default_model: "claude-sonnet-4-6",
+        max_concurrent_agents: 10,
+        session_timeout_minutes: 60,
+        log_level: "info",
+        telemetry_enabled: true,
+        budget_enforcement: true,
+        activity_retention_days: 30,
+      };
+      if ((options.method ?? "GET").toUpperCase() === "PATCH" && options.body) {
+        try {
+          const body = JSON.parse(
+            typeof options.body === "string"
+              ? options.body
+              : JSON.stringify(options.body),
+          );
+          const merged = { ...base, ...body };
+          return { config: merged, updated_keys: Object.keys(body) };
+        } catch {
+          return { config: base };
+        }
+      }
+      return { config: base };
+    },
+  },
+  { pattern: /^\/config\//, handler: () => ({ config: mockConfig() }) },
 
   // ── Users ─────────────────────────────────────────────────────────────────────
   {
@@ -3108,9 +3136,11 @@ const FRESH_WORKSPACE_OVERRIDES: Record<string, unknown> = {
       cache_hit_rate: 0,
     },
     system_health: {
-      status: "operational",
-      uptime_seconds: 0,
-      checks: [],
+      backend: "ok" as const,
+      primary_gateway: null,
+      gateway_status: "healthy" as const,
+      memory_mb: 0,
+      cpu_pct: 0,
     },
   },
   "/activity": { events: [], total: 0 },

@@ -41,10 +41,12 @@
   );
 
   const health        = $derived(dashboardStore.systemHealth);
-  const memoryWarning = $derived(health !== null && health.memory_mb > 500);
-  const cpuWarning    = $derived(health !== null && health.cpu_pct > 80);
-  const backendDot    = $derived(health ? backendToDot(health.backend) : 'idle' as const);
-  const gatewayDot    = $derived(health ? gatewayToDot(health.gateway_status) : 'idle' as const);
+  const healthMemMb   = $derived(health?.memory_mb ?? 0);
+  const healthCpuPct  = $derived(health?.cpu_pct ?? 0);
+  const memoryWarning = $derived(health !== null && healthMemMb > 500);
+  const cpuWarning    = $derived(health !== null && healthCpuPct > 80);
+  const backendDot    = $derived(health !== null ? backendToDot(health.backend ?? 'error') : 'idle' as const);
+  const gatewayDot    = $derived(health !== null ? gatewayToDot(health.gateway_status ?? 'down') : 'idle' as const);
   const gatewayName   = $derived(health?.primary_gateway ?? 'No gateway');
 
   // OSA runtime state
@@ -291,7 +293,7 @@
           <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01" />
         </svg>
         <span class="af-label" class:af-label--warn={memoryWarning}>
-          {health.memory_mb} MB
+          {healthMemMb} MB
         </span>
       </button>
 
@@ -303,7 +305,7 @@
         <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
       </svg>
       <span class="af-label" class:af-label--warn={cpuWarning}>
-        {health.cpu_pct}%
+        {healthCpuPct}%
       </span>
     {:else}
       <span class="af-detail">Cache savings: %</span>

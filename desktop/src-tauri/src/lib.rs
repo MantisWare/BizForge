@@ -14,10 +14,13 @@ struct WindowState {
     width: f64,
     height: f64,
     maximized: bool,
+    #[serde(default)]
+    fullscreen: bool,
 }
 
 const WINDOW_STORE_FILE: &str = "window-state.json";
 const WINDOW_STORE_KEY: &str = "main";
+const SAVE_DEBOUNCE_MS: u64 = 500;
 
 fn load_window_state(app: &tauri::AppHandle) -> Option<WindowState> {
     let store = app.store(WINDOW_STORE_FILE).ok()?;
@@ -29,6 +32,7 @@ fn save_window_state(app: &tauri::AppHandle, state: &WindowState) {
     if let Ok(store) = app.store(WINDOW_STORE_FILE) {
         if let Ok(val) = serde_json::to_value(state) {
             store.set(WINDOW_STORE_KEY, val);
+            let _ = store.save();
         }
     }
 }
@@ -38,16 +42,16 @@ fn capture_window_state(
     previous: Option<&WindowState>,
 ) -> Option<WindowState> {
     let maximized = window.is_maximized().ok().unwrap_or(false);
+    let fullscreen = window.is_fullscreen().ok().unwrap_or(false);
 
-    if maximized {
-        // Preserve the last non-maximized geometry so restore doesn't apply
-        // screen-filling dimensions when the user only wants to un-maximize.
+    if maximized || fullscreen {
         return Some(WindowState {
             x: previous.map_or(0.0, |p| p.x),
             y: previous.map_or(0.0, |p| p.y),
             width: previous.map_or(1440.0, |p| p.width),
             height: previous.map_or(900.0, |p| p.height),
-            maximized: true,
+            maximized,
+            fullscreen,
         });
     }
 
@@ -59,20 +63,63 @@ fn capture_window_state(
         width: size.width as f64,
         height: size.height as f64,
         maximized: false,
+        fullscreen: false,
     })
+}
+
+/// Check whether the saved window position intersects at least one currently
+/// connected monitor. Returns `true` if the window would be visible.
+fn is_position_on_screen(window: &tauri::WebviewWindow, state: &WindowState) -> bool {
+    let monitors = match window.available_monitors() {
+        Ok(m) => m,
+        Err(_) => return true,
+    };
+
+    if monitors.is_empty() {
+        return true;
+    }
+
+    let win_left = state.x as i32;
+    let win_top = state.y as i32;
+    let win_right = win_left + state.width as i32;
+    let win_bottom = win_top + state.height as i32;
+
+    for monitor in &monitors {
+        let mx = monitor.position().x;
+        let my = monitor.position().y;
+        let mw = monitor.size().width as i32;
+        let mh = monitor.size().height as i32;
+
+        let overlap_x = (win_right.min(mx + mw) - win_left.max(mx)).max(0);
+        let overlap_y = (win_bottom.min(my + mh) - win_top.max(my)).max(0);
+
+        if overlap_x >= 100 && overlap_y >= 50 {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn restore_window_state(window: &tauri::WebviewWindow, state: &WindowState) {
     use tauri::{PhysicalPosition, PhysicalSize};
-    // Always restore position and non-maximized size first.
-    let _ = window.set_position(PhysicalPosition::new(state.x as i32, state.y as i32));
-    let _ = window.set_size(PhysicalSize::new(state.width as u32, state.height as u32));
-    if state.maximized {
+
+    // Restore size first (needed before position to check screen bounds correctly)
+    let w = (state.width as u32).max(960);
+    let h = (state.height as u32).max(600);
+    let _ = window.set_size(PhysicalSize::new(w, h));
+
+    if is_position_on_screen(window, state) {
+        let _ = window.set_position(PhysicalPosition::new(state.x as i32, state.y as i32));
+    }
+
+    if state.fullscreen {
+        let _ = window.set_fullscreen(true);
+    } else if state.maximized {
         let _ = window.maximize();
     } else {
-        // Ensure the window is not stuck in a maximized state from a previous
-        // session where capture saved maximized dimensions (pre-fix data).
         let _ = window.unmaximize();
+        let _ = window.set_fullscreen(false);
     }
 }
 
@@ -211,6 +258,7 @@ pub fn run() {
             filesystem::setup_osa,
             filesystem::stop_osa,
             filesystem::get_system_resources,
+            filesystem::remove_dir_recursive,
             mcp::mcp_status,
             mcp::mcp_client_config,
             mcp::mcp_build,
@@ -229,12 +277,18 @@ pub fn run() {
                 }
 
                 // Listen for move, resize, and close events to persist window state.
-                // Track the last saved state so maximized captures can preserve the
-                // previous non-maximized geometry instead of saving screen-filling dims.
+                // Debounce rapid move/resize events using a timestamp check to
+                // avoid excessive disk writes during drag. CloseRequested always
+                // saves immediately.
                 let app_handle = app.handle().clone();
                 let last_state = std::sync::Mutex::new(
                     load_window_state(&app_handle),
                 );
+                let pending_state: std::sync::Arc<std::sync::Mutex<Option<WindowState>>> =
+                    std::sync::Arc::new(std::sync::Mutex::new(None));
+                let debounce_scheduled: std::sync::Arc<std::sync::atomic::AtomicBool> =
+                    std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
                 main.on_window_event(move |event| {
                     use tauri::WindowEvent;
                     match event {
@@ -243,16 +297,35 @@ pub fn run() {
                                 if win.is_visible().unwrap_or(false) {
                                     let prev = last_state.lock().ok().and_then(|g| g.clone());
                                     if let Some(state) = capture_window_state(&win, prev.as_ref()) {
-                                        save_window_state(&app_handle, &state);
                                         if let Ok(mut guard) = last_state.lock() {
-                                            *guard = Some(state);
+                                            *guard = Some(state.clone());
+                                        }
+                                        if let Ok(mut ps) = pending_state.lock() {
+                                            *ps = Some(state);
+                                        }
+                                        // Spawn a debounce thread if one isn't already waiting
+                                        if !debounce_scheduled.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                                            let ps = pending_state.clone();
+                                            let flag = debounce_scheduled.clone();
+                                            let handle = app_handle.clone();
+                                            std::thread::spawn(move || {
+                                                std::thread::sleep(std::time::Duration::from_millis(SAVE_DEBOUNCE_MS));
+                                                flag.store(false, std::sync::atomic::Ordering::SeqCst);
+                                                if let Some(state) = ps.lock().ok().and_then(|mut g| g.take()) {
+                                                    save_window_state(&handle, &state);
+                                                }
+                                            });
                                         }
                                     }
                                 }
                             }
                         }
                         WindowEvent::CloseRequested { .. } => {
-                            if let Some(win) = app_handle.get_webview_window("main") {
+                            // Flush any pending state immediately
+                            let final_state = pending_state.lock().ok().and_then(|mut g| g.take());
+                            if let Some(state) = final_state {
+                                save_window_state(&app_handle, &state);
+                            } else if let Some(win) = app_handle.get_webview_window("main") {
                                 let prev = last_state.lock().ok().and_then(|g| g.clone());
                                 if let Some(state) = capture_window_state(&win, prev.as_ref()) {
                                     save_window_state(&app_handle, &state);

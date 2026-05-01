@@ -30,10 +30,11 @@ defmodule BizforgeWeb.Plugs.WorkspaceAuth do
     cond do
       # No workspace_id in params — scope to all workspaces owned by the current user
       is_nil(workspace_id) or workspace_id == "" ->
-        user_workspace_ids =
-          Repo.all(from w in Workspace, where: w.owner_id == ^user.id, select: w.id)
+        assign(conn, :user_workspace_ids, user_workspace_ids(user))
 
-        assign(conn, :user_workspace_ids, user_workspace_ids)
+      # workspace_id is not a valid UUID (e.g. mock-generated ID) — ignore it
+      !valid_uuid?(workspace_id) ->
+        assign(conn, :user_workspace_ids, user_workspace_ids(user))
 
       # Validate ownership when workspace_id is present
       true ->
@@ -50,11 +51,22 @@ defmodule BizforgeWeb.Plugs.WorkspaceAuth do
             |> halt()
 
           nil ->
-            conn
-            |> put_status(404)
-            |> json(%{error: "not_found", message: "Workspace not found"})
-            |> halt()
+            # Workspace not found — fall back to all user workspaces instead of 404.
+            # The frontend may send stale or mock-generated workspace IDs during
+            # mode transitions; rejecting them blocks every scoped page on first load.
+            assign(conn, :user_workspace_ids, user_workspace_ids(user))
         end
+    end
+  end
+
+  defp user_workspace_ids(user) do
+    Repo.all(from w in Workspace, where: w.owner_id == ^user.id, select: w.id)
+  end
+
+  defp valid_uuid?(str) do
+    case Ecto.UUID.cast(str) do
+      {:ok, _} -> true
+      :error -> false
     end
   end
 end
