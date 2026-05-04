@@ -41,6 +41,7 @@ defmodule Bizforge.Adapter do
   def resolve("http"), do: {:ok, Bizforge.Adapters.HTTP}
   def resolve("openclaw"), do: {:ok, Bizforge.Adapters.OpenClaw}
   def resolve("cursor"), do: {:ok, Bizforge.Adapters.Cursor}
+  def resolve("cursor-cli"), do: {:ok, Bizforge.Adapters.CursorCli}
   def resolve("gemini"), do: {:ok, Bizforge.Adapters.Gemini}
   def resolve("aider"), do: {:ok, Bizforge.Adapters.Aider}
   def resolve("jido-claw"), do: {:ok, Bizforge.Adapters.JidoClaw}
@@ -55,6 +56,7 @@ defmodule Bizforge.Adapter do
     Bizforge.Adapters.HTTP,
     Bizforge.Adapters.OpenClaw,
     Bizforge.Adapters.Cursor,
+    Bizforge.Adapters.CursorCli,
     Bizforge.Adapters.Gemini,
     Bizforge.Adapters.Aider,
     Bizforge.Adapters.JidoClaw,

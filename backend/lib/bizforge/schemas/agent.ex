@@ -57,7 +57,7 @@ defmodule Bizforge.Schemas.Agent do
     |> validate_inclusion(:status, ~w(active idle working running sleeping error paused))
     |> validate_inclusion(
       :adapter,
-      ~w(osa claude-code codex bash http openclaw cursor gemini aider jido-claw windsurf)
+      ~w(osa claude-code codex bash http openclaw cursor cursor-cli gemini aider jido-claw windsurf)
     )
     |> unique_constraint([:workspace_id, :slug])
   end

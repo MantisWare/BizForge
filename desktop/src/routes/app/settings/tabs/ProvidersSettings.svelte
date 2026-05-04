@@ -254,30 +254,41 @@
         </div>
 
         {#if addSlug}
-          <div class="pst-field">
-            <label class="pst-label" for="pst-key">API Key</label>
-            <input
-              id="pst-key"
-              class="pst-input"
-              type="password"
-              placeholder="sk-..."
-              autocomplete="off"
-              value={addApiKey}
-              oninput={(e) => { addApiKey = (e.target as HTMLInputElement).value; }}
-            />
-          </div>
+          {#if selectedCatalogEntry?.noKey}
+            <div class="pst-nokey-hint">
+              No API key required — authentication is handled by the local CLI.
+              {#if addSlug === 'cursor-cli'}
+                Run <code>agent login</code> in your terminal to authenticate.
+              {/if}
+            </div>
+          {:else}
+            <div class="pst-field">
+              <label class="pst-label" for="pst-key">API Key</label>
+              <input
+                id="pst-key"
+                class="pst-input"
+                type="password"
+                placeholder="sk-..."
+                autocomplete="off"
+                value={addApiKey}
+                oninput={(e) => { addApiKey = (e.target as HTMLInputElement).value; }}
+              />
+            </div>
+          {/if}
 
-          <div class="pst-field">
-            <label class="pst-label" for="pst-endpoint">Endpoint <span class="pst-optional">(optional)</span></label>
-            <input
-              id="pst-endpoint"
-              class="pst-input"
-              type="text"
-              placeholder={selectedCatalogEntry?.defaultEndpoint ?? 'https://api.example.com'}
-              value={addEndpoint}
-              oninput={(e) => { addEndpoint = (e.target as HTMLInputElement).value; }}
-            />
-          </div>
+          {#if !selectedCatalogEntry?.noKey || selectedCatalogEntry?.defaultEndpoint}
+            <div class="pst-field">
+              <label class="pst-label" for="pst-endpoint">Endpoint <span class="pst-optional">(optional)</span></label>
+              <input
+                id="pst-endpoint"
+                class="pst-input"
+                type="text"
+                placeholder={selectedCatalogEntry?.defaultEndpoint ?? 'https://api.example.com'}
+                value={addEndpoint}
+                oninput={(e) => { addEndpoint = (e.target as HTMLInputElement).value; }}
+              />
+            </div>
+          {/if}
         {/if}
       {:else}
         <!-- Local provider -->
@@ -1015,5 +1026,23 @@
   .pst-pretest-error {
     font-size: 11px;
     color: var(--text-tertiary);
+  }
+
+  .pst-nokey-hint {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+  }
+
+  .pst-nokey-hint code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 1px 5px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-xs);
   }
 </style>

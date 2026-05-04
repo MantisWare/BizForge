@@ -159,6 +159,22 @@ export const ADAPTER_REGISTRY: readonly AdapterDef[] = [
     installHint: 'Install Cursor IDE, then add CLI to PATH',
   },
   {
+    id: 'cursor-cli',
+    name: 'Cursor CLI',
+    description: 'Cursor AI agent CLI — subscription-based LLM pass-through',
+    benefits: 'Use Cursor\'s AI models as a provider with no per-token cost (subscription-based). Supports Claude, GPT, and auto model selection via the agent binary.',
+    capabilities: [
+      cap('chat', 'Chat'),
+      cap('code_edit', 'Code Edit'),
+      cap('file_read', 'File Read'),
+      cap('file_write', 'File Write'),
+      cap('code_completion', 'Code Completion'),
+    ],
+    supportsSession: true,
+    supportsConcurrent: false,
+    installHint: 'curl https://cursor.com/install -fsS | bash && agent login',
+  },
+  {
     id: 'gemini',
     name: 'Gemini',
     description: 'Google Gemini — multimodal text and code generation',

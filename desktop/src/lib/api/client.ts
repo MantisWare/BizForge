@@ -695,10 +695,11 @@ async function doFetch<T>(
 
   if (!response.ok) {
     let body: unknown;
+    const rawText = await response.text();
     try {
-      body = await response.json();
+      body = JSON.parse(rawText);
     } catch {
-      body = await response.text();
+      body = rawText;
     }
     const message =
       typeof body === "object" && body !== null && "error" in body
@@ -1347,11 +1348,16 @@ export const projects = {
     return data.projects ?? [];
   },
   get: (id: string) => request<Project>(`/projects/${id}`),
-  create: (body: Partial<Project>) =>
-    request<Project>("/projects", {
+  create: async (body: Partial<Project>): Promise<Project> => {
+    const data = await request<{ project: Project } | Project>("/projects", {
       method: "POST",
       body: JSON.stringify(body),
-    }),
+    });
+    if ("project" in data && typeof data.project === "object") {
+      return data.project;
+    }
+    return data as Project;
+  },
   update: (id: string, body: Partial<Project>) =>
     request<Project>(`/projects/${id}`, {
       method: "PATCH",

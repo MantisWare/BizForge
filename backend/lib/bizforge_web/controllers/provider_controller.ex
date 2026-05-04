@@ -152,6 +152,20 @@ defmodule BizforgeWeb.ProviderController do
     end
   end
 
+  defp do_discover(conn, _endpoint, "cursor-cli", _api_key) do
+    start_ms = System.monotonic_time(:millisecond)
+    result = Bizforge.Adapters.CursorCli.list_models()
+    elapsed_ms = System.monotonic_time(:millisecond) - start_ms
+
+    case result do
+      {:ok, models} ->
+        json(conn, %{status: "connected", models: models, latency_ms: elapsed_ms})
+
+      {:error, reason} ->
+        json(conn, %{status: "error", models: [], latency_ms: elapsed_ms, error: reason})
+    end
+  end
+
   defp do_discover(conn, endpoint, slug, api_key) do
     category = if slug in ["local", "ollama", "lmstudio"], do: "local", else: "cloud"
     start_ms = System.monotonic_time(:millisecond)
@@ -179,6 +193,22 @@ defmodule BizforgeWeb.ProviderController do
           latency_ms: elapsed_ms,
           error: reason
         })
+    end
+  end
+
+  defp perform_test(%Provider{slug: "cursor-cli"} = provider) do
+    start_ms = System.monotonic_time(:millisecond)
+    agent_bin = get_in(provider.config, ["agent_bin"])
+
+    test_result = Bizforge.Adapters.CursorCli.test_connection(agent_bin)
+    elapsed_ms = System.monotonic_time(:millisecond) - start_ms
+
+    case test_result do
+      {:ok, %{models: models}} ->
+        %{status: "connected", latency_ms: elapsed_ms, models: models}
+
+      {:error, reason} ->
+        %{status: "error", latency_ms: elapsed_ms, models: [], error_message: reason}
     end
   end
 

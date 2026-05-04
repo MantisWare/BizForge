@@ -290,6 +290,7 @@ export type AdapterType =
   | "bash"
   | "http"
   | "cursor"
+  | "cursor-cli"
   | "gemini"
   | "custom";
 

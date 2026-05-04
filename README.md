@@ -434,7 +434,7 @@ Browse the library in the Command Center or drop any agent file into your `agent
 
 ## Adapters
 
-Bizforge dispatches work to any connected runtime. Eleven adapters — five fully functional, six in beta:
+Bizforge dispatches work to any connected runtime. Twelve adapters — six fully functional, six in beta:
 
 | Adapter | Status | Install |
 |---------|--------|---------|
@@ -443,13 +443,14 @@ Bizforge dispatches work to any connected runtime. Eleven adapters — five full
 | **Codex** | Functional | `npm install -g @openai/codex` |
 | **Bash / HTTP** | Functional | Built-in |
 | **Cursor** | Beta | [cursor.sh](https://cursor.sh) |
+| **Cursor CLI** | Functional | `curl https://cursor.com/install -fsS \| bash` |
 | **Gemini** | Beta | [ai.google.dev](https://ai.google.dev) |
 | **OpenClaw** | Beta | `npm install -g openclaw` |
 | **Aider** | Beta | `pip install aider-chat` |
 | **JidoClaw** | Beta | `curl -fsSL https://raw.githubusercontent.com/robertohluna/jido_claw/main/install.sh \| bash` |
 | **Windsurf** | Beta | [codeium.com/windsurf](https://codeium.com/windsurf) |
 
-The Command Center auto-detects installed adapters and provides one-click setup wizards. AI providers (Anthropic, OpenAI, Google, Groq, DeepSeek, plus 12 more cloud providers and local runtimes like Ollama, LM Studio, Jan, GPT4All, and llama.cpp) are managed through Settings > AI Providers with per-provider API keys, endpoint configuration, model discovery, connection testing, and advanced parameters (temperature, max tokens, top-p, etc.). Configured providers are available during agent hiring, filtering the model picker to each provider's discovered models.
+The Command Center auto-detects installed adapters and provides one-click setup wizards. AI providers (Anthropic, OpenAI, Google, Groq, DeepSeek, Cursor CLI, plus 12 more cloud providers and local runtimes like Ollama, LM Studio, Jan, GPT4All, and llama.cpp) are managed through Settings > AI Providers with per-provider API keys, endpoint configuration, model discovery, connection testing, and advanced parameters (temperature, max tokens, top-p, etc.). Cursor CLI uses subscription-based auth (`agent login`) with no per-token cost. Configured providers are available during agent hiring, filtering the model picker to each provider's discovered models.
 
 All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`, `health/1`, `capabilities/0`.
 
@@ -464,6 +465,7 @@ All adapters implement the `Bizforge.Adapter` behaviour: `execute/2`, `stream/2`
 | **HTTP** | No | Yes | chat | Universal API glue — wrap any REST endpoint, webhook, or microservice as an agent | A `url` in agent config |
 | **OpenClaw** | Yes | No | code edit, file read/write, shell execution, web search | Open-source multi-agent coordination with code editing and web search | `openclaw` binary |
 | **Cursor** | Yes | No | code edit, file read/write, code completion | IDE-grade context-aware code editing via Cursor's AI engine | Cursor IDE + CLI in PATH |
+| **Cursor CLI** | Yes | No | chat, code edit, file read/write, code completion | Subscription-based LLM pass-through — Claude, GPT, auto-select; no per-token cost | `agent` binary + `agent login` |
 | **Gemini** | Yes | Yes | text generation, multimodal, code generation, analysis | Google's multimodal AI (text + images); API-key only, no binary install | `GEMINI_API_KEY` env var |
 | **Aider** | No | Yes | code edit, file read/write, git operations | Git-aware code editing with repo structure understanding and diff context | `aider` binary via pip |
 | **JidoClaw** | Yes | Yes | code edit, file read/write, shell execution, elixir native | Elixir-native in-process execution without spawning external processes | `jido_claw` mix dep or CLI |

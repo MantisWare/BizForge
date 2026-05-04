@@ -149,7 +149,7 @@
       if (selectedProviders.length === 0) return false;
       return selectedProviders.every((sp) => {
         if (sp.slug === 'local') return true;
-        const noKeySlugs = ['local'];
+        const noKeySlugs = ['local', 'cursor-cli'];
         if (noKeySlugs.includes(sp.slug)) return true;
         return (sp.apiKey ?? '').trim().length > 0;
       });

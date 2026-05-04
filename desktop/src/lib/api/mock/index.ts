@@ -864,6 +864,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           name: (body.name as string) ?? "New Project",
           description: (body.description as string | null) ?? null,
           status: "active",
+          workspace_id: (body.workspace_id as string | undefined),
           workspace_path:
             (body.workspace_path as string) ?? "~/.bizforge/projects",
           goal_count: 0,

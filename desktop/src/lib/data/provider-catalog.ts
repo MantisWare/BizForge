@@ -92,6 +92,19 @@ export const FEATURED_PROVIDERS: readonly ProviderCatalogEntry[] = [
       "claude-haiku-4-5-20251001",
     ],
   },
+  {
+    slug: "cursor-cli",
+    name: "Cursor CLI",
+    description: "Cursor AI subscription — no per-token cost",
+    category: "cloud",
+    noKey: true,
+    defaultModels: [
+      "auto",
+      "claude-4.6-opus-high",
+      "claude-4.6-sonnet-medium",
+      "claude-4.5-sonnet",
+    ],
+  },
 ] as const;
 
 export const MORE_PROVIDERS: readonly ProviderCatalogEntry[] = [
