@@ -22,5 +22,6 @@ defmodule Bizforge.Schemas.Project do
     |> cast(attrs, [:name, :description, :status, :workspace_id])
     |> validate_required([:name, :workspace_id])
     |> validate_inclusion(:status, ~w(active archived completed))
+    |> foreign_key_constraint(:workspace_id)
   end
 end

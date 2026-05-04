@@ -2,7 +2,7 @@ defmodule BizforgeWeb.ProjectController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Project, Goal}
+  alias Bizforge.Schemas.{Project, Goal, Workspace}
   import Ecto.Query
 
   def index(conn, params) do
@@ -20,16 +20,26 @@ defmodule BizforgeWeb.ProjectController do
   end
 
   def create(conn, params) do
+    user = conn.assigns[:current_user]
+    params = resolve_workspace_id(params, user)
+
     changeset = Project.changeset(%Project{}, params)
 
-    case Repo.insert(changeset) do
-      {:ok, project} ->
-        conn |> put_status(201) |> json(%{project: serialize(project)})
+    try do
+      case Repo.insert(changeset) do
+        {:ok, project} ->
+          conn |> put_status(201) |> json(%{project: serialize(project)})
 
-      {:error, cs} ->
+        {:error, cs} ->
+          conn
+          |> put_status(422)
+          |> json(%{error: "validation_failed", details: format_errors(cs)})
+      end
+    rescue
+      Ecto.ConstraintError ->
         conn
         |> put_status(422)
-        |> json(%{error: "validation_failed", details: format_errors(cs)})
+        |> json(%{error: "validation_failed", details: %{workspace_id: ["does not exist"]}})
     end
   end
 
@@ -97,6 +107,33 @@ defmodule BizforgeWeb.ProjectController do
   end
 
   # --- Private helpers ---
+
+  defp resolve_workspace_id(params, user) do
+    workspace_id = params["workspace_id"]
+
+    valid_workspace =
+      if workspace_id not in [nil, ""] do
+        case Ecto.UUID.cast(workspace_id) do
+          {:ok, _} -> Repo.get(Workspace, workspace_id)
+          :error -> nil
+        end
+      end
+
+    if valid_workspace do
+      params
+    else
+      fallback =
+        Repo.one(
+          from w in Workspace,
+            where: w.owner_id == ^user.id,
+            order_by: [desc: w.updated_at],
+            limit: 1,
+            select: w.id
+        )
+
+      Map.put(params, "workspace_id", fallback)
+    end
+  end
 
   defp serialize(%Project{} = p) do
     %{
