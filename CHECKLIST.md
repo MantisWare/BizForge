@@ -131,6 +131,8 @@ Active development phases and their progress.
 - [x] Fix window size restore — preserve non-maximized geometry when window is maximized, prevent fullscreen-on-restart
 - [x] Improve window state persistence — debounced saves (500ms) to avoid excessive disk writes during drag/resize, multi-monitor awareness with overlap validation on restore, fullscreen state tracking, explicit store flush for crash safety
 - [x] Persist session state to Tauri disk store — auth token, onboarding status, display name survive webview localStorage resets
+- [x] Persistent authentication — save user credentials to Tauri disk store on login/register, auto re-login when token expires or localStorage is cleared, credentials cleared on explicit logout
+- [x] Fix auth session permanence — runtime 401s now trigger silent re-login with saved credentials (singleton promise prevents stampede from 30+ stores), redirect to /auth only when re-login fails, no more "unauthorized" toast errors surfacing to the user
 - [x] Add retry logic to auth token verification — tolerate backend warm-up during cold start
 - [x] Fix workspace onboarding in browser mode — Choose button now opens prompt dialog, auto-detect existing backend workspaces, reuse instead of always creating
 - [x] Fix tilde (~) expansion in Rust IPC — all filesystem commands (scan, scaffold, list, watch) now resolve ~ to $HOME
@@ -149,6 +151,7 @@ Active development phases and their progress.
 - [x] Add workspace delete from WorkspaceSwitcher dropdown — hover-reveal trash icon per workspace item, confirmation modal with "remove from list" vs "also delete .bizforge/ files" options, Rust `remove_dir_recursive` IPC command with .bizforge safety guard
 - [x] Fix Environment page system resources showing all zeros — API client now unwraps `{ resources: ... }` wrapper, environment store prefers real OS metrics from Tauri IPC (`get_system_resources`), added disk space (total/free) to Rust `SystemResourceInfo` via `sysinfo::Disks`
 - [x] Make Reports left panel resizable — drag handle between list panel and viewer, keyboard accessible (Arrow keys), min/max constraints (220–600px), centered empty state CTA, tabs wrap instead of scrolling off-screen
+- [x] Restructure sidebar navigation for top-down user journey — reordered sections: Daily Drivers > Explore (Library, Chat) > Organize (Organization, Projects, Goals, Issues, Documents) > Agents (tree + Skills + Memory) > Automate (Workflows, Schedules, Alerts) > Observe (Activity, Sessions, Work Products, Costs, Analytics, Reports) > Platform (Integrations, Secrets, Users & Access, Environment, Datasets); removed "Data" and "System" sections; moved Library from Automate and Chat from bottom pinned into new "Explore" section; moved Organization from System into "Organize"; moved Skills/Memory into Agents; moved Work Products into Observe; moved Datasets into Platform; updated collapsed-mode icons
 
 ### 10b. Adapter Info & Footer Enhancements
 
@@ -250,7 +253,17 @@ Active development phases and their progress.
 - [x] Domo Data Engineer (connectors, datasets, ETL, data science)
 - [x] Domo Automation Engineer (Code Engine, workflows, governance, API integration)
 
-### 3. Desktop UI Registration
+### 3. Agent Documentation Standards (from Domo Consolidated RAG Documentation)
+
+- [x] Domo UI Developer — Domo Design Guide (Material Design, color palette, 6px typography grid), card size px mappings (1–6 scale), `da new` scaffolding, domo.js/ryuu.js patterns, @domoinc/toolkit clients, Phoenix charting, DDX Brick→Pro-Code conversion, `domo.navigate()` limitation
+- [x] Domo App Engineer — Complete manifest spec (all properties: mapping, collections, workflowMapping, packageMapping, proxyId, flags, ignore), `da new` + BYOS templates (React/Angular/Vue), AppDB STRING-only constraint, Redux Toolkit state management, environment-specific builds with manifestOverrides
+- [x] Domo Backend Developer — `codeengine` library methods (sendRequest, getAccount, getExecutionDetails, axios), JS libraries (codeengine, axios, googleAuthLibrary), Python packages (requests, pandas, numpy, boto3), package lifecycle (save→deploy→version), manifest `packageMapping` wiring, Code Engine limits (1GB/5min)
+- [x] Domo QA Engineer — 8-layer test strategy (scaffolding, data binding, AppDB, security, Code Engine, card rendering, publishing, regression), card size test matrix with pixel dimensions, AppDB STRING-only validation, troubleshooting checklist (sync failures, proxy issues, publish errors)
+- [x] Domo Platform Developer — Full manifest specification table, MCP tool catalog (7 servers, 80+ tools), dashboard/Beast Mode/page layout patterns (60-unit grid), DDX Bricks + Pro-Code Editor, all @domoinc/toolkit clients listed
+- [x] Domo Data Engineer — DataSet vs AppDB type distinction (DataSet: STRING/LONG/DOUBLE/DATE/DATETIME; AppDB: STRING only), Stream API gzip procedure with sequential part IDs, Federated queries, Workbench agent, PDP at source dataset only, RFC-4180 CSV format, volume-based ingestion strategy table
+- [x] Domo Automation Engineer — `codeengine` library API table (5 methods), global vs custom packages, scheduled AppDB sync via Code Engine + Workflow pattern, cross-instance orchestration, workflow input parameter types (12 types), Code Engine resource limits
+
+### 4. Desktop UI Registration
 
 - [x] Register 4 agents in library mock catalog (agents.ts)
 - [x] Register 12 skills in library mock catalog (skills.ts)
@@ -435,6 +448,17 @@ Active development phases and their progress.
 - [x] Zone-based agent positioning (agents distributed across department zones by index)
 - [x] Pass `zoneColor` prop from Scene3D to AgentDesk3D for per-zone theming
 
+### 14c. Virtual Office Team & Division Indicators
+
+- [x] Create `orgColors.ts` utility — deterministic `teamColor(id)` and `divisionColor(id)` HSL generators with `AgentOrgInfo` type
+- [x] Fetch hierarchy tree in office page — resolve agent → team → department → division chain into `agentOrgMap`
+- [x] Thread `agentOrgMap` through VirtualOffice → PixelOffice / Office3D / OfficeDetailPanel
+- [x] Add `teamColor` and `divisionColor` fields to `OfficeCharacter` type, populate during agent-to-character sync
+- [x] 2D Pixel: team-colored underline bar at bottom of name label background + division-colored pip replacing old status pip
+- [x] 3D: team-colored backdrop plane + underline bar behind floating name text, division-colored pip replacing zone-based pip
+- [x] OfficeDetailPanel: Organization section showing team/division name with color pips, "Assign to Team" / "Change Team" / "Remove from Team" buttons with team picker dropdown
+- [x] Collapsible team/division legend overlay (bottom-left) — groups teams by division with color swatches and agent counts
+
 ## Phase: Bidirectional Inbox & Slack Integration
 
 > Unify the inbox around the notifications table, wire system event producers, build bidirectional Slack integration with inbound messages, agent replies, and interactive approvals.
@@ -542,6 +566,74 @@ Active development phases and their progress.
 
 ---
 
+## Phase: Project Documentation & AI Task Generation
+
+> Project-scoped documentation management with AI-powered document generation and automatic issue/task extraction from documentation.
+
+### 1. Project Documents Tab
+
+- [x] Add `listByProject(projectId)` to API client for project-scoped document queries
+- [x] Add `fetchByProject()` and `projectDocuments` state to documents store
+- [x] Update mock router to filter documents by `project_id` query param
+- [x] Add "Docs" tab to project detail page (`/app/projects/[id]`) between Goals and Issues
+- [x] Document list with title, path, format badge, and date in split-pane layout
+- [x] Inline `DocumentViewer` for selected documents
+- [x] Create-document dialog with pre-filled `project_id`
+- [x] Empty state with CTAs for manual creation and AI generation
+
+### 2. AI Document Generation
+
+- [x] Create `GenerateDocModal.svelte` — document type selector (PRD, Tech Spec, Architecture, API Docs, User Guide, Runbook, Custom)
+- [x] Context input with project metadata toggles (include description, goals, issues)
+- [x] Agent selector for choosing which AI agent generates the document
+- [x] SSE streaming integration via `sessions.create` + `messages.send` + `connectSSE`
+- [x] Mock-mode word-by-word simulated streaming with realistic document template
+- [x] Streaming markdown preview with inline cursor animation
+- [x] Edit, regenerate, and save-as-document flow
+
+### 3. AI Issue Generation from Documentation
+
+- [x] Create `GenerateIssuesModal.svelte` — multi-phase modal (select docs → analyze → review)
+- [x] Document selection checklist with select-all/deselect-all
+- [x] Structured AI prompt requesting JSON-formatted issue proposals
+- [x] Mock-mode analysis with 8 realistic proposed issues
+- [x] Review panel with editable title, description, priority, and labels per issue
+- [x] Expandable/collapsible issue cards with select/deselect checkboxes
+- [x] Add `batchCreateIssues()` to issues store for bulk creation
+- [x] Trigger buttons on both Docs tab ("Analyze Docs") and Issues tab ("Generate from Docs")
+
+### 4. Agent/MCP Layer
+
+- [x] Verify existing MCP tools: `bizforge_issue_create`, `bizforge_issues_list`, `bizforge_document_write`, `bizforge_document_read`
+- [x] Add `bizforge_project_documents` MCP tool for project-scoped document listing
+- [x] Existing ChatPanel and agent sessions support free-form doc/task requests without additional UI
+
+### 5. Default Model Setting
+
+- [x] Add `allModels` derived to `providersStore` — flat list of models across connected providers
+- [x] Add "Default Model" section to AI Providers settings with grouped `<optgroup>` dropdown
+- [x] Auto-save default model to `settingsStore` (persisted server-side and locally)
+- [x] Wire `GenerateDocModal` to pass `settingsStore.data.default_model` via `messages.send()` model param
+- [x] Wire `GenerateIssuesModal` to pass `settingsStore.data.default_model` via `messages.send()` model param
+- [x] Display current default model in both modals with "Change in Settings → AI Providers" hint
+- [x] Fix error handling: show "No agents available" message instead of hardcoded fallback agent ID
+- [x] Pre-fetch agents on modal mount if not already loaded
+
+### 6. LLM Inspector Panel
+
+- [x] Add `LlmLogEntry` type and optional `color` field to `AIProvider` in `types.ts`
+- [x] Add inspector panel CSS variables and 16-color pastel provider palette to `app.css`
+- [x] Create `llmInspector.svelte.ts` store — ring buffer (500 entries), panel open/width/provider-color persistence via localStorage
+- [x] Create `LlmInspectorPanel.svelte` — right-side collapsible panel with drag-resize gutter, provider color dots, direction arrows, 3-line preview, expandable full payload view
+- [x] Integrate panel into `+layout.svelte` app body flex row alongside Sidebar and main content
+- [x] Add `⌘⇧I` / `Ctrl+Shift+I` keyboard shortcut to toggle inspector panel
+- [x] Add LLM request/response interception in `client.ts` — pub/sub hook on `request()` captures AI-bound traffic (sessions, providers, agents, conversations, reports)
+- [x] Wire inspector store to client interceptor — auto-captures sent/received payloads with provider resolution
+- [x] Add color picker to Providers Settings — per-provider color swatch with native color input, persisted to localStorage
+- [x] Panel defaults to 50% viewport width on first open, resizable between 300px and 80vw, width persisted across sessions
+
+---
+
 > **Auto-updated by Cursor:** Fixed window size restore (non-maximized geometry preserved) and session persistence (auth token + onboarding state backed by Tauri disk store, token verification retries during cold start) on 2026-05-01.
 > **Auto-updated by Cursor:** Added single-instance enforcement via tauri-plugin-single-instance — duplicate launches now focus the existing window instead of opening a new one on 2026-05-01.
 > **Auto-updated by Cursor:** Added Claude Code as a featured AI provider — catalog entry with Anthropic endpoint/models and mock provider seed data on 2026-05-01.
@@ -596,3 +688,15 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Updated Wiki to reflect current application state — Library article updated with auto-resolve skill dependencies and 157/121/48/5 entity counts; Skills article updated with library import, bulk enable, and auto-resolve capabilities; Inbox article updated with bidirectional messaging, Slack integration, and reply composer; Agents Roster article updated with role-based skill recommendations in hire dialogs; Integrations article updated with full Slack integration details on 2026-05-01.
 > **Auto-updated by Cursor:** Fixed Hire Team dialog bugs — auto-assign role-matched system prompts from prompt-templates.ts to all team agents (not just the first), fixed agent name/role column alignment with CSS grid layout, fixed "Next: Configure" button unclickable (stopPropagation on modal/button clicks + z-index stacking), rebranded all hire dialog accent colors from blue to orange across 7 components on 2026-05-01.
 > **Auto-updated by Cursor:** Wired Settings > Integrations tab — Connect buttons now open IntegrationConnectModal with per-service config fields (GitHub: PAT/org/webhook, Slack: bot token/signing secret/channel, Linear: API key/team ID, Notion: integration token/root page, Jira: email/API token/domain/project key, Datadog: API key/app key/site); modal validates required fields before submitting; Disconnect/Configure buttons work inline; mock layer now persists connect/disconnect state changes; fixed `validation_failed` error on 2026-05-01.
+> **Auto-updated by Cursor:** Restructured sidebar navigation for intuitive top-down user journey — 7 sections: Explore (Library + Chat), Organize (Org + Projects + Goals + Issues + Docs), Agents (tree + Skills + Memory), Automate (Workflows + Schedules + Alerts), Observe (Activity + Sessions + Work Products + Costs + Analytics + Reports), Platform (Integrations + Secrets + Users + Environment + Datasets); removed orphaned "Data" section and renamed "System" to "Platform"; updated collapsed-mode icons on 2026-05-05.
+> **Auto-updated by Cursor:** Fixed division creation "validation_failed" error — hierarchy store now extracts and displays field-level error details from backend changeset validation (was only showing generic "validation_failed"); fixed `budget_enforcement` type mismatch between frontend (`"soft"|"hard"`) and backend (`"visibility"|"warning"|"stop"`) across Organization, Division, Department, and Team types; replaced `||` with explicit empty-string checks per project nullish-coalescing rules on 2026-05-05.
+> **Auto-updated by Cursor:** Fixed hierarchy tree showing empty despite divisions existing in database — `hierarchy.get()` API client was not unwrapping the backend response (divisions were nested inside `organization` object but frontend expected them at the top level); added response transformation to destructure `divisions` out of `organization` and return the correct `HierarchyTree` shape on 2026-05-05.
+> **Auto-updated by Cursor:** Added persistent authentication — user credentials saved to Tauri disk store (with base64-obfuscated localStorage fallback in browser mode) on login/register; `initializeAuth()` automatically re-logs in with saved credentials when JWT is expired or localStorage is cleared; explicit logout clears saved credentials; eliminates repeated sign-in on app restart on 2026-05-05.
+> **Auto-updated by Cursor:** Fixed auth session permanence — runtime 401 errors now trigger silent re-login via saved credentials with a singleton promise (prevents 30+ stores from stampeding parallel re-logins); `request()` no-token guard also attempts re-auth before failing; if re-login fails (password changed, credentials cleared), user is redirected to `/auth` page instead of seeing "unauthorized" error toasts; auth redirect flag reset when `/auth` page mounts so fresh login proceeds normally on 2026-05-06.
+> **Auto-updated by Cursor:** Implemented Project Documentation & AI Task Generation — Docs tab on project detail page with project-scoped CRUD, GenerateDocModal with 7 doc types and SSE streaming preview, GenerateIssuesModal with doc analysis and batch issue creation, `batchCreateIssues` store method, `listByProject` API client method, mock project_id filtering, `bizforge_project_documents` MCP tool on 2026-05-05.
+> **Auto-updated by Cursor:** Added Default Model setting to AI Providers — grouped dropdown of all models from connected providers, auto-saved to settings store; both AI generation modals now pass `default_model` via `messages.send()` and display current model with settings link; removed hardcoded agent fallbacks; added `allModels` derived to providers store on 2026-05-05.
+> **Auto-updated by Cursor:** Added LLM Inspector Panel — global right-side collapsible panel logging all LLM requests/responses with provider color-coding (16-color pastel palette), 3-line collapsed preview, expandable full payload view, drag-resizable width (50% default, 300px–80vw range), direction arrows for sent/received, provider color picker in Settings, localStorage persistence for panel state/width/colors, and ⌘⇧I keyboard shortcut on 2026-05-05.
+> **Auto-updated by Cursor:** Added composition member lists to Library company and team detail pages — Composition section now shows individual agent and skill names below the count tiles, with hover tooltips displaying each member's description; data resolved from library agent/skill pools by matching `required_skills` on 2026-05-06.
+> **Auto-updated by Cursor:** Added Domo Development team template — full end-to-end 8-agent team (PM, Platform Lead, UI Developer, Backend Developer, App Engineer, Data Engineer, Automation Engineer, QA Engineer) with all 12 Domo skills; added 3 new library agents (Domo UI Developer, Domo Backend Developer, Domo QA Engineer) with full `.md` definitions referencing Domo-specific documentation and patterns; strengthened existing Domo Platform team agent prompts to explicitly reference Domo CLI commands, API tier selection, manifest conventions, and Code Engine patterns on 2026-05-06.
+> **Auto-updated by Cursor:** Added Virtual Office team & division visual indicators — `orgColors.ts` utility for deterministic team/division colors, hierarchy tree fetch in office page builds `agentOrgMap` (agent→team→division chain), 2D pixel name labels now show team-colored underline bar + division pip, 3D name labels have team-colored backdrop plane + division pip, OfficeDetailPanel shows org info with assign/change/remove team controls, collapsible legend overlay groups teams by division with color swatches on 2026-05-06.
+> **Auto-updated by Cursor:** Enhanced all 7 Domo demo agents with comprehensive Domo documentation standards — domo-ui-developer (Domo Design Guide with color palette, 6px typography grid, card size px mappings, da new scaffolding, domo.js/ryuu.js patterns, Phoenix charting, DDX Brick→Pro-Code conversion), domo-app-engineer (complete manifest spec with all properties, da new + BYOS templates for React/Angular/Vue, AppDB STRING-only constraint, @domoinc/toolkit all clients, Redux Toolkit state management), domo-backend-developer (codeengine library methods: sendRequest/getAccount/axios, JS/Python package lists, package lifecycle, packageMapping manifest wiring), domo-qa-engineer (8-layer test strategy covering scaffolding, data binding, AppDB, security, Code Engine, card rendering, publishing, regression), domo-platform-developer (full manifest specification, MCP tool catalog with 7 servers, dashboard/Beast Mode/page layout patterns), domo-data-engineer (DataSet vs AppDB type distinction, Stream API gzip procedure, Federated queries, Workbench, PDP at source only), domo-automation-engineer (codeengine library API table, global vs custom packages, scheduled AppDB sync pattern, cross-instance orchestration) on 2026-05-06.

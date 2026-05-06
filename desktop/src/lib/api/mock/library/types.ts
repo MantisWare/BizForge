@@ -2,6 +2,12 @@
 
 export type Visibility = "public" | "unlisted" | "private";
 
+export interface CompositionMember {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface LibraryAgent {
   id: string;
   name: string;
@@ -37,6 +43,8 @@ export interface LibraryOperation {
   agent_count: number;
   skill_count: number;
   required_skills: string[];
+  member_agents: CompositionMember[];
+  member_skills: CompositionMember[];
   category: string;
   emoji: string;
   tags: string[];
@@ -51,6 +59,8 @@ export interface LibraryTemplate {
   size: string;
   agent_count: number;
   required_skills: string[];
+  member_agents: CompositionMember[];
+  member_skills: CompositionMember[];
   emoji: string;
   tags: string[];
   version: string;

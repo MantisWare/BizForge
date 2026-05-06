@@ -847,6 +847,7 @@ export interface AIProvider {
   last_tested_at?: string;
   error_message?: string;
   workspace_id?: string;
+  color?: string;
   created_at: string;
   updated_at: string;
 }
@@ -1232,7 +1233,7 @@ export interface Organization {
   agent_count: number;
   budget_monthly_cents: number | null;
   budget_per_agent_cents: number | null;
-  budget_enforcement: "soft" | "hard" | null;
+  budget_enforcement: "visibility" | "warning" | "stop" | null;
   governance: string | null;
   mission: string | null;
   created_at: string;
@@ -1276,7 +1277,7 @@ export interface Division {
   description: string | null;
   head_agent_id: string | null;
   budget_monthly_cents: number | null;
-  budget_enforcement: "soft" | "hard" | null;
+  budget_enforcement: "visibility" | "warning" | "stop" | null;
   signal: string | null;
   mission: string | null;
   operating_model: string | null;
@@ -1296,7 +1297,7 @@ export interface Department {
   description: string | null;
   head_agent_id: string | null;
   budget_monthly_cents: number | null;
-  budget_enforcement: "soft" | "hard" | null;
+  budget_enforcement: "visibility" | "warning" | "stop" | null;
   signal: string | null;
   mission: string | null;
   teams_overview: string | null;
@@ -1316,7 +1317,7 @@ export interface Team {
   description: string | null;
   manager_agent_id: string | null;
   budget_monthly_cents: number | null;
-  budget_enforcement: "soft" | "hard" | null;
+  budget_enforcement: "visibility" | "warning" | "stop" | null;
   signal: string | null;
   mission: string | null;
   coordination: string | null;
@@ -1712,4 +1713,26 @@ export interface ReportCreateRequest {
   schedule?: string;
   format?: ReportFormat;
   tags?: string[];
+}
+
+// ── LLM Inspector ─────────────────────────────────────────────────────────────
+
+export type LlmLogDirection = "sent" | "received";
+export type LlmLogStatus = "pending" | "success" | "error";
+
+export interface LlmLogEntry {
+  id: string;
+  requestId: string;
+  timestamp: string;
+  providerId: string;
+  providerName: string;
+  providerSlug: string;
+  model: string;
+  direction: LlmLogDirection;
+  payload: unknown;
+  previewLines: string[];
+  tokenCount?: number;
+  durationMs?: number;
+  status: LlmLogStatus;
+  error?: string;
 }

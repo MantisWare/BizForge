@@ -11,10 +11,12 @@
     selected: boolean;
     emissive: string;
     zoneColor?: string;
+    teamColor?: string;
+    divisionColor?: string;
     onclick: () => void;
   }
 
-  let { agent, position, selected, emissive, zoneColor = '#8888a0', onclick }: Props = $props();
+  let { agent, position, selected, emissive, zoneColor = '#8888a0', teamColor, divisionColor, onclick }: Props = $props();
 
   // Deterministic color from agent id
   function agentColor(id: string): string {
@@ -144,8 +146,20 @@
     {/if}
   </T.Group>
 
-  <!-- Agent name label floating above -->
+  <!-- Agent name label floating above with team-colored backdrop -->
   <T.Group position={[0, 1.85, 0.6]}>
+    <!-- Team color backdrop plane behind name -->
+    {#if teamColor !== undefined}
+      <T.Mesh position.z={-0.01}>
+        <T.PlaneGeometry args={[shortLabel.length * 0.1 + 0.3, 0.22]} />
+        <T.MeshBasicMaterial color={teamColor} transparent opacity={0.3} />
+      </T.Mesh>
+      <!-- Team color underline bar -->
+      <T.Mesh position={[0, -0.1, -0.005]}>
+        <T.PlaneGeometry args={[shortLabel.length * 0.1 + 0.3, 0.03]} />
+        <T.MeshBasicMaterial color={teamColor} transparent opacity={0.85} />
+      </T.Mesh>
+    {/if}
     <Float speed={2} floatIntensity={0.12}>
       <Text
         text={shortLabel}
@@ -168,14 +182,14 @@
     />
   </T.Group>
 
-  <!-- Department pip (small sphere near name) -->
+  <!-- Division pip (small sphere near name) — uses real division color when available -->
   <T.Mesh position={[-0.5, 1.85, 0.6]}>
     <T.SphereGeometry args={[0.04, 8, 8]} />
-    <T.MeshBasicMaterial color={zoneColor} />
+    <T.MeshBasicMaterial color={divisionColor ?? zoneColor} />
   </T.Mesh>
 
   <!-- Current task speech bubble (if running) -->
-  {#if agent.status === 'running' && agent.current_task !== undefined}
+  {#if agent.status === 'running' && agent.current_task !== undefined && agent.current_task !== null}
     <T.Group position={[0, 2.15, 0.6]}>
       <Float speed={3} floatIntensity={0.15}>
         <Text

@@ -871,6 +871,32 @@ const RAW_TEMPLATES: RawTemplate[] = [
       "explain",
     ],
   },
+  {
+    id: "domo-development",
+    name: "Domo Development",
+    emoji: "globe",
+    description:
+      "Full end-to-end Domo platform development team — project management, UI and backend development, custom app engineering, data pipeline architecture, workflow automation, and quality assurance using Domo-specific tooling, APIs, and documentation.",
+    size: sizeFromCount(8),
+    agent_count: 8,
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-appdb-manage",
+      "domo-app-publish",
+      "domo-code-engine",
+      "domo-connector-build",
+      "domo-dataset-manage",
+      "domo-magic-etl",
+      "domo-workflow-automate",
+      "domo-embed-analytics",
+      "domo-api-integrate",
+      "domo-governance",
+      "domo-data-science",
+      "sprint-planning",
+      "delegate",
+      "board",
+    ],
+  },
 ];
 
 export const TEMPLATES: LibraryTemplate[] = RAW_TEMPLATES.map(enrichTemplate);

@@ -1867,7 +1867,7 @@ const RAW_AGENTS: RawAgent[] = [
     required_skills: ["audit", "retrospective", "stats", "simplify"],
   },
 
-  // domo (4)
+  // domo (7)
   {
     id: "domo-platform-developer",
     name: "Domo Platform Developer",
@@ -1938,6 +1938,59 @@ const RAW_AGENTS: RawAgent[] = [
       "domo-code-engine",
       "domo-governance",
       "domo-api-integrate",
+    ],
+  },
+  {
+    id: "domo-ui-developer",
+    name: "Domo UI Developer",
+    emoji: "paint-brush",
+    category: "domo",
+    role: "ui developer",
+    adapter: "osa",
+    budget: 400,
+    description:
+      "Frontend specialist for Domo custom apps — builds responsive UIs with the Domo App Framework, domo.js data binding, @domoinc/toolkit components, DDX Bricks, and card-responsive layouts following Domo design patterns.",
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-appdb-manage",
+      "domo-app-publish",
+      "domo-embed-analytics",
+    ],
+  },
+  {
+    id: "domo-backend-developer",
+    name: "Domo Backend Developer",
+    emoji: "server",
+    category: "domo",
+    role: "backend developer",
+    adapter: "osa",
+    budget: 450,
+    description:
+      "Server-side specialist for Domo — Code Engine functions (JS/Python), Platform and Product API integration, connector data transport, Workflow orchestration, and cross-instance backend logic.",
+    required_skills: [
+      "domo-code-engine",
+      "domo-api-integrate",
+      "domo-workflow-automate",
+      "domo-connector-build",
+      "domo-dataset-manage",
+    ],
+  },
+  {
+    id: "domo-qa-engineer",
+    name: "Domo QA Engineer",
+    emoji: "shield-check",
+    category: "domo",
+    role: "qa engineer",
+    adapter: "osa",
+    budget: 350,
+    description:
+      "Quality assurance specialist for Domo — validates custom app functionality, AppDB security filters, PDP policy enforcement, ETL data accuracy, API contract conformance, and connector reliability across Domo instances.",
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-appdb-manage",
+      "domo-dataset-manage",
+      "domo-api-integrate",
+      "domo-governance",
     ],
   },
 ];

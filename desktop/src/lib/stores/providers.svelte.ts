@@ -42,6 +42,18 @@ class ProvidersStore {
     this.providers.find((p) => p.is_default) ?? null,
   );
 
+  /** Flat list of all models across providers that have at least one model. */
+  allModels = $derived.by(() => {
+    const result: { providerId: string; providerName: string; model: string }[] = [];
+    for (const p of this.providers) {
+      if (p.models.length === 0) continue;
+      for (const m of p.models) {
+        result.push({ providerId: p.id, providerName: p.name, model: m });
+      }
+    }
+    return result;
+  });
+
   private persist(): void {
     saveCache(this.providers);
   }

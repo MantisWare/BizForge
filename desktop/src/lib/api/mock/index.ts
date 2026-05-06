@@ -171,6 +171,95 @@ function delay(ms = 30): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms + Math.random() * 20));
 }
 
+// ── In-memory stores for hierarchy entities ──────────────────────────────────
+
+type MockDivision = {
+  id: string;
+  organization_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  head_agent_id: string | null;
+  budget_monthly_cents: number | null;
+  budget_enforcement: string | null;
+  signal: string | null;
+  mission: string | null;
+  operating_model: string | null;
+  coordination: string | null;
+  escalation_rules: string | null;
+  inserted_at: string;
+  updated_at: string;
+};
+
+type MockDepartment = {
+  id: string;
+  division_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  head_agent_id: string | null;
+  budget_monthly_cents: number | null;
+  budget_enforcement: string | null;
+  signal: string | null;
+  mission: string | null;
+  teams_overview: string | null;
+  coordination: string | null;
+  escalation_rules: string | null;
+  inserted_at: string;
+  updated_at: string;
+};
+
+type MockTeam = {
+  id: string;
+  department_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  manager_agent_id: string | null;
+  budget_monthly_cents: number | null;
+  budget_enforcement: string | null;
+  signal: string | null;
+  mission: string | null;
+  coordination: string | null;
+  escalation_rules: string | null;
+  handoff_protocols: string | null;
+  inserted_at: string;
+  updated_at: string;
+};
+
+let mockDivisionStore: MockDivision[] = [];
+let mockDepartmentStore: MockDepartment[] = [];
+let mockTeamStore: MockTeam[] = [];
+
+// ── In-memory store for organizations ────────────────────────────────────────
+
+type MockOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  avatar_url: string | null;
+  plan: string;
+  member_count: number;
+  agent_count: number;
+  budget_monthly_cents: number | null;
+  budget_per_agent_cents: number | null;
+  budget_enforcement: string | null;
+  governance: string | null;
+  mission: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+let mockOrgStore: MockOrganization[] = mockOrganizations().map((o) => ({
+  ...o,
+  budget_monthly_cents: o.budget_monthly_cents ?? null,
+  budget_per_agent_cents: o.budget_per_agent_cents ?? null,
+  budget_enforcement: o.budget_enforcement ?? null,
+  governance: o.governance ?? null,
+  mission: o.mission ?? null,
+}));
+
 // rawPath includes query string; path is cleanPath (no query string)
 type RouteHandler = (
   path: string,
@@ -913,7 +1002,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   },
   {
     pattern: /^\/documents$/,
-    handler: (_path, options) => {
+    handler: (_path, options, rawPath) => {
       if ((options.method ?? "GET").toUpperCase() === "POST") {
         let body: Record<string, unknown> = {};
         try {
@@ -927,7 +1016,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           title: (body.title as string) ?? "New Document",
           path: (body.path as string) ?? "reference/new-doc.md",
           format: ((body.format as string) ?? "markdown") as Document["format"],
-          project_id: (body.project_id as string) ?? "proj-1",
+          project_id: (body.project_id as string) ?? null,
           last_edited_by: (body.last_edited_by as string) ?? "User",
           created_at: now,
           updated_at: now,
@@ -936,9 +1025,18 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
         addDocument(newDoc);
         return { document: newDoc };
       }
+      const projectId =
+        new URLSearchParams((rawPath ?? "").split("?")[1] ?? "").get(
+          "project_id",
+        ) ?? undefined;
+      const allDocs = getDocuments();
+      const docs = projectId !== undefined
+        ? allDocs.filter((d) => d.project_id === projectId)
+        : allDocs;
       return {
-        documents: getDocuments(),
-        count: getDocuments().length,
+        documents: docs,
+        tree: projectId !== undefined ? [] : getDocumentTree(),
+        count: docs.length,
       };
     },
   },
@@ -2055,10 +2153,27 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     pattern: /^\/organizations\/([^/]+)$/,
     handler: (path, options) => {
       const id = path.split("/")[2];
-      if ((options.method ?? "GET").toUpperCase() === "DELETE")
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "DELETE") {
+        mockOrgStore = mockOrgStore.filter((o) => o.id !== id);
         return undefined;
+      }
+      if (method === "PATCH" && options.body) {
+        const body = JSON.parse(
+          typeof options.body === "string" ? options.body : "{}",
+        ) as Record<string, unknown>;
+        const idx = mockOrgStore.findIndex((o) => o.id === id);
+        if (idx !== -1) {
+          mockOrgStore[idx] = {
+            ...mockOrgStore[idx],
+            ...body,
+            updated_at: new Date().toISOString(),
+          } as MockOrganization;
+          return mockOrgStore[idx];
+        }
+      }
       return (
-        mockOrganizations().find((o) => o.id === id) ?? mockOrganizations()[0]
+        mockOrgStore.find((o) => o.id === id) ?? mockOrgStore[0]
       );
     },
   },
@@ -2066,20 +2181,37 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     pattern: /^\/organizations$/,
     handler: (_path, options) => {
       if ((options.method ?? "GET").toUpperCase() === "POST") {
-        return {
+        const body = JSON.parse(
+          typeof options.body === "string" ? options.body : "{}",
+        ) as Record<string, unknown>;
+        const now = new Date().toISOString();
+        const name = (body.name as string) ?? "New Organization";
+        const newOrg: MockOrganization = {
           id: `org-new-${Date.now()}`,
-          name: "New Org",
-          slug: "new-org",
-          description: null,
+          name,
+          slug:
+            (body.slug as string) ??
+            name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, ""),
+          description: (body.description as string | null) ?? null,
           avatar_url: null,
           plan: "free",
           member_count: 1,
           agent_count: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          budget_monthly_cents: null,
+          budget_per_agent_cents: null,
+          budget_enforcement: null,
+          governance: null,
+          mission: null,
+          created_at: now,
+          updated_at: now,
         };
+        mockOrgStore = [newOrg, ...mockOrgStore];
+        return newOrg;
       }
-      return { organizations: mockOrganizations() };
+      return { organizations: mockOrgStore };
     },
   },
 
@@ -2222,109 +2354,190 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       organization: {
         id: "org-1",
         name: "Default Organization",
-        divisions: [],
+        divisions: mockDivisionStore.map((d) => ({
+          ...d,
+          departments: mockDepartmentStore
+            .filter((dept) => dept.division_id === d.id)
+            .map((dept) => ({
+              ...dept,
+              teams: mockTeamStore.filter((t) => t.department_id === dept.id),
+            })),
+        })),
       },
     }),
   },
   {
     pattern: /^\/divisions\/([^/]+)\/departments$/,
-    handler: () => ({ departments: [] }),
+    handler: (path) => {
+      const divId = path.split("/")[2];
+      return {
+        departments: mockDepartmentStore.filter((d) => d.division_id === divId),
+      };
+    },
   },
   {
     pattern: /^\/divisions\/([^/]+)$/,
     handler: (path, options) => {
       const id = path.split("/")[2];
-      if ((options.method ?? "GET").toUpperCase() === "PATCH" && options.body) {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "PATCH" && options.body) {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return {
+        const idx = mockDivisionStore.findIndex((d) => d.id === id);
+        if (idx !== -1) {
+          mockDivisionStore[idx] = {
+            ...mockDivisionStore[idx],
+            ...body,
+            updated_at: new Date().toISOString(),
+          } as typeof mockDivisionStore[number];
+          return mockDivisionStore[idx];
+        }
+        return { id, ...body, updated_at: new Date().toISOString() };
+      }
+      if (method === "DELETE") {
+        mockDivisionStore = mockDivisionStore.filter((d) => d.id !== id);
+        return { ok: true };
+      }
+      return (
+        mockDivisionStore.find((d) => d.id === id) ?? {
           id,
           name: "Division",
           slug: "division",
-          departments: [],
-          ...body,
-        };
-      }
-      if ((options.method ?? "GET").toUpperCase() === "DELETE")
-        return { ok: true };
-      return { id, name: "Division", slug: "division", departments: [] };
+        }
+      );
     },
   },
   {
-    // POST /divisions — create a new division
     pattern: /^\/divisions$/,
-    handler: (_path, options) => {
-      if ((options.method ?? "GET").toUpperCase() === "POST") {
+    handler: (_path, options, rawPath) => {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "POST") {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return {
+        const now = new Date().toISOString();
+        const newDiv = {
           id: `div-${Date.now()}`,
+          organization_id: (body.organization_id as string) ?? "",
           name: (body.name as string) ?? "New Division",
-          slug: ((body.name as string) ?? "division")
-            .toLowerCase()
-            .replace(/\s+/g, "-"),
-          workspace_id: (body.workspace_id as string) ?? null,
-          head_agent_id: (body.head_agent_id as string) ?? null,
-          budget_cents: 0,
-          departments: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          slug:
+            (body.slug as string) ??
+            ((body.name as string) ?? "division")
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, ""),
+          description: (body.description as string | null) ?? null,
+          head_agent_id: (body.head_agent_id as string | null) ?? null,
+          budget_monthly_cents:
+            (body.budget_monthly_cents as number | null) ?? null,
+          budget_enforcement:
+            (body.budget_enforcement as string | null) ?? null,
+          signal: (body.signal as string | null) ?? null,
+          mission: (body.mission as string | null) ?? null,
+          operating_model: (body.operating_model as string | null) ?? null,
+          coordination: (body.coordination as string | null) ?? null,
+          escalation_rules: (body.escalation_rules as string | null) ?? null,
+          inserted_at: now,
+          updated_at: now,
         };
+        mockDivisionStore = [newDiv, ...mockDivisionStore];
+        return newDiv;
       }
-      return { divisions: [] };
+      const orgId = new URLSearchParams(
+        (rawPath ?? "").split("?")[1] ?? "",
+      ).get("organization_id");
+      const filtered = orgId
+        ? mockDivisionStore.filter((d) => d.organization_id === orgId)
+        : mockDivisionStore;
+      return { divisions: filtered };
     },
   },
   {
     pattern: /^\/departments\/([^/]+)\/teams$/,
-    handler: () => ({ teams: [] }),
+    handler: (path) => {
+      const deptId = path.split("/")[2];
+      return {
+        teams: mockTeamStore.filter((t) => t.department_id === deptId),
+      };
+    },
   },
   {
     pattern: /^\/departments\/([^/]+)$/,
     handler: (path, options) => {
       const id = path.split("/")[2];
-      if ((options.method ?? "GET").toUpperCase() === "PATCH" && options.body) {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "PATCH" && options.body) {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return {
+        const idx = mockDepartmentStore.findIndex((d) => d.id === id);
+        if (idx !== -1) {
+          mockDepartmentStore[idx] = {
+            ...mockDepartmentStore[idx],
+            ...body,
+            updated_at: new Date().toISOString(),
+          } as typeof mockDepartmentStore[number];
+          return mockDepartmentStore[idx];
+        }
+        return { id, ...body, updated_at: new Date().toISOString() };
+      }
+      if (method === "DELETE") {
+        mockDepartmentStore = mockDepartmentStore.filter((d) => d.id !== id);
+        return { ok: true };
+      }
+      return (
+        mockDepartmentStore.find((d) => d.id === id) ?? {
           id,
           name: "Department",
           slug: "department",
-          teams: [],
-          ...body,
-        };
-      }
-      if ((options.method ?? "GET").toUpperCase() === "DELETE")
-        return { ok: true };
-      return { id, name: "Department", slug: "department", teams: [] };
+        }
+      );
     },
   },
   {
-    // POST /departments — create a new department
     pattern: /^\/departments$/,
-    handler: (_path, options) => {
-      if ((options.method ?? "GET").toUpperCase() === "POST") {
+    handler: (_path, options, rawPath) => {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "POST") {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return {
+        const now = new Date().toISOString();
+        const newDept = {
           id: `dept-${Date.now()}`,
+          division_id: (body.division_id as string) ?? "",
           name: (body.name as string) ?? "New Department",
-          slug: ((body.name as string) ?? "department")
-            .toLowerCase()
-            .replace(/\s+/g, "-"),
-          division_id: (body.division_id as string) ?? null,
-          workspace_id: (body.workspace_id as string) ?? null,
-          head_agent_id: (body.head_agent_id as string) ?? null,
-          budget_cents: 0,
-          teams: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          slug:
+            (body.slug as string) ??
+            ((body.name as string) ?? "department")
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, ""),
+          description: (body.description as string | null) ?? null,
+          head_agent_id: (body.head_agent_id as string | null) ?? null,
+          budget_monthly_cents:
+            (body.budget_monthly_cents as number | null) ?? null,
+          budget_enforcement:
+            (body.budget_enforcement as string | null) ?? null,
+          signal: (body.signal as string | null) ?? null,
+          mission: (body.mission as string | null) ?? null,
+          teams_overview: (body.teams_overview as string | null) ?? null,
+          coordination: (body.coordination as string | null) ?? null,
+          escalation_rules: (body.escalation_rules as string | null) ?? null,
+          inserted_at: now,
+          updated_at: now,
         };
+        mockDepartmentStore = [newDept, ...mockDepartmentStore];
+        return newDept;
       }
-      return { departments: [] };
+      const divId = new URLSearchParams(
+        (rawPath ?? "").split("?")[1] ?? "",
+      ).get("division_id");
+      const filtered = divId
+        ? mockDepartmentStore.filter((d) => d.division_id === divId)
+        : mockDepartmentStore;
+      return { departments: filtered };
     },
   },
   {
@@ -2350,41 +2563,78 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
     pattern: /^\/teams\/([^/]+)$/,
     handler: (path, options) => {
       const id = path.split("/")[2];
-      if ((options.method ?? "GET").toUpperCase() === "PATCH" && options.body) {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "PATCH" && options.body) {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return { id, name: "Team", slug: "team", agents: [], ...body };
+        const idx = mockTeamStore.findIndex((t) => t.id === id);
+        if (idx !== -1) {
+          mockTeamStore[idx] = {
+            ...mockTeamStore[idx],
+            ...body,
+            updated_at: new Date().toISOString(),
+          } as typeof mockTeamStore[number];
+          return mockTeamStore[idx];
+        }
+        return { id, ...body, updated_at: new Date().toISOString() };
       }
-      if ((options.method ?? "GET").toUpperCase() === "DELETE")
+      if (method === "DELETE") {
+        mockTeamStore = mockTeamStore.filter((t) => t.id !== id);
         return { ok: true };
-      return { id, name: "Team", slug: "team", agents: [] };
+      }
+      return (
+        mockTeamStore.find((t) => t.id === id) ?? {
+          id,
+          name: "Team",
+          slug: "team",
+        }
+      );
     },
   },
   {
-    // POST /teams — create a new team
     pattern: /^\/teams$/,
-    handler: (_path, options) => {
-      if ((options.method ?? "GET").toUpperCase() === "POST") {
+    handler: (_path, options, rawPath) => {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "POST") {
         const body = JSON.parse(
           typeof options.body === "string" ? options.body : "{}",
         ) as Record<string, unknown>;
-        return {
+        const now = new Date().toISOString();
+        const newTeam = {
           id: `team-${Date.now()}`,
+          department_id: (body.department_id as string) ?? "",
           name: (body.name as string) ?? "New Team",
-          slug: ((body.name as string) ?? "team")
-            .toLowerCase()
-            .replace(/\s+/g, "-"),
-          department_id: (body.department_id as string) ?? null,
-          workspace_id: (body.workspace_id as string) ?? null,
-          manager_agent_id: (body.manager_agent_id as string) ?? null,
-          budget_cents: 0,
-          agents: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          slug:
+            (body.slug as string) ??
+            ((body.name as string) ?? "team")
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, ""),
+          description: (body.description as string | null) ?? null,
+          manager_agent_id: (body.manager_agent_id as string | null) ?? null,
+          budget_monthly_cents:
+            (body.budget_monthly_cents as number | null) ?? null,
+          budget_enforcement:
+            (body.budget_enforcement as string | null) ?? null,
+          signal: (body.signal as string | null) ?? null,
+          mission: (body.mission as string | null) ?? null,
+          coordination: (body.coordination as string | null) ?? null,
+          escalation_rules: (body.escalation_rules as string | null) ?? null,
+          handoff_protocols: (body.handoff_protocols as string | null) ?? null,
+          inserted_at: now,
+          updated_at: now,
         };
+        mockTeamStore = [newTeam, ...mockTeamStore];
+        return newTeam;
       }
-      return { teams: [] };
+      const deptId = new URLSearchParams(
+        (rawPath ?? "").split("?")[1] ?? "",
+      ).get("department_id");
+      const filtered = deptId
+        ? mockTeamStore.filter((t) => t.department_id === deptId)
+        : mockTeamStore;
+      return { teams: filtered };
     },
   },
   // ── Skills sub-routes ──────────────────────────────────────────────────────────
@@ -3187,6 +3437,17 @@ export function clearAllMockData(): void {
   // Flush the in-memory map so the cleared state takes effect immediately
   // without waiting for a module reload.
   clearAllMockWorkspaceAgents();
+  mockDivisionStore = [];
+  mockDepartmentStore = [];
+  mockTeamStore = [];
+  mockOrgStore = mockOrganizations().map((o) => ({
+    ...o,
+    budget_monthly_cents: o.budget_monthly_cents ?? null,
+    budget_per_agent_cents: o.budget_per_agent_cents ?? null,
+    budget_enforcement: o.budget_enforcement ?? null,
+    governance: o.governance ?? null,
+    mission: o.mission ?? null,
+  }));
 }
 
 // ── Fresh workspace detection ─────────────────────────────────────────────────
@@ -3241,7 +3502,6 @@ const FRESH_WORKSPACE_OVERRIDES: Record<string, unknown> = {
     },
   },
   "/activity": { events: [], total: 0 },
-  "/issues": { issues: [] },
   "/inbox": { items: [], count: 0 },
   "/sessions": { sessions: [], count: 0 },
   "/schedules": { schedules: [] },
@@ -3264,11 +3524,6 @@ const FRESH_WORKSPACE_OVERRIDES: Record<string, unknown> = {
     agents_error: 0,
     budget_warnings: 0,
   },
-  "/goals": { goals: [], count: 0 },
-  "/goals/tree": { tree: [] },
-  "/projects": { projects: [], count: 0 },
-  "/documents": { documents: [], count: 0 },
-  "/documents/tree": { tree: [] },
   "/skills": { skills: [] },
   "/webhooks": { webhooks: [] },
   "/alerts/rules": { rules: [] },
@@ -3302,16 +3557,6 @@ const FRESH_WORKSPACE_OVERRIDES: Record<string, unknown> = {
   "/analytics/teams": { teams: [] },
   "/work-products": { products: [], count: 0 },
   "/conversations": { conversations: [], total: 0 },
-  "/hierarchy": {
-    organization: {
-      id: "org-1",
-      name: "Default Organization",
-      divisions: [],
-    },
-  },
-  "/divisions": { divisions: [] },
-  "/departments": { departments: [] },
-  "/teams": { teams: [] },
   "/invitations": { invitations: [] },
   "/config/revisions": { revisions: [] },
   "/execution-workspaces": { workspaces: [] },

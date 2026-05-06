@@ -179,6 +179,38 @@
                 <div class="ldc-comp-label">Skills</div>
               </div>
             </div>
+
+            {#if company.member_agents.length > 0}
+              <div class="ldc-members-section">
+                <h3 class="ldc-members-heading">
+                  <AgentIcon value="robot" size={14} />
+                  Agents
+                </h3>
+                <ul class="ldc-members-list" role="list">
+                  {#each company.member_agents as agent (agent.id)}
+                    <li class="ldc-member" title={agent.description} role="listitem">
+                      {agent.name}
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+
+            {#if company.member_skills.length > 0}
+              <div class="ldc-members-section">
+                <h3 class="ldc-members-heading">
+                  <AgentIcon value="bolt" size={14} />
+                  Skills
+                </h3>
+                <ul class="ldc-members-list" role="list">
+                  {#each company.member_skills as skill (skill.id)}
+                    <li class="ldc-member" title={skill.description} role="listitem">
+                      {skill.name}
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
           </section>
 
           <!-- Version -->
@@ -507,6 +539,59 @@
   .ldc-comp-label {
     font-size: 12px;
     color: var(--text-muted);
+  }
+
+  /* Composition member lists */
+  .ldc-members-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-default);
+  }
+
+  .ldc-members-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-tertiary);
+    margin: 0 0 8px 0;
+  }
+
+  .ldc-members-heading :global(svg) {
+    color: #f26522;
+    flex-shrink: 0;
+  }
+
+  .ldc-members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ldc-member {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-xs);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: default;
+    transition: all 120ms ease;
+  }
+
+  .ldc-member:hover {
+    background: var(--bg-elevated);
+    border-color: rgba(242, 101, 34, 0.3);
+    color: var(--text-primary);
   }
 
   /* Stats grid */

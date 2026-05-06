@@ -14,7 +14,9 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import CommandPalette from '$lib/components/layout/CommandPalette.svelte';
   import ActivityWidget from '$lib/components/activity/ActivityWidget.svelte';
+  import LlmInspectorPanel from '$lib/components/inspector/LlmInspectorPanel.svelte';
   import { activityStore } from '$lib/stores/activity.svelte';
+  import { llmInspectorStore } from '$lib/stores/llmInspector.svelte';
   import { sessionsStore } from '$lib/stores/sessions.svelte';
   import { organizationsStore } from '$lib/stores/organizations.svelte';
   import { approvalsStore } from '$lib/stores/approvals.svelte';
@@ -185,6 +187,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       if (e.key === '\\') { e.preventDefault(); toggleSidebar(); return; }
       if (e.key === ',') { e.preventDefault(); goto('/app/settings'); return; }
       if (e.key === 't' || e.key === 'T') { e.preventDefault(); goto('/app/terminal'); return; }
+      if (e.shiftKey && (e.key === 'i' || e.key === 'I')) { e.preventDefault(); llmInspectorStore.toggle(); return; }
       const idx = ['1', '2', '3'].indexOf(e.key);
       if (idx !== -1) { e.preventDefault(); goto(NAV_ROUTES[idx]); }
     }
@@ -209,6 +212,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     <main class="main-content" id="main-content">
       {@render children()}
     </main>
+    <LlmInspectorPanel />
   </div>
   <AppFooter />
 </div>

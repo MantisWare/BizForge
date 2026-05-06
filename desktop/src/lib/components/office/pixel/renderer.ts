@@ -499,7 +499,7 @@ export function renderOffice(
           c.globalAlpha = 1.0;
         }
 
-        // Name label with department color pip
+        // Name label with team underline and division pip
         const labelFontSize = Math.max(7, 8 * zoom);
         c.font = `${labelFontSize}px monospace`;
         c.textAlign = "center";
@@ -510,23 +510,38 @@ export function renderOffice(
         const labelX = px + ts / 2;
         const labelY = py + offY - 4 * zoom;
 
+        const labelLeft = labelX - labelWidth / 2;
+        const labelTop = labelY - labelFontSize;
+        const labelH = labelFontSize + 3 * zoom;
+        const labelR = 3 * zoom;
+
         // Label background
         c.fillStyle = "rgba(15, 17, 23, 0.78)";
         c.beginPath();
-        c.roundRect(
-          labelX - labelWidth / 2,
-          labelY - labelFontSize,
-          labelWidth,
-          labelFontSize + 3 * zoom,
-          3 * zoom,
-        );
+        c.roundRect(labelLeft, labelTop, labelWidth, labelH, labelR);
         c.fill();
 
-        // Department color pip on the left side of label
-        c.fillStyle = char.statusColor;
+        // Team-colored underline bar at bottom of label
+        const teamClr = char.teamColor;
+        if (teamClr !== undefined) {
+          const barH = 2 * zoom;
+          c.save();
+          c.beginPath();
+          c.roundRect(labelLeft, labelTop, labelWidth, labelH, labelR);
+          c.clip();
+          c.fillStyle = teamClr;
+          c.globalAlpha = 0.85;
+          c.fillRect(labelLeft, labelTop + labelH - barH, labelWidth, barH);
+          c.globalAlpha = 1.0;
+          c.restore();
+        }
+
+        // Division color pip on the left side of label
+        const divClr = char.divisionColor ?? char.statusColor;
+        c.fillStyle = divClr;
         c.beginPath();
         c.arc(
-          labelX - labelWidth / 2 + 4 * zoom,
+          labelLeft + 4 * zoom,
           labelY - labelFontSize / 2 + 1.5 * zoom,
           2 * zoom,
           0,

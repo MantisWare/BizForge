@@ -466,6 +466,18 @@ mcpServer.tool(
     ),
 );
 
+mcpServer.tool(
+  "bizforge_project_documents",
+  "List all documents belonging to a specific project",
+  {
+    project_id: z.string().describe("The project ID to list documents for"),
+  },
+  async ({ project_id }) =>
+    safeTool(() =>
+      api("/documents", { params: { project_id } }),
+    ),
+);
+
 // ── Tools: Memory ────────────────────────────────────────────────────────────
 
 mcpServer.tool(
@@ -693,7 +705,7 @@ async function main(): Promise<void> {
   await mcpServer.connect(transport);
 
   process.stderr.write(
-    "[bizforge-mcp] Server started. 59 tools registered.\n",
+    "[bizforge-mcp] Server started. 60 tools registered.\n",
   );
 }
 

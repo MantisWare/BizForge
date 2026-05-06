@@ -7,23 +7,28 @@
   import IssueList from '$lib/components/issues/IssueList.svelte';
   import AgentCard from '$lib/components/agents/AgentCard.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
+  import DocumentViewer from '$lib/components/documents/DocumentViewer.svelte';
+  import GenerateDocModal from '$lib/components/documents/GenerateDocModal.svelte';
+  import GenerateIssuesModal from '$lib/components/issues/GenerateIssuesModal.svelte';
   import { projectsStore } from '$lib/stores/projects.svelte';
   import { goalsStore } from '$lib/stores/goals.svelte';
   import { issuesStore } from '$lib/stores/issues.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { sessionsStore } from '$lib/stores/sessions.svelte';
   import { costsStore } from '$lib/stores/costs.svelte';
+  import { documentsStore } from '$lib/stores/documents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
-  import type { Project } from '$lib/api/types';
+  import type { Project, Document } from '$lib/api/types';
 
   // ── Route params ────────────────────────────────────────────────────────────
   const id = $derived(page.params.id ?? '');
 
   // ── Tab state — URL-persisted via ?tab= ─────────────────────────────────────
-  type ProjectTab = 'overview' | 'goals' | 'issues' | 'agents' | 'sessions' | 'costs';
+  type ProjectTab = 'overview' | 'goals' | 'docs' | 'issues' | 'agents' | 'sessions' | 'costs';
   const TABS: { id: ProjectTab; label: string }[] = [
     { id: 'overview',  label: 'Overview'  },
     { id: 'goals',     label: 'Goals'     },
+    { id: 'docs',      label: 'Docs'      },
     { id: 'issues',    label: 'Issues'    },
     { id: 'agents',    label: 'Agents'    },
     { id: 'sessions',  label: 'Sessions'  },
@@ -32,7 +37,7 @@
 
   const activeTab = $derived.by<ProjectTab>(() => {
     const t = page.url.searchParams.get('tab');
-    if (t === 'goals' || t === 'issues' || t === 'agents' || t === 'sessions' || t === 'costs') {
+    if (t === 'goals' || t === 'docs' || t === 'issues' || t === 'agents' || t === 'sessions' || t === 'costs') {
       return t;
     }
     return 'overview';
@@ -87,6 +92,9 @@
     if (tab === 'goals') {
       loadedTabs = new Set([...loadedTabs, 'goals']);
       void goalsStore.fetchGoals(id);
+    } else if (tab === 'docs') {
+      loadedTabs = new Set([...loadedTabs, 'docs']);
+      void documentsStore.fetchByProject(id);
     } else if (tab === 'issues') {
       loadedTabs = new Set([...loadedTabs, 'issues']);
       void issuesStore.fetchIssues(workspaceStore.activeWorkspaceId ?? undefined);
@@ -139,6 +147,42 @@
   const goalsTotal = $derived(goalsStore.totalCount);
   const goalsCompleted = $derived(goalsStore.completedCount);
   const goalsProgress = $derived(goalsTotal > 0 ? Math.round((goalsCompleted / goalsTotal) * 100) : 0);
+
+  // ── Docs tab state ──────────────────────────────────────────────────────────
+  let selectedDoc = $state<Document | null>(null);
+  let showDocForm = $state(false);
+  let docFormPath = $state('');
+  let docFormContent = $state('');
+  let docCreating = $state(false);
+  let showGenerateDocModal = $state(false);
+  let showGenerateIssuesModal = $state(false);
+
+  const projectDocs = $derived(documentsStore.projectDocuments);
+  const projectDocsCount = $derived(projectDocs.length);
+
+  async function handleCreateDoc() {
+    if (!docFormPath.trim() || !project) return;
+    docCreating = true;
+    try {
+      await documentsStore.createDocument({
+        title: docFormPath.trim().split('/').pop() ?? docFormPath.trim(),
+        path: docFormPath.trim(),
+        content: docFormContent,
+        project_id: project.id,
+      });
+      showDocForm = false;
+      docFormPath = '';
+      docFormContent = '';
+    } finally {
+      docCreating = false;
+    }
+  }
+
+  function cancelDocForm() {
+    showDocForm = false;
+    docFormPath = '';
+    docFormContent = '';
+  }
 
   // ── Inline-edit description ───────────────────────────────────────────────────
   let editingDesc = $state(false);
@@ -202,6 +246,11 @@
             aria-current={activeTab === tab.id ? 'page' : undefined}
           >
             {tab.label}
+            {#if tab.id === 'docs' && projectDocsCount > 0}
+              <span class="pj-tab-badge" aria-label="{projectDocsCount} documents">
+                {projectDocsCount}
+              </span>
+            {/if}
             {#if tab.id === 'issues' && openIssueCount > 0}
               <span class="pj-tab-badge" aria-label="{openIssueCount} open issues">
                 {openIssueCount}
@@ -427,6 +476,111 @@
             <GoalHierarchy nodes={goalsStore.goals} />
           {/if}
 
+        <!-- ── Docs ───────────────────────────────────────────────────────────── -->
+        {:else if activeTab === 'docs'}
+          <div class="pj-tab-toolbar">
+            <h2 class="pj-tab-heading">
+              Documents
+              {#if projectDocsCount > 0}
+                <span class="pj-count-badge">{projectDocsCount}</span>
+              {/if}
+            </h2>
+            <div class="pj-tab-toolbar-actions">
+              {#if projectDocsCount > 0}
+                <button
+                  class="pj-btn-ghost"
+                  type="button"
+                  onclick={() => { showGenerateIssuesModal = true; }}
+                  aria-label="Generate issues from documentation"
+                >
+                  Analyze Docs
+                </button>
+              {/if}
+              <button
+                class="pj-btn-ghost"
+                type="button"
+                onclick={() => { showGenerateDocModal = true; }}
+                aria-label="Generate documentation with AI"
+              >
+                Generate with AI
+              </button>
+              <button
+                class="pj-btn-primary"
+                type="button"
+                onclick={() => { showDocForm = true; }}
+                aria-label="Create a new document"
+              >
+                + New Document
+              </button>
+            </div>
+          </div>
+
+          {#if documentsStore.projectDocsLoading}
+            <div class="pj-loading" role="status" aria-live="polite">
+              <div class="pj-spinner" aria-hidden="true"></div>
+              <span>Loading documents…</span>
+            </div>
+          {:else if projectDocsCount === 0}
+            <div class="pj-empty-tab pj-docs-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" />
+              </svg>
+              <p class="pj-empty-hint">No documents for this project yet.</p>
+              <p class="pj-empty-sub">Add documentation manually or generate it with AI.</p>
+              <div class="pj-empty-actions">
+                <button
+                  class="pj-btn-ghost"
+                  type="button"
+                  onclick={() => { showGenerateDocModal = true; }}
+                >
+                  Generate with AI
+                </button>
+                <button
+                  class="pj-btn-primary"
+                  type="button"
+                  onclick={() => { showDocForm = true; }}
+                >
+                  + New Document
+                </button>
+              </div>
+            </div>
+          {:else}
+            <div class="pj-docs-layout">
+              <div class="pj-docs-list" role="list" aria-label="Project documents">
+                {#each projectDocs as doc (doc.id)}
+                  <button
+                    class="pj-doc-row"
+                    class:pj-doc-row--active={selectedDoc?.id === doc.id}
+                    type="button"
+                    onclick={() => { selectedDoc = doc; }}
+                    aria-pressed={selectedDoc?.id === doc.id}
+                    role="listitem"
+                  >
+                    <div class="pj-doc-info">
+                      <span class="pj-doc-title">{doc.title}</span>
+                      <span class="pj-doc-path">{doc.path}</span>
+                    </div>
+                    <div class="pj-doc-meta">
+                      <span class="pj-doc-format">{doc.format}</span>
+                      <time class="pj-doc-date" datetime={doc.updated_at}>
+                        {formatDate(doc.updated_at)}
+                      </time>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+              {#if selectedDoc}
+                <div class="pj-docs-viewer">
+                  <DocumentViewer document={selectedDoc} />
+                </div>
+              {:else}
+                <div class="pj-docs-placeholder">
+                  <p class="pj-empty-hint">Select a document to preview its contents.</p>
+                </div>
+              {/if}
+            </div>
+          {/if}
+
         <!-- ── Issues ─────────────────────────────────────────────────────────── -->
         {:else if activeTab === 'issues'}
           <div class="pj-tab-toolbar">
@@ -436,13 +590,25 @@
                 <span class="pj-count-badge">{openIssueCount} open</span>
               {/if}
             </h2>
-            <button
-              class="pj-btn-primary"
-              type="button"
-              aria-label="Create issue in this project"
-            >
-              + Create Issue
-            </button>
+            <div class="pj-tab-toolbar-actions">
+              {#if projectDocsCount > 0}
+                <button
+                  class="pj-btn-ghost"
+                  type="button"
+                  onclick={() => { showGenerateIssuesModal = true; }}
+                  aria-label="Generate issues from project documentation"
+                >
+                  Generate from Docs
+                </button>
+              {/if}
+              <button
+                class="pj-btn-primary"
+                type="button"
+                aria-label="Create issue in this project"
+              >
+                + Create Issue
+              </button>
+            </div>
           </div>
 
           {#if issuesStore.loading}
@@ -655,6 +821,74 @@
     </div><!-- /pj-page -->
   {/if}
 </PageShell>
+
+<!-- Create document dialog -->
+{#if showDocForm}
+  <div
+    class="pj-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Create document"
+    onclick={(e) => { if (e.target === e.currentTarget) cancelDocForm(); }}
+  >
+    <div class="pj-dialog">
+      <h2 class="pj-dialog-title">New Document</h2>
+      <div class="pj-field">
+        <label class="pj-field-label" for="pj-doc-path">Path</label>
+        <input
+          id="pj-doc-path"
+          class="pj-field-input"
+          type="text"
+          placeholder="e.g. docs/requirements.md"
+          bind:value={docFormPath}
+          autofocus
+        />
+      </div>
+      <div class="pj-field">
+        <label class="pj-field-label" for="pj-doc-content">Content</label>
+        <textarea
+          id="pj-doc-content"
+          class="pj-field-textarea"
+          placeholder="Document content…"
+          bind:value={docFormContent}
+          rows={8}
+        ></textarea>
+      </div>
+      <div class="pj-dialog-footer">
+        <button class="pj-btn-ghost" onclick={cancelDocForm} disabled={docCreating}>Cancel</button>
+        <button
+          class="pj-btn-primary"
+          onclick={handleCreateDoc}
+          disabled={docCreating || !docFormPath.trim()}
+        >
+          {docCreating ? 'Creating…' : 'Create Document'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- AI document generation modal -->
+{#if showGenerateDocModal && project}
+  <GenerateDocModal
+    projectId={project.id}
+    projectName={project.name}
+    projectDescription={project.description}
+    onClose={() => { showGenerateDocModal = false; }}
+    onSaved={() => { showGenerateDocModal = false; void documentsStore.fetchByProject(project!.id); }}
+  />
+{/if}
+
+<!-- Generate issues from docs modal -->
+{#if showGenerateIssuesModal && project}
+  <GenerateIssuesModal
+    projectId={project.id}
+    projectName={project.name}
+    documents={projectDocs}
+    onClose={() => { showGenerateIssuesModal = false; }}
+    onCreated={() => { showGenerateIssuesModal = false; void issuesStore.fetchIssues(workspaceStore.activeWorkspaceId ?? undefined); }}
+  />
+{/if}
 
 <style>
   /* ── Loading / empty states ─────────────────────────────────────────────── */
@@ -1242,5 +1476,216 @@
     display: flex;
     align-items: center;
     gap: 7px;
+  }
+
+  /* ── Docs tab ──────────────────────────────────────────────────────────── */
+  .pj-tab-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pj-docs-layout {
+    display: flex;
+    gap: 0;
+    min-height: 300px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md, 8px);
+    overflow: hidden;
+    background: var(--bg-surface);
+  }
+
+  .pj-docs-list {
+    width: 280px;
+    min-width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-default);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pj-docs-list::-webkit-scrollbar { width: 4px; }
+  .pj-docs-list::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+
+  .pj-doc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.04));
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background 80ms ease;
+    font-family: inherit;
+  }
+
+  .pj-doc-row:hover { background: var(--bg-elevated); }
+  .pj-doc-row--active { background: rgba(249, 115, 22, 0.06); border-left: 2px solid #f97316; }
+
+  .pj-doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .pj-doc-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pj-doc-path {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono, monospace);
+  }
+
+  .pj-doc-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .pj-doc-format {
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-default);
+    color: var(--text-tertiary);
+  }
+
+  .pj-doc-date {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .pj-docs-viewer {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .pj-docs-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .pj-docs-empty {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 48px 24px;
+  }
+
+  .pj-docs-empty svg { color: var(--text-muted); opacity: 0.4; }
+
+  .pj-empty-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .pj-empty-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* ── Create doc dialog ─────────────────────────────────────────────────── */
+  .pj-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .pj-dialog {
+    background: var(--bg-tertiary, var(--bg-surface));
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 24px;
+    width: 480px;
+    max-width: calc(100vw - 40px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pj-dialog-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .pj-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pj-field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .pj-field-input {
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pj-field-input:focus { outline: none; border-color: #f97316; }
+
+  .pj-field-textarea {
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: var(--font-mono, monospace);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.5;
+  }
+  .pj-field-textarea:focus { outline: none; border-color: #f97316; }
+
+  .pj-dialog-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
   }
 </style>

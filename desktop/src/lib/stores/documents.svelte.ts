@@ -13,6 +13,11 @@ class DocumentsStore {
   loading = $state(false);
   error = $state<string | null>(null);
 
+  /** Project-scoped documents loaded via fetchByProject(). */
+  projectDocuments = $state<Document[]>([]);
+  projectDocsLoading = $state(false);
+  projectDocsError = $state<string | null>(null);
+
   async fetchDocuments(): Promise<void> {
     this.loading = true;
     this.error = null;
@@ -37,6 +42,20 @@ class DocumentsStore {
     }
   }
 
+  async fetchByProject(projectId: string): Promise<void> {
+    this.projectDocsLoading = true;
+    this.projectDocsError = null;
+    try {
+      const data = await documentsApi.listByProject(projectId);
+      this.projectDocuments = data.documents;
+    } catch (err) {
+      this.projectDocuments = [];
+      this.projectDocsError = (err as Error).message;
+    } finally {
+      this.projectDocsLoading = false;
+    }
+  }
+
   async createDocument(doc: {
     title: string;
     path: string;
@@ -46,6 +65,9 @@ class DocumentsStore {
   }): Promise<Document> {
     const created = await documentsApi.create(doc);
     this.documents = [...this.documents, created];
+    if (created.project_id !== null) {
+      this.projectDocuments = [...this.projectDocuments, created];
+    }
     this._rebuildTree();
     return created;
   }
@@ -66,6 +88,7 @@ class DocumentsStore {
   async deleteDocument(path: string): Promise<void> {
     await documentsApi.delete(path);
     this.documents = this.documents.filter((d) => d.path !== path);
+    this.projectDocuments = this.projectDocuments.filter((d) => d.path !== path);
     if (this.selected?.path === path) {
       this.selected = null;
     }

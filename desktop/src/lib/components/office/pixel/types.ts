@@ -95,6 +95,8 @@ export interface OfficeCharacter {
   animFrame: number;
   animTimer: number;
   statusColor: string; // status indicator color
+  teamColor?: string; // team indicator color (from org hierarchy)
+  divisionColor?: string; // division indicator color (from org hierarchy)
   currentTask?: string;
   bubbleTimer: number; // speech bubble countdown
 }

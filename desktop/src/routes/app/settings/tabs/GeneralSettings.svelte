@@ -2,13 +2,14 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { settingsStore } from '$lib/stores/settings.svelte';
-  import { clearToken, clearCache } from '$api/client';
+  import { clearToken, clearCache, clearSavedCredentials } from '$api/client';
 
   let loggingOut = $state(false);
 
   async function handleLogout() {
     loggingOut = true;
     await clearToken();
+    await clearSavedCredentials();
     clearCache();
     try {
       localStorage.removeItem('bizforge-workspaces');

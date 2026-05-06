@@ -4,15 +4,17 @@
   import { T } from '@threlte/core';
   import { OrbitControls, Text } from '@threlte/extras';
   import type { BizforgeAgent } from '$api/types';
+  import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import AgentDesk3D from './AgentDesk3D.svelte';
 
   interface Props {
     agents: BizforgeAgent[];
+    agentOrgMap?: Map<string, AgentOrgInfo>;
     selectedAgentId?: string | null;
     onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
-  let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
+  let { agents, agentOrgMap = new Map(), selectedAgentId = null, onAgentClick }: Props = $props();
 
   // ─── Zone definitions matching pixel office layout ───────
   const ZONES = [
@@ -393,12 +395,15 @@
   {@const isSelected = selectedAgentId === agent.id}
   {@const emissive = statusEmissive(agent.status)}
   {@const zone = ZONES.find(z => z.id === placement.zoneId)}
+  {@const orgInfo = agentOrgMap.get(agent.id)}
   <AgentDesk3D
     {agent}
     position={placement.pos}
     selected={isSelected}
     {emissive}
     zoneColor={zone?.labelColor ?? '#8888a0'}
+    teamColor={orgInfo?.teamColor ?? undefined}
+    divisionColor={orgInfo?.divisionColor ?? undefined}
     onclick={() => onAgentClick?.(agent)}
   />
 {/each}

@@ -3,20 +3,22 @@
 <script lang="ts">
   import { Canvas } from '@threlte/core';
   import type { BizforgeAgent } from '$api/types';
+  import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import Scene3D from './Scene3D.svelte';
 
   interface Props {
     agents: BizforgeAgent[];
+    agentOrgMap?: Map<string, AgentOrgInfo>;
     selectedAgentId?: string | null;
     onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
-  let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
+  let { agents, agentOrgMap = new Map(), selectedAgentId = null, onAgentClick }: Props = $props();
 </script>
 
 <div class="o3d-container">
   <Canvas>
-    <Scene3D {agents} {selectedAgentId} {onAgentClick} />
+    <Scene3D {agents} {agentOrgMap} {selectedAgentId} {onAgentClick} />
   </Canvas>
 </div>
 

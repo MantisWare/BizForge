@@ -6,13 +6,88 @@
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
+  import { organizationsStore } from '$lib/stores/organizations.svelte';
+  import { teamColor, divisionColor, type AgentOrgInfo } from '$lib/utils/orgColors';
 
   let viewMode = $state<'2d' | '3d'>('2d');
+  let agentOrgMap = $state<Map<string, AgentOrgInfo>>(new Map());
 
   // Re-fetch whenever the active workspace changes (mirrors /app/agents pattern)
   $effect(() => {
     const wsId = workspaceStore.activeWorkspaceId ?? undefined;
     void agentsStore.fetchAgents(wsId);
+  });
+
+  // Fetch hierarchy tree so we can resolve agent -> team -> division colors
+  $effect(() => {
+    const org = organizationsStore.current;
+    if (org !== null) {
+      void hierarchyStore.fetchTree(org.id);
+      void hierarchyStore.fetchTeams();
+    } else if (!organizationsStore.loading) {
+      void organizationsStore.fetchOrganizations();
+    }
+  });
+
+  // Build the agentOrgMap whenever hierarchy tree or agents change
+  $effect(() => {
+    const tree = hierarchyStore.tree;
+    const agents = agentsStore.agents;
+    const newMap = new Map<string, AgentOrgInfo>();
+
+    if (tree === null) {
+      agentOrgMap = newMap;
+      return;
+    }
+
+    // Build lookup: teamId -> { team, department, division }
+    const teamLookup = new Map<string, { teamName: string; teamId: string; divisionId: string; divisionName: string }>();
+    for (const div of tree.divisions) {
+      for (const dept of div.departments) {
+        for (const team of dept.teams) {
+          teamLookup.set(team.id, {
+            teamId: team.id,
+            teamName: team.name,
+            divisionId: div.id,
+            divisionName: div.name,
+          });
+
+          // Also map agents found inside tree team nodes
+          for (const agent of team.agents) {
+            const info: AgentOrgInfo = {
+              teamId: team.id,
+              teamName: team.name,
+              teamColor: teamColor(team.id),
+              divisionId: div.id,
+              divisionName: div.name,
+              divisionColor: divisionColor(div.id),
+            };
+            newMap.set(agent.id, info);
+          }
+        }
+      }
+    }
+
+    // Also resolve from agent.team_id for agents not present in tree nodes
+    for (const agent of agents) {
+      if (newMap.has(agent.id)) continue;
+      const tid = agent.team_id;
+      if (tid === null || tid === undefined) continue;
+      const lookup = teamLookup.get(tid);
+      if (lookup !== undefined) {
+        newMap.set(agent.id, {
+          teamId: lookup.teamId,
+          teamName: lookup.teamName,
+          teamColor: teamColor(lookup.teamId),
+          divisionId: lookup.divisionId,
+          divisionName: lookup.divisionName,
+          divisionColor: divisionColor(lookup.divisionId),
+        });
+      }
+    }
+
+    agentOrgMap = newMap;
   });
 </script>
 
@@ -54,6 +129,7 @@
       <VirtualOffice
         agents={agentsStore.agents}
         {viewMode}
+        {agentOrgMap}
         onViewModeChange={(m) => { viewMode = m; }}
       />
     {/if}

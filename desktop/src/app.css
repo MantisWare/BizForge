@@ -71,6 +71,31 @@
   --sidebar-expanded-width: 260px;
   --sidebar-transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* LLM Inspector panel */
+  --inspector-min-width: 300px;
+  --inspector-max-width: 80vw;
+  --inspector-default-width: 50vw;
+  --inspector-gutter-width: 4px;
+  --inspector-tab-width: 28px;
+
+  /* Provider color palette — 16 pastel colors */
+  --provider-color-0: #FFB3BA;
+  --provider-color-1: #BAFFC9;
+  --provider-color-2: #BAE1FF;
+  --provider-color-3: #FFFFBA;
+  --provider-color-4: #E8BAFF;
+  --provider-color-5: #FFD9BA;
+  --provider-color-6: #BAF2FF;
+  --provider-color-7: #FFBAE8;
+  --provider-color-8: #C9FFBA;
+  --provider-color-9: #BACCFF;
+  --provider-color-10: #FFE4BA;
+  --provider-color-11: #BAFFD9;
+  --provider-color-12: #FFBACC;
+  --provider-color-13: #D9BAFF;
+  --provider-color-14: #BAFFEF;
+  --provider-color-15: #FFF0BA;
+
   /* Border radius scale — slightly softer */
   --radius-xs: 6px;
   --radius-sm: 10px;

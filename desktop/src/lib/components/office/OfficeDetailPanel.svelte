@@ -3,15 +3,54 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import type { BizforgeAgent, AgentStatus, AgentLifecycleAction } from '$api/types';
+  import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import { agentsStore } from '$lib/stores/agents.svelte';
+  import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
 
   interface Props {
     agent: BizforgeAgent | null;
+    agentOrgMap?: Map<string, AgentOrgInfo>;
     onclose: () => void;
   }
 
-  let { agent, onclose }: Props = $props();
+  let { agent, agentOrgMap = new Map(), onclose }: Props = $props();
+
+  let showTeamPicker = $state(false);
+  let assigningTeam = $state(false);
+
+  const orgInfo = $derived(
+    agent !== null ? (agentOrgMap.get(agent.id) ?? null) : null
+  );
+
+  async function assignToTeam(teamId: string): Promise<void> {
+    if (agent === null || assigningTeam) return;
+    assigningTeam = true;
+
+    // Remove from current team if assigned
+    if (orgInfo?.teamId !== null && orgInfo?.teamId !== undefined) {
+      await hierarchyStore.removeTeamMember(orgInfo.teamId, agent.id);
+    }
+
+    const ok = await hierarchyStore.addTeamMember(teamId, agent.id);
+    showTeamPicker = false;
+    assigningTeam = false;
+
+    if (ok) {
+      await agentsStore.fetchAgents();
+    }
+  }
+
+  async function removeFromTeam(): Promise<void> {
+    if (agent === null || orgInfo?.teamId === null || orgInfo?.teamId === undefined || assigningTeam) return;
+    assigningTeam = true;
+    const ok = await hierarchyStore.removeTeamMember(orgInfo.teamId, agent.id);
+    assigningTeam = false;
+
+    if (ok) {
+      await agentsStore.fetchAgents();
+    }
+  }
 
   const STATUS_COLORS: Record<AgentStatus, string> = {
     running:    'rgba(34, 197, 94, 0.7)',
@@ -72,7 +111,7 @@
 
   // Available lifecycle actions based on status
   const availableActions = $derived.by((): AgentLifecycleAction[] => {
-    if (!agent) return [];
+    if (agent === null) return [];
     switch (agent.status) {
       case 'running': return ['sleep', 'pause'];
       case 'idle':    return ['focus', 'sleep'];
@@ -96,7 +135,7 @@
   let performing = $state<AgentLifecycleAction | null>(null);
 
   async function performAction(action: AgentLifecycleAction) {
-    if (!agent || performing) return;
+    if (agent === null || performing !== null) return;
     performing = action;
     await agentsStore.performAction(agent.id, action);
     performing = null;
@@ -158,6 +197,57 @@
         <span class="odp-status-dot" style="background: {statusColor};"></span>
         {STATUS_LABELS[agent.status]}
       </span>
+    </div>
+
+    <!-- Team & Division -->
+    <div class="odp-section">
+      <div class="odp-section-label">Organization</div>
+      <div class="odp-org-info">
+        {#if orgInfo !== null && orgInfo.teamName !== null}
+          <div class="odp-org-row">
+            <span class="odp-org-pip" style="background: {orgInfo.teamColor ?? '#4a4a5a'};"></span>
+            <span class="odp-org-label">Team</span>
+            <span class="odp-org-value">{orgInfo.teamName}</span>
+          </div>
+          {#if orgInfo.divisionName !== null}
+            <div class="odp-org-row">
+              <span class="odp-org-pip" style="background: {orgInfo.divisionColor ?? '#4a4a5a'};"></span>
+              <span class="odp-org-label">Division</span>
+              <span class="odp-org-value">{orgInfo.divisionName}</span>
+            </div>
+          {/if}
+          <button class="odp-org-btn" onclick={() => { showTeamPicker = !showTeamPicker; }} disabled={assigningTeam}>
+            Change Team
+          </button>
+          <button class="odp-org-btn odp-org-btn--danger" onclick={removeFromTeam} disabled={assigningTeam}>
+            Remove from Team
+          </button>
+        {:else}
+          <p class="odp-org-empty">Not assigned to a team</p>
+          <button class="odp-org-btn odp-org-btn--primary" onclick={() => { showTeamPicker = !showTeamPicker; }} disabled={assigningTeam}>
+            Assign to Team
+          </button>
+        {/if}
+
+        {#if showTeamPicker}
+          <div class="odp-team-picker">
+            {#if hierarchyStore.teams.length === 0}
+              <p class="odp-team-empty">No teams available</p>
+            {:else}
+              {#each hierarchyStore.teams as team (team.id)}
+                <button
+                  class="odp-team-option"
+                  class:odp-team-option--current={orgInfo?.teamId === team.id}
+                  disabled={assigningTeam || orgInfo?.teamId === team.id}
+                  onclick={() => assignToTeam(team.id)}
+                >
+                  {team.name}
+                </button>
+              {/each}
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
 
     <!-- Current task -->
@@ -406,6 +496,146 @@
     height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
+  }
+
+  /* Organization info */
+  .odp-org-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .odp-org-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .odp-org-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .odp-org-label {
+    color: #4a4870;
+    font-weight: 500;
+    min-width: 48px;
+  }
+
+  .odp-org-value {
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .odp-org-empty {
+    font-size: 12px;
+    color: #4a4870;
+    margin: 0 0 4px;
+    font-style: italic;
+  }
+
+  .odp-org-btn {
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid #2a2848;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 120ms ease;
+    margin-top: 2px;
+  }
+
+  .odp-org-btn:hover:not(:disabled) {
+    background: #1e1e38;
+    border-color: #3a3860;
+    color: var(--text-secondary);
+  }
+
+  .odp-org-btn--primary {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+  }
+
+  .odp-org-btn--primary:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .odp-org-btn--danger {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  .odp-org-btn--danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .odp-org-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .odp-team-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 6px;
+    padding: 6px;
+    background: #0f0f1e;
+    border: 1px solid #1e1e38;
+    border-radius: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .odp-team-picker::-webkit-scrollbar { width: 3px; }
+  .odp-team-picker::-webkit-scrollbar-thumb { background: #2a2848; border-radius: 2px; }
+
+  .odp-team-option {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 100ms ease;
+  }
+
+  .odp-team-option:hover:not(:disabled) {
+    background: #1e1e38;
+    color: var(--text-primary);
+  }
+
+  .odp-team-option--current {
+    background: rgba(59, 130, 246, 0.1);
+    color: #93c5fd;
+    cursor: default;
+  }
+
+  .odp-team-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .odp-team-empty {
+    font-size: 11px;
+    color: #4a4870;
+    padding: 8px 4px;
+    margin: 0;
+    text-align: center;
   }
 
   /* Task */

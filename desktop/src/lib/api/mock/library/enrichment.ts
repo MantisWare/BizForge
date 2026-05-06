@@ -82,12 +82,12 @@ export type RawSkill = Omit<
 
 export type RawOperation = Omit<
   LibraryOperation,
-  "emoji" | "tags" | "version" | "isOfficial" | "required_skills"
+  "emoji" | "tags" | "version" | "isOfficial" | "required_skills" | "member_agents" | "member_skills"
 > & { emoji?: string; version?: string; required_skills?: string[] };
 
 export type RawTemplate = Omit<
   LibraryTemplate,
-  "emoji" | "tags" | "version" | "isOfficial" | "required_skills"
+  "emoji" | "tags" | "version" | "isOfficial" | "required_skills" | "member_agents" | "member_skills"
 > & { emoji?: string; version?: string; required_skills?: string[] };
 
 // ── Enrichment functions ─────────────────────────────────────────────────────
@@ -121,6 +121,8 @@ export function enrichOperation(o: RawOperation): LibraryOperation {
   return {
     ...o,
     required_skills: o.required_skills ?? [],
+    member_agents: [],
+    member_skills: [],
     emoji: o.emoji ?? "building",
     isOfficial,
     tags: deriveTags(o.id, o.category),
@@ -133,6 +135,8 @@ export function enrichTemplate(t: RawTemplate): LibraryTemplate {
   return {
     ...t,
     required_skills: t.required_skills ?? [],
+    member_agents: [],
+    member_skills: [],
     emoji: t.emoji ?? "document-text",
     isOfficial,
     tags: deriveTags(t.id, t.size),

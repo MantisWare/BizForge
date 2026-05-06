@@ -4,9 +4,24 @@ import {
   departments as departmentsApi,
   teams as teamsApi,
   hierarchy as hierarchyApi,
+  ApiError,
 } from "$api/client";
 import type { Division, Department, Team, HierarchyTree } from "$api/types";
 import { toastStore } from "./toasts.svelte";
+
+function extractErrorMessage(e: unknown): string {
+  if (e instanceof ApiError && typeof e.body === "object" && e.body !== null) {
+    const body = e.body as Record<string, unknown>;
+    if (typeof body.details === "object" && body.details !== null) {
+      const details = body.details as Record<string, string[]>;
+      const fieldErrors = Object.entries(details)
+        .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(", ") : String(msgs)}`)
+        .join("; ");
+      if (fieldErrors.length > 0) return fieldErrors;
+    }
+  }
+  return (e as Error).message;
+}
 
 class HierarchyStore {
   // ── State ────────────────────────────────────────────────────────────────────
@@ -107,7 +122,7 @@ class HierarchyStore {
       toastStore.success("Division created", data.name ?? "");
       return created;
     } catch (e) {
-      toastStore.error("Failed to create division", (e as Error).message);
+      toastStore.error("Failed to create division", extractErrorMessage(e));
       return null;
     }
   }
@@ -123,7 +138,7 @@ class HierarchyStore {
       toastStore.success("Division updated");
       return updated;
     } catch (e) {
-      toastStore.error("Failed to update division", (e as Error).message);
+      toastStore.error("Failed to update division", extractErrorMessage(e));
       return null;
     }
   }
@@ -136,7 +151,7 @@ class HierarchyStore {
       toastStore.success("Division deleted");
       return true;
     } catch (e) {
-      toastStore.error("Failed to delete division", (e as Error).message);
+      toastStore.error("Failed to delete division", extractErrorMessage(e));
       return false;
     }
   }
@@ -152,7 +167,7 @@ class HierarchyStore {
       toastStore.success("Department created", data.name ?? "");
       return created;
     } catch (e) {
-      toastStore.error("Failed to create department", (e as Error).message);
+      toastStore.error("Failed to create department", extractErrorMessage(e));
       return null;
     }
   }
@@ -170,7 +185,7 @@ class HierarchyStore {
       toastStore.success("Department updated");
       return updated;
     } catch (e) {
-      toastStore.error("Failed to update department", (e as Error).message);
+      toastStore.error("Failed to update department", extractErrorMessage(e));
       return null;
     }
   }
@@ -183,7 +198,7 @@ class HierarchyStore {
       toastStore.success("Department deleted");
       return true;
     } catch (e) {
-      toastStore.error("Failed to delete department", (e as Error).message);
+      toastStore.error("Failed to delete department", extractErrorMessage(e));
       return false;
     }
   }
@@ -197,7 +212,7 @@ class HierarchyStore {
       toastStore.success("Team created", data.name ?? "");
       return created;
     } catch (e) {
-      toastStore.error("Failed to create team", (e as Error).message);
+      toastStore.error("Failed to create team", extractErrorMessage(e));
       return null;
     }
   }
@@ -210,7 +225,7 @@ class HierarchyStore {
       toastStore.success("Team updated");
       return updated;
     } catch (e) {
-      toastStore.error("Failed to update team", (e as Error).message);
+      toastStore.error("Failed to update team", extractErrorMessage(e));
       return null;
     }
   }
@@ -223,7 +238,7 @@ class HierarchyStore {
       toastStore.success("Team deleted");
       return true;
     } catch (e) {
-      toastStore.error("Failed to delete team", (e as Error).message);
+      toastStore.error("Failed to delete team", extractErrorMessage(e));
       return false;
     }
   }
@@ -240,7 +255,7 @@ class HierarchyStore {
       toastStore.success("Agent added to team");
       return true;
     } catch (e) {
-      toastStore.error("Failed to add member", (e as Error).message);
+      toastStore.error("Failed to add member", extractErrorMessage(e));
       return false;
     }
   }
@@ -251,7 +266,7 @@ class HierarchyStore {
       toastStore.success("Agent removed from team");
       return true;
     } catch (e) {
-      toastStore.error("Failed to remove member", (e as Error).message);
+      toastStore.error("Failed to remove member", extractErrorMessage(e));
       return false;
     }
   }

@@ -2,6 +2,7 @@
 <!-- Container: switches Pixel / 3D mode, renders detail panel -->
 <script lang="ts">
   import type { BizforgeAgent } from '$api/types';
+  import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import PixelOffice from './pixel/PixelOffice.svelte';
   import Office3D from './Office3D.svelte';
   import OfficeDetailPanel from './OfficeDetailPanel.svelte';
@@ -9,11 +10,13 @@
   interface Props {
     agents: BizforgeAgent[];
     viewMode?: '2d' | '3d';
+    agentOrgMap?: Map<string, AgentOrgInfo>;
     onViewModeChange?: (mode: '2d' | '3d') => void;
   }
 
-  let { agents, viewMode = '2d', onViewModeChange }: Props = $props();
+  let { agents, viewMode = '2d', agentOrgMap = new Map(), onViewModeChange }: Props = $props();
   let selectedAgent = $state<BizforgeAgent | null>(null);
+  let legendOpen = $state(false);
 
   function handleAgentClick(agent: BizforgeAgent) {
     selectedAgent = selectedAgent?.id === agent.id ? null : agent;
@@ -27,6 +30,36 @@
     const next = viewMode === '2d' ? '3d' : '2d';
     onViewModeChange?.(next);
   }
+
+  interface LegendTeam { id: string; name: string; color: string; count: number }
+  interface LegendDivision { id: string; name: string; color: string; teams: LegendTeam[] }
+
+  const legendData = $derived.by((): { divisions: LegendDivision[]; unassigned: number } => {
+    const divMap = new Map<string, LegendDivision>();
+    let unassigned = 0;
+
+    for (const a of agents) {
+      const info = agentOrgMap.get(a.id);
+      if (info === undefined || info.teamId === null) {
+        unassigned++;
+        continue;
+      }
+      const divId = info.divisionId ?? '_none';
+      let div = divMap.get(divId);
+      if (div === undefined) {
+        div = { id: divId, name: info.divisionName ?? 'Unknown', color: info.divisionColor ?? '#4a4a5a', teams: [] };
+        divMap.set(divId, div);
+      }
+      let team = div.teams.find(t => t.id === info.teamId);
+      if (team === undefined) {
+        team = { id: info.teamId!, name: info.teamName ?? 'Unknown', color: info.teamColor ?? '#4a4a5a', count: 0 };
+        div.teams.push(team);
+      }
+      team.count++;
+    }
+
+    return { divisions: [...divMap.values()], unassigned };
+  });
 </script>
 
 <div class="vo-container" class:vo-panel-open={selectedAgent !== null}>
@@ -35,6 +68,7 @@
     <div class="vo-pixel-wrap">
       <PixelOffice
         {agents}
+        {agentOrgMap}
         selectedAgentId={selectedAgent?.id ?? null}
         onAgentClick={handleAgentClick}
       />
@@ -64,6 +98,7 @@
     <div class="vo-canvas">
       <Office3D
         {agents}
+        {agentOrgMap}
         selectedAgentId={selectedAgent?.id ?? null}
         onAgentClick={handleAgentClick}
       />
@@ -71,7 +106,51 @@
   {/if}
 
   {#if selectedAgent}
-    <OfficeDetailPanel agent={selectedAgent} onclose={handleClosePanel} />
+    <OfficeDetailPanel agent={selectedAgent} {agentOrgMap} onclose={handleClosePanel} />
+  {/if}
+
+  <!-- Team / Division legend overlay -->
+  {#if legendData.divisions.length > 0 || legendData.unassigned > 0}
+    <div class="vo-legend" class:vo-legend--open={legendOpen}>
+      <button class="vo-legend-toggle" onclick={() => { legendOpen = !legendOpen; }} aria-label="Toggle team legend">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="10" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="1" y="10" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="10" y="10" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+        </svg>
+        Teams
+        <svg class="vo-legend-caret" class:vo-legend-caret--up={legendOpen} width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M2 4L5 7L8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      {#if legendOpen}
+        <div class="vo-legend-body">
+          {#each legendData.divisions as div (div.id)}
+            <div class="vo-legend-division">
+              <div class="vo-legend-div-header">
+                <span class="vo-legend-pip" style="background: {div.color};"></span>
+                <span class="vo-legend-div-name">{div.name}</span>
+              </div>
+              {#each div.teams as team (team.id)}
+                <div class="vo-legend-team">
+                  <span class="vo-legend-swatch" style="background: {team.color};"></span>
+                  <span class="vo-legend-team-name">{team.name}</span>
+                  <span class="vo-legend-count">{team.count}</span>
+                </div>
+              {/each}
+            </div>
+          {/each}
+          {#if legendData.unassigned > 0}
+            <div class="vo-legend-team vo-legend-team--unassigned">
+              <span class="vo-legend-swatch" style="background: #4a4a5a;"></span>
+              <span class="vo-legend-team-name">Unassigned</span>
+              <span class="vo-legend-count">{legendData.unassigned}</span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -162,5 +241,110 @@
   .vo-panel-open .vo-canvas,
   .vo-panel-open .vo-pixel-wrap {
     margin-right: 320px;
+  }
+
+  /* ── Legend overlay ──────────────────────────── */
+  .vo-legend {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: 18;
+    background: var(--glass-bg, rgba(15, 17, 23, 0.88));
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
+    border-radius: 10px;
+    min-width: 140px;
+    max-width: 220px;
+    overflow: hidden;
+    transition: box-shadow 200ms ease;
+  }
+  .vo-legend--open {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  }
+  .vo-legend-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary, #8a94a8);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 100ms ease;
+  }
+  .vo-legend-toggle:hover { color: var(--text-secondary, #c8c0d8); }
+  .vo-legend-caret {
+    margin-left: auto;
+    transition: transform 150ms ease;
+  }
+  .vo-legend-caret--up { transform: rotate(180deg); }
+  .vo-legend-body {
+    padding: 0 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .vo-legend-body::-webkit-scrollbar { width: 3px; }
+  .vo-legend-body::-webkit-scrollbar-thumb { background: #2a2848; border-radius: 2px; }
+  .vo-legend-division {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .vo-legend-div-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+  }
+  .vo-legend-pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .vo-legend-div-name {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary, #6a6a8a);
+  }
+  .vo-legend-team {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0 2px 14px;
+  }
+  .vo-legend-team--unassigned {
+    padding-left: 0;
+    margin-top: 2px;
+    border-top: 1px solid rgba(148, 163, 184, 0.08);
+    padding-top: 6px;
+  }
+  .vo-legend-swatch {
+    width: 10px;
+    height: 3px;
+    border-radius: 1.5px;
+    flex-shrink: 0;
+  }
+  .vo-legend-team-name {
+    font-size: 11px;
+    color: var(--text-secondary, #c8c0d8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+  .vo-legend-count {
+    font-size: 10px;
+    color: var(--text-tertiary, #6a6a8a);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
   }
 </style>

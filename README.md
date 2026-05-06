@@ -290,18 +290,17 @@ Bizforge's budget enforcement wraps around MPP:
 
 | Cluster | Pages |
 |---------|-------|
-| **Daily** | Dashboard, Inbox, Chat, Virtual Office |
-| **Work** | Issues, Projects, Goals, Work Products, Workflows |
-| **Agents** | Agent Roster, Agent Detail, Spawn, Sessions, Schedules |
-| **Data** | Memory, Documents, Datasets, Signals, Templates |
-| **Observe** | Activity, Logs, Analytics, Costs, Reports, Alerts, Audit |
-| **Automate** | Skills, Integrations, Webhooks, Plugins, Gateways |
-| **Library** | Agent Marketplace, Skills, Companies, Teams (with detail pages) |
-| **System** | Organizations, Hierarchy, Divisions, Departments, Teams, Users, Access, Config, AI Providers, Secrets, Environment |
+| **Daily** | Dashboard, Inbox, Virtual Office |
+| **Explore** | Library (Agent Marketplace, Skills, Companies, Teams), Chat |
+| **Organize** | Organization (Hierarchy, Divisions, Departments, Teams), Projects, Goals, Issues, Documents |
+| **Agents** | Agent Roster, Agent Detail, Spawn, Skills, Memory |
+| **Automate** | Workflows, Schedules, Alerts |
+| **Observe** | Activity, Sessions, Logs, Work Products, Costs, Analytics, Reports |
+| **Platform** | Integrations, Webhooks, Plugins, Gateways, Secrets, Users, Access, Environment, Datasets |
 
 ### Virtual Office
 
-Pixel-art 2D grid view and optional 3D scene (Three.js via Threlte) showing agents at desks. Agents glow when active, bob when working, display current task in a speech bubble. Click to inspect or intervene.
+Pixel-art 2D grid view and optional 3D scene (Three.js via Threlte) showing agents at desks. Agents glow when active, bob when working, display current task in a speech bubble. Click to inspect or intervene. Team and division affiliations are shown visually via colored underline bars on name labels and division-colored pips — agents without a team show a neutral gray indicator. A collapsible legend overlay groups teams by division with color swatches and agent counts. The detail panel lets you assign, change, or remove an agent's team directly from the office view.
 
 ### Mock-First Development
 
@@ -727,7 +726,13 @@ When `BIZFORGE_HEADLESS=true`, the application boots the full OTP supervision tr
 
 ## Roadmap
 
-### Phase: Headless Workspace Execution _(In Progress)_
+### Phase: Project Documentation & AI Task Generation _(In Progress)_
+
+AI-powered documentation and task management within projects. Generate comprehensive documents (PRDs, tech specs, architecture docs) via AI agents, then analyze documentation to automatically propose and create actionable issues/tasks.
+
+- **Checklist:** [`CHECKLIST.md`](CHECKLIST.md)
+
+### Phase: Headless Workspace Execution _(Complete)_
 
 Run any fully configured workspace autonomously via CLI — no GUI required. Set up in the Command Center, deploy headlessly, monitor from a minimal stats dashboard.
 

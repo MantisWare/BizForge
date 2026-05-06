@@ -222,8 +222,8 @@
     divCreating = true;
     const result = await hierarchyStore.createDivision({
       name: divName.trim(),
-      slug: divSlug.trim() || slugify(divName.trim()),
-      description: divDesc.trim() || null,
+      slug: divSlug.trim() !== "" ? divSlug.trim() : slugify(divName.trim()),
+      description: divDesc.trim() !== "" ? divDesc.trim() : null,
       organization_id: org.id,
     });
     divCreating = false;

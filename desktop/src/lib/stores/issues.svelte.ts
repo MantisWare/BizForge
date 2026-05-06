@@ -195,6 +195,35 @@ class IssuesStore {
     }
   }
 
+  async batchCreateIssues(items: Partial<Issue>[]): Promise<Issue[]> {
+    const created: Issue[] = [];
+    const errors: string[] = [];
+    for (const data of items) {
+      try {
+        const issue = await issuesApi.create(data);
+        created.push(issue);
+      } catch (e) {
+        errors.push(`"${data.title ?? "Untitled"}": ${(e as Error).message}`);
+      }
+    }
+    if (created.length > 0) {
+      this.issues = [...created, ...this.issues];
+    }
+    this.error = errors.length > 0 ? errors.join('; ') : null;
+    if (created.length > 0) {
+      toastStore.success(
+        `${created.length} issue${created.length !== 1 ? 's' : ''} created`,
+        errors.length > 0
+          ? `${errors.length} failed — see details`
+          : `Batch-created from documentation analysis`,
+      );
+    }
+    if (errors.length > 0 && created.length === 0) {
+      toastStore.error('Failed to create issues', errors[0]);
+    }
+    return created;
+  }
+
   selectIssue(issue: Issue | null): void {
     this.selected = issue;
   }

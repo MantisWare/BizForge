@@ -2,6 +2,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
+  import { settingsStore } from '$lib/stores/settings.svelte';
+  import { llmInspectorStore } from '$lib/stores/llmInspector.svelte';
   import type { AIProviderCreateRequest, AIProviderConfig, AIProviderCategory } from '$api/types';
   import {
     ALL_PROVIDERS,
@@ -196,6 +198,34 @@
     if (status === 'connected') return 'pst-dot--ok';
     if (status === 'error') return 'pst-dot--error';
     return 'pst-dot--untested';
+  }
+
+  // ── Default model ──────────────────────────────────────────────────────────
+
+  interface ModelGroup {
+    providerName: string;
+    models: string[];
+  }
+
+  const modelGroups = $derived.by<ModelGroup[]>(() => {
+    const groups = new Map<string, string[]>();
+    for (const entry of providersStore.allModels) {
+      let list = groups.get(entry.providerName);
+      if (list === undefined) {
+        list = [];
+        groups.set(entry.providerName, list);
+      }
+      list.push(entry.model);
+    }
+    return [...groups.entries()].map(([providerName, models]) => ({ providerName, models }));
+  });
+
+  const defaultModel = $derived(settingsStore.data.default_model);
+  const hasModels = $derived(providersStore.allModels.length > 0);
+
+  function handleDefaultModelChange(value: string) {
+    settingsStore.update('default_model', value);
+    void settingsStore.save();
   }
 </script>
 
@@ -434,6 +464,18 @@
             {#if prov.category === 'local'}
               <span class="pst-badge pst-badge--local">Local</span>
             {/if}
+            <label class="pst-color-picker" title="Inspector color for {prov.name}">
+              <span
+                class="pst-color-swatch"
+                style="background: {llmInspectorStore.getProviderColor(prov.slug)}"
+              ></span>
+              <input
+                type="color"
+                class="pst-color-input"
+                value={llmInspectorStore.getProviderColor(prov.slug)}
+                oninput={(e) => llmInspectorStore.setProviderColor(prov.slug, (e.target as HTMLInputElement).value)}
+              />
+            </label>
           </div>
 
           <div class="pst-provider-meta">
@@ -543,6 +585,59 @@
       {/each}
     </div>
   {/if}
+
+  <!-- Default Model Selection -->
+  <div class="pst-default-model">
+    <div class="pst-default-model-header">
+      <h3 class="pst-default-model-title">Default Model</h3>
+      <p class="pst-default-model-desc">
+        Choose which model BizForge uses for built-in AI features. This applies to:
+      </p>
+      <ul class="pst-default-model-uses">
+        <li><strong>Document generation</strong> — creating PRDs, technical specs, architecture docs, and other project documentation from the Docs tab</li>
+        <li><strong>Issue analysis</strong> — reading project documentation to propose actionable tasks and issues</li>
+        <li><strong>Content assistance</strong> — any other in-app AI operation triggered from the UI</li>
+      </ul>
+      <p class="pst-default-model-desc">
+        This does not affect agent sessions started from the Chat panel or dispatched tasks — those use the model configured on each individual agent.
+      </p>
+    </div>
+
+    {#if hasModels}
+      <div class="pst-default-model-selector">
+        <label class="pst-label" for="pst-default-model">Model</label>
+        <select
+          id="pst-default-model"
+          class="pst-select pst-default-model-select"
+          value={defaultModel}
+          onchange={(e) => handleDefaultModelChange((e.target as HTMLSelectElement).value)}
+          aria-label="Default model"
+        >
+          {#each modelGroups as group (group.providerName)}
+            <optgroup label={group.providerName}>
+              {#each group.models as model (model)}
+                <option value={model}>{model}</option>
+              {/each}
+            </optgroup>
+          {/each}
+        </select>
+
+        {#if defaultModel}
+          <span class="pst-default-model-current">
+            Current: <code>{defaultModel}</code>
+          </span>
+        {/if}
+      </div>
+    {:else}
+      <div class="pst-default-model-empty">
+        {#if providersStore.totalCount > 0}
+          No models available yet. Use <strong>Fetch Models</strong> or <strong>Test Connection</strong> on a provider above to discover its available models.
+        {:else}
+          Add a provider above to select a default model.
+        {/if}
+      </div>
+    {/if}
+  </div>
 </section>
 
 <style>
@@ -1044,5 +1139,121 @@
     padding: 1px 5px;
     background: rgba(0, 0, 0, 0.08);
     border-radius: var(--radius-xs);
+  }
+
+  /* Default Model Section */
+
+  .pst-default-model {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-default);
+  }
+
+  .pst-default-model-header {
+    margin-bottom: 12px;
+  }
+
+  .pst-default-model-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+
+  .pst-default-model-desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .pst-default-model-uses {
+    margin: 6px 0 8px;
+    padding-left: 18px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.6;
+    list-style: disc;
+  }
+
+  .pst-default-model-uses strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .pst-default-model-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pst-default-model-select {
+    max-width: 420px;
+  }
+
+  .pst-default-model-current {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .pst-default-model-current code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 1px 5px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xs);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+  }
+
+  .pst-default-model-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 12px 14px;
+    background: var(--bg-elevated);
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+  }
+
+  .pst-default-model-empty strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Color Picker */
+
+  .pst-color-picker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .pst-color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border-default);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .pst-color-picker:hover .pst-color-swatch {
+    border-color: var(--border-hover);
+    box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.15);
+  }
+
+  .pst-color-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
   }
 </style>

@@ -3,6 +3,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import type { BizforgeAgent } from '$api/types';
+  import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import type { Camera, OfficeCharacter, TimeOfDay } from './types';
   import { CharacterState } from './types';
   import { createDefaultLayout, findPath, SEATS } from './layout';
@@ -11,11 +12,12 @@
 
   interface Props {
     agents: BizforgeAgent[];
+    agentOrgMap?: Map<string, AgentOrgInfo>;
     selectedAgentId?: string | null;
     onAgentClick?: (agent: BizforgeAgent) => void;
   }
 
-  let { agents, selectedAgentId = null, onAgentClick }: Props = $props();
+  let { agents, agentOrgMap = new Map(), selectedAgentId = null, onAgentClick }: Props = $props();
 
   let canvasEl: HTMLCanvasElement | undefined = $state();
   let minimapEl: HTMLCanvasElement | undefined = $state();
@@ -94,11 +96,13 @@
 
       if (existing) {
         const prevState = existing.state;
-        // Update state
+        const orgInfo = agentOrgMap.get(agent.id);
         existing.state = newState;
         existing.statusColor = statusToColor(agent.status);
-        existing.currentTask = agent.current_task || undefined;
-        existing.name = agent.display_name || agent.name;
+        existing.teamColor = orgInfo?.teamColor ?? undefined;
+        existing.divisionColor = orgInfo?.divisionColor ?? undefined;
+        existing.currentTask = agent.current_task ?? undefined;
+        existing.name = agent.display_name ?? agent.name;
 
         // If agent became active, walk to seat
         if (newState === CharacterState.TYPE && prevState !== CharacterState.TYPE) {
@@ -113,9 +117,10 @@
         newChars.push(existing);
       } else {
         // Create new character at seat
+        const orgInfo = agentOrgMap.get(agent.id);
         newChars.push({
           id: agent.id,
-          name: agent.display_name || agent.name,
+          name: agent.display_name ?? agent.name,
           color: '',
           skinTone: '',
           hairColor: '',
@@ -133,12 +138,14 @@
           animFrame: 0,
           animTimer: 0,
           statusColor: statusToColor(agent.status),
-          currentTask: agent.current_task || undefined,
+          teamColor: orgInfo?.teamColor ?? undefined,
+          divisionColor: orgInfo?.divisionColor ?? undefined,
+          currentTask: agent.current_task ?? undefined,
           bubbleTimer: 3,
         });
 
         // Add spawn event
-        untrack(() => addEvent(`${agent.display_name || agent.name} joined the office`, '#fb923c'));
+        untrack(() => addEvent(`${agent.display_name ?? agent.name} joined the office`, '#fb923c'));
       }
     });
 

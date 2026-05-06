@@ -57,8 +57,8 @@
     creating = true;
     const data: Partial<Division> = {
       name: createName.trim(),
-      slug: createSlug.trim() || slugify(createName.trim()),
-      description: createDesc.trim() || null,
+      slug: createSlug.trim() !== "" ? createSlug.trim() : slugify(createName.trim()),
+      description: createDesc.trim() !== "" ? createDesc.trim() : null,
       organization_id: organizationsStore.current?.id ?? '',
     };
     const result = await hierarchyStore.createDivision(data);

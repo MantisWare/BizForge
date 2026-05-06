@@ -59,6 +59,7 @@ import type {
   Team,
   TeamMembership,
   HierarchyTree,
+  HierarchyDivisionNode,
   Label,
   LabelCreateRequest,
   Plugin,
@@ -463,7 +464,26 @@ async function _doInitializeAuth(): Promise<void> {
     await clearToken();
   }
 
-  // 5. No valid stored token — try dev auto-login as FALLBACK (dev mode only)
+  // 5. Attempt auto re-login with saved credentials (persistent session).
+  // This covers the common case where the JWT expired or localStorage was
+  // cleared by the OS but the user's credentials are still saved on disk.
+  const savedCreds = await restoreCredentials();
+  if (savedCreds !== null) {
+    logInfo("auth", `Attempting auto re-login with saved credentials (${savedCreds.email})...`);
+    try {
+      const token = await login(savedCreds.email, savedCreds.password);
+      _token = token;
+      await persistToken(token);
+      logInfo("auth", `Auto re-login successful (${Math.round(performance.now() - authStartMs)}ms total)`);
+      resolveAuthGate();
+      return;
+    } catch {
+      logWarn("auth", "Auto re-login with saved credentials failed — credentials may have changed");
+      await clearSavedCredentials();
+    }
+  }
+
+  // 6. No valid stored token or saved credentials — try dev auto-login as FALLBACK (dev mode only)
   const devEmail = import.meta.env.VITE_DEV_EMAIL;
   const devPassword = import.meta.env.VITE_DEV_PASSWORD;
   if (devEmail && devPassword) {
@@ -660,6 +680,59 @@ function queueForOffline(method: string, path: string, body?: unknown): void {
   saveQueueToStorage(offlineQueue);
 }
 
+// ── Runtime Re-authentication ─────────────────────────────────────────────────
+// When a 401 occurs at runtime (token expired while the app is open), attempt
+// to silently re-login with saved credentials. A singleton promise ensures that
+// if 30+ stores all hit 401 simultaneously, only one re-login attempt is made.
+
+let _reAuthPromise: Promise<boolean> | null = null;
+let _redirectingToAuth = false;
+
+async function attemptReAuth(): Promise<boolean> {
+  if (_reAuthPromise !== null) return _reAuthPromise;
+  _reAuthPromise = _doReAuth();
+  const result = await _reAuthPromise;
+  _reAuthPromise = null;
+  return result;
+}
+
+async function _doReAuth(): Promise<boolean> {
+  await clearToken();
+
+  const creds = await restoreCredentials();
+  if (creds === null) {
+    logWarn("auth", "No saved credentials — cannot re-authenticate silently");
+    redirectToAuth();
+    return false;
+  }
+
+  logInfo("auth", `Runtime 401 — attempting silent re-login as ${creds.email}...`);
+  try {
+    const token = await login(creds.email, creds.password);
+    _token = token;
+    await persistToken(token);
+    logInfo("auth", "Silent re-login successful — resuming requests");
+    return true;
+  } catch {
+    logWarn("auth", "Silent re-login failed — redirecting to login page");
+    await clearSavedCredentials();
+    redirectToAuth();
+    return false;
+  }
+}
+
+function redirectToAuth(): void {
+  if (_redirectingToAuth) return;
+  _redirectingToAuth = true;
+  if (typeof window !== "undefined") {
+    window.location.href = "/auth";
+  }
+}
+
+export function resetAuthRedirect(): void {
+  _redirectingToAuth = false;
+}
+
 // ── Core Request ──────────────────────────────────────────────────────────────
 
 async function doFetch<T>(
@@ -687,10 +760,13 @@ async function doFetch<T>(
 
   const elapsed = Math.round(performance.now() - fetchStart);
 
-  if (response.status === 401 && !retried && _token) {
-    logWarn("auth", `401 on ${path} — token expired, clearing persisted token and retrying`);
-    void clearToken();
-    return doFetch<T>(path, options, true);
+  if (response.status === 401 && !retried) {
+    logWarn("auth", `401 on ${path} — attempting re-authentication`);
+    const reAuthed = await attemptReAuth();
+    if (reAuthed) {
+      return doFetch<T>(path, options, true);
+    }
+    throw new ApiError(401, "unauthorized");
   }
 
   if (!response.ok) {
@@ -714,6 +790,56 @@ async function doFetch<T>(
   return response.json() as Promise<T>;
 }
 
+// ── LLM Inspector Hooks ──────────────────────────────────────────────────────
+
+export interface LlmInterceptEvent {
+  requestId: string;
+  path: string;
+  method: string;
+  direction: "sent" | "received";
+  payload: unknown;
+  durationMs?: number;
+  status: "pending" | "success" | "error";
+  error?: string;
+}
+
+type LlmInterceptListener = (event: LlmInterceptEvent) => void;
+
+const _llmListeners: LlmInterceptListener[] = [];
+
+const LLM_PATH_PATTERNS: RegExp[] = [
+  /^\/sessions\/[^/]+\/message$/,
+  /^\/conversations\/[^/]+\/messages$/,
+  /^\/providers\/[^/]+\/test$/,
+  /^\/providers\/discover-models$/,
+  /^\/providers\/[^/]+\/discover-models$/,
+  /^\/reports\/[^/]+\/generate$/,
+  /^\/agents\/[^/]+\/heartbeat$/,
+  /^\/agents\/[^/]+\/dispatch$/,
+];
+
+function isLlmPath(path: string): boolean {
+  return LLM_PATH_PATTERNS.some((re) => re.test(path));
+}
+
+export function onLlmIntercept(listener: LlmInterceptListener): () => void {
+  _llmListeners.push(listener);
+  return () => {
+    const idx = _llmListeners.indexOf(listener);
+    if (idx !== -1) _llmListeners.splice(idx, 1);
+  };
+}
+
+function emitLlmIntercept(event: LlmInterceptEvent): void {
+  for (const listener of _llmListeners) {
+    try {
+      listener(event);
+    } catch {
+      // Listeners must not break the request pipeline
+    }
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   // Wait for auth to finish before making any API call.
   // Re-read useMock AFTER the promise resolves — initializeAuth() may have
@@ -726,6 +852,27 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   // running. The transition promise is null when no transition is active.
   if (_transitionPromise) await _transitionPromise;
 
+  const isLlm = isLlmPath(path);
+  const reqId = isLlm ? crypto.randomUUID() : "";
+  const reqStart = isLlm ? performance.now() : 0;
+
+  if (isLlm) {
+    let body: unknown;
+    try {
+      body = options.body !== undefined ? JSON.parse(options.body as string) : undefined;
+    } catch {
+      body = options.body;
+    }
+    emitLlmIntercept({
+      requestId: reqId,
+      path,
+      method: (options.method ?? "GET").toUpperCase(),
+      direction: "sent",
+      payload: body,
+      status: "pending",
+    });
+  }
+
   // Guard: re-check useMock after the auth gate opens so a flip that happened
   // concurrently during initializeAuth() is always visible here.
   if (useMock) {
@@ -736,15 +883,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (!useMock) {
       // Fall through to the real fetch path below
     } else {
-      return mock.handleRequest<T>(path, options);
+      const result = await mock.handleRequest<T>(path, options);
+      if (isLlm) {
+        emitLlmIntercept({
+          requestId: reqId,
+          path,
+          method: (options.method ?? "GET").toUpperCase(),
+          direction: "received",
+          payload: result,
+          durationMs: Math.round(performance.now() - reqStart),
+          status: "success",
+        });
+      }
+      return result;
     }
   }
 
-  // Guard: if the backend is live but there is no auth token, fail fast
-  // instead of sending an unauthenticated request that will 401.
-  // Public endpoints (health, auth/*) bypass this via doFetch directly.
+  // Guard: if the backend is live but there is no auth token, attempt
+  // silent re-login with saved credentials before failing.
   if (!useMock && _token === null) {
-    throw new ApiError(401, "unauthorized");
+    const reAuthed = await attemptReAuth();
+    if (!reAuthed) {
+      throw new ApiError(401, "unauthorized");
+    }
   }
 
   const method = (options.method ?? "GET").toUpperCase();
@@ -786,8 +947,32 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   try {
-    return await withRetry(() => doFetch<T>(path, options));
+    const data = await withRetry(() => doFetch<T>(path, options));
+    if (isLlm) {
+      emitLlmIntercept({
+        requestId: reqId,
+        path,
+        method,
+        direction: "received",
+        payload: data,
+        durationMs: Math.round(performance.now() - reqStart),
+        status: "success",
+      });
+    }
+    return data;
   } catch (error) {
+    if (isLlm) {
+      emitLlmIntercept({
+        requestId: reqId,
+        path,
+        method,
+        direction: "received",
+        payload: undefined,
+        durationMs: Math.round(performance.now() - reqStart),
+        status: "error",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     if (!(error instanceof ApiError)) {
       logWarn("net", `Network error on ${method} ${path} — queued for offline sync`);
       const body =
@@ -950,6 +1135,7 @@ const SESSION_KEYS = [
   "bizforge-onboarding",
   "bizforge-display-name",
   "bizforge-mock-mode",
+  "bizforge-saved-email",
 ] as const;
 
 async function saveSessionToStore(): Promise<void> {
@@ -986,6 +1172,93 @@ async function restoreSessionFromStore(): Promise<void> {
 }
 
 export { saveSessionToStore, restoreSessionFromStore };
+
+// ── Credential Persistence (Auto Re-login) ──────────────────────────────────
+// Save login credentials to the Tauri disk store so the app can automatically
+// re-authenticate when the token expires or localStorage is cleared between
+// app launches. Credentials are stored only on disk via Tauri plugin-store
+// (never in localStorage) to reduce exposure surface.
+
+interface SavedCredentials {
+  email: string;
+  password: string;
+}
+
+async function persistCredentials(email: string, password: string): Promise<void> {
+  try {
+    localStorage.setItem("bizforge-saved-email", email);
+  } catch {
+    // Non-fatal
+  }
+  try {
+    const { load: loadStore } = await import("@tauri-apps/plugin-store");
+    const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+    await store.set("savedCredentials", JSON.stringify({ email, password }));
+    await store.save();
+    logInfo("auth", "Credentials saved to Tauri store for auto re-login");
+  } catch {
+    // Not in Tauri — fall back to localStorage (obfuscated, not secure encryption)
+    try {
+      localStorage.setItem(
+        "bizforge-saved-credentials",
+        btoa(JSON.stringify({ email, password })),
+      );
+    } catch {
+      // Non-fatal
+    }
+  }
+}
+
+async function restoreCredentials(): Promise<SavedCredentials | null> {
+  // Try Tauri store first (preferred — survives webview resets)
+  try {
+    const { load: loadStore } = await import("@tauri-apps/plugin-store");
+    const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+    const raw = await store.get<string>("savedCredentials");
+    if (raw !== null && raw !== undefined) {
+      const parsed = JSON.parse(raw) as SavedCredentials;
+      if (parsed.email && parsed.password) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Not in Tauri — try localStorage fallback
+  }
+
+  // localStorage fallback (base64-obfuscated)
+  try {
+    const raw = localStorage.getItem("bizforge-saved-credentials");
+    if (raw !== null) {
+      const parsed = JSON.parse(atob(raw)) as SavedCredentials;
+      if (parsed.email && parsed.password) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  return null;
+}
+
+async function clearSavedCredentials(): Promise<void> {
+  try {
+    localStorage.removeItem("bizforge-saved-credentials");
+    localStorage.removeItem("bizforge-saved-email");
+  } catch {
+    // Non-fatal
+  }
+  try {
+    const { load: loadStore } = await import("@tauri-apps/plugin-store");
+    const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+    await store.delete("savedCredentials");
+    await store.save();
+  } catch {
+    // Not in Tauri or store unavailable
+  }
+}
+
+export { persistCredentials, clearSavedCredentials };
 
 // ── Health ────────────────────────────────────────────────────────────────────
 
@@ -1721,7 +1994,12 @@ export const documents = {
   },
 
   get: async (path: string): Promise<Document> => {
-    return request<Document>(`/documents/${encodeDocPath(path)}`);
+    const data = await request<Document | { document: Document }>(
+      `/documents/${encodeDocPath(path)}`,
+    );
+    return "document" in data
+      ? (data as { document: Document }).document
+      : (data as Document);
   },
 
   create: async (doc: {
@@ -1731,26 +2009,45 @@ export const documents = {
     format?: Document["format"];
     project_id?: string | null;
   }): Promise<Document> => {
-    return request<Document>("/documents", {
-      method: "POST",
-      body: JSON.stringify(doc),
-    });
+    const data = await request<Document | { document: Document }>(
+      "/documents",
+      { method: "POST", body: JSON.stringify(doc) },
+    );
+    return "document" in data
+      ? (data as { document: Document }).document
+      : (data as Document);
   },
 
   update: async (
     path: string,
     updates: { content?: string; title?: string; format?: Document["format"] },
   ): Promise<Document> => {
-    return request<Document>(`/documents/${encodeDocPath(path)}`, {
-      method: "PUT",
-      body: JSON.stringify(updates),
-    });
+    const data = await request<Document | { document: Document }>(
+      `/documents/${encodeDocPath(path)}`,
+      { method: "PUT", body: JSON.stringify(updates) },
+    );
+    return "document" in data
+      ? (data as { document: Document }).document
+      : (data as Document);
   },
 
   delete: async (path: string): Promise<void> => {
     await request<void>(`/documents/${encodeDocPath(path)}`, {
       method: "DELETE",
     });
+  },
+
+  listByProject: async (
+    projectId: string,
+  ): Promise<{
+    documents: Document[];
+    tree: DocumentTreeNode[];
+  }> => {
+    const data = await request<{
+      documents: Document[];
+      tree: DocumentTreeNode[];
+    }>(`/documents?project_id=${encodeURIComponent(projectId)}`);
+    return { documents: data.documents ?? [], tree: data.tree ?? [] };
   },
 
   revisions: async (documentId: string): Promise<DocumentRevision[]> => {
@@ -1995,17 +2292,35 @@ export const organizations = {
     );
     return data.organizations ?? [];
   },
-  get: (id: string) => request<Organization>(`/organizations/${id}`),
-  create: (body: OrganizationCreateRequest) =>
-    request<Organization>("/organizations", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  update: (id: string, body: Partial<OrganizationCreateRequest>) =>
-    request<Organization>(`/organizations/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
+  get: async (id: string): Promise<Organization> => {
+    const data = await request<Organization | { organization: Organization }>(
+      `/organizations/${id}`,
+    );
+    return "organization" in data
+      ? (data as { organization: Organization }).organization
+      : (data as Organization);
+  },
+  create: async (body: OrganizationCreateRequest): Promise<Organization> => {
+    const data = await request<Organization | { organization: Organization }>(
+      "/organizations",
+      { method: "POST", body: JSON.stringify(body) },
+    );
+    return "organization" in data
+      ? (data as { organization: Organization }).organization
+      : (data as Organization);
+  },
+  update: async (
+    id: string,
+    body: Partial<OrganizationCreateRequest>,
+  ): Promise<Organization> => {
+    const data = await request<Organization | { organization: Organization }>(
+      `/organizations/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
+    return "organization" in data
+      ? (data as { organization: Organization }).organization
+      : (data as Organization);
+  },
   delete: (id: string) =>
     request<void>(`/organizations/${id}`, { method: "DELETE" }),
   members: async (id: string): Promise<OrganizationMembership[]> => {
@@ -2024,17 +2339,32 @@ export const divisions = {
     const data = await request<{ divisions: Division[] }>(`/divisions${qs}`);
     return data.divisions ?? [];
   },
-  get: (id: string) => request<Division>(`/divisions/${id}`),
-  create: (body: Partial<Division>) =>
-    request<Division>("/divisions", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  update: (id: string, body: Partial<Division>) =>
-    request<Division>(`/divisions/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
+  get: async (id: string): Promise<Division> => {
+    const data = await request<Division | { division: Division }>(
+      `/divisions/${id}`,
+    );
+    return "division" in data
+      ? (data as { division: Division }).division
+      : (data as Division);
+  },
+  create: async (body: Partial<Division>): Promise<Division> => {
+    const data = await request<Division | { division: Division }>(
+      "/divisions",
+      { method: "POST", body: JSON.stringify(body) },
+    );
+    return "division" in data
+      ? (data as { division: Division }).division
+      : (data as Division);
+  },
+  update: async (id: string, body: Partial<Division>): Promise<Division> => {
+    const data = await request<Division | { division: Division }>(
+      `/divisions/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
+    return "division" in data
+      ? (data as { division: Division }).division
+      : (data as Division);
+  },
   delete: (id: string) =>
     request<void>(`/divisions/${id}`, { method: "DELETE" }),
   departments: async (divisionId: string): Promise<Department[]> => {
@@ -2055,17 +2385,35 @@ export const departments = {
     );
     return data.departments ?? [];
   },
-  get: (id: string) => request<Department>(`/departments/${id}`),
-  create: (body: Partial<Department>) =>
-    request<Department>("/departments", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  update: (id: string, body: Partial<Department>) =>
-    request<Department>(`/departments/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
+  get: async (id: string): Promise<Department> => {
+    const data = await request<Department | { department: Department }>(
+      `/departments/${id}`,
+    );
+    return "department" in data
+      ? (data as { department: Department }).department
+      : (data as Department);
+  },
+  create: async (body: Partial<Department>): Promise<Department> => {
+    const data = await request<Department | { department: Department }>(
+      "/departments",
+      { method: "POST", body: JSON.stringify(body) },
+    );
+    return "department" in data
+      ? (data as { department: Department }).department
+      : (data as Department);
+  },
+  update: async (
+    id: string,
+    body: Partial<Department>,
+  ): Promise<Department> => {
+    const data = await request<Department | { department: Department }>(
+      `/departments/${id}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
+    return "department" in data
+      ? (data as { department: Department }).department
+      : (data as Department);
+  },
   delete: (id: string) =>
     request<void>(`/departments/${id}`, { method: "DELETE" }),
   teams: async (departmentId: string): Promise<Team[]> => {
@@ -2084,17 +2432,30 @@ export const teams = {
     const data = await request<{ teams: Team[] }>(`/teams${qs}`);
     return data.teams ?? [];
   },
-  get: (id: string) => request<Team>(`/teams/${id}`),
-  create: (body: Partial<Team>) =>
-    request<Team>("/teams", {
+  get: async (id: string): Promise<Team> => {
+    const data = await request<Team | { team: Team }>(`/teams/${id}`);
+    return "team" in data
+      ? (data as { team: Team }).team
+      : (data as Team);
+  },
+  create: async (body: Partial<Team>): Promise<Team> => {
+    const data = await request<Team | { team: Team }>("/teams", {
       method: "POST",
       body: JSON.stringify(body),
-    }),
-  update: (id: string, body: Partial<Team>) =>
-    request<Team>(`/teams/${id}`, {
+    });
+    return "team" in data
+      ? (data as { team: Team }).team
+      : (data as Team);
+  },
+  update: async (id: string, body: Partial<Team>): Promise<Team> => {
+    const data = await request<Team | { team: Team }>(`/teams/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
-    }),
+    });
+    return "team" in data
+      ? (data as { team: Team }).team
+      : (data as Team);
+  },
   delete: (id: string) => request<void>(`/teams/${id}`, { method: "DELETE" }),
   agents: async (teamId: string): Promise<BizforgeAgent[]> => {
     const data = await request<{ agents: BizforgeAgent[] }>(
@@ -2118,8 +2479,13 @@ export const teams = {
 // ── Hierarchy ─────────────────────────────────────────────────────────────────
 
 export const hierarchy = {
-  get: (organizationId: string) =>
-    request<HierarchyTree>(`/hierarchy?organization_id=${organizationId}`),
+  get: async (organizationId: string): Promise<HierarchyTree> => {
+    const raw = await request<{
+      organization: Organization & { divisions?: HierarchyDivisionNode[] };
+    }>(`/hierarchy?organization_id=${organizationId}`);
+    const { divisions, ...org } = raw.organization ?? ({} as Organization & { divisions?: HierarchyDivisionNode[] });
+    return { organization: org as Organization, divisions: divisions ?? [] };
+  },
 };
 
 // ── Labels ────────────────────────────────────────────────────────────────────

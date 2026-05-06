@@ -4,6 +4,7 @@
 // Types
 export type {
   Visibility,
+  CompositionMember,
   LibraryAgent,
   LibrarySkill,
   LibraryOperation,

@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { auth, persistToken, resetInitPromise } from '$api/client';
+  import { auth, persistToken, resetInitPromise, persistCredentials, resetAuthRedirect } from '$api/client';
 
   // ── State ─────────────────────────────────────────────────────────────────
 
@@ -26,6 +26,9 @@
 
   onMount(async () => {
     if (!browser) return;
+
+    // Clear the redirect-in-progress flag so the auth flow can proceed fresh.
+    resetAuthRedirect();
 
     // initializeAuth() is a singleton — safe to call multiple times.
     // It probes /health, reads /auth/status to set _firstRun, and restores
@@ -123,6 +126,7 @@
         // Persist token and reset the init-promise cache so the /app layout
         // guard sees the fresh token on the next initializeAuth() call.
         await persistToken(result.token);
+        await persistCredentials(email.trim(), password);
         resetInitPromise();
 
         // Store registration data for onboarding to pre-fill.
@@ -141,6 +145,7 @@
           password,
         });
         await persistToken(result.token);
+        await persistCredentials(email.trim(), password);
         resetInitPromise();
 
         localStorage.setItem('bizforge-display-name', result.user.name);
