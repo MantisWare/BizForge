@@ -209,7 +209,9 @@ defmodule Bizforge.Heartbeat do
           case %WorkProduct{}
                |> WorkProduct.changeset(%{
                  title: "Heartbeat output for issue #{issue_id}",
+                 type: "code",
                  product_type: "heartbeat",
+                 status: "final",
                  issue_id: issue_id,
                  session_id: session.id,
                  agent_id: agent.id,

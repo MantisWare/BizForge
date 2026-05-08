@@ -43,7 +43,9 @@ defmodule BizforgeWeb.QaReportController do
     %WorkProduct{}
     |> WorkProduct.changeset(%{
       title: "QA Report: #{status} (#{summary["passed"] || 0}/#{summary["total"] || 0} passed)",
+      type: "report",
       product_type: "qa-report",
+      status: "final",
       issue_id: issue_id,
       session_id: session_id,
       agent_id: agent_id,
@@ -53,19 +55,21 @@ defmodule BizforgeWeb.QaReportController do
     |> Repo.insert()
   end
 
-  defp create_report(workspace_id, agent_id, summary, failures, status) do
+  defp create_report(workspace_id, _agent_id, summary, failures, _status) do
     %Report{}
     |> Report.changeset(%{
-      title: "QA Automation Report",
-      category: "qa",
-      status: status,
-      workspace_id: workspace_id,
-      agent_id: agent_id,
-      data: %{
+      name: "QA Automation Report — #{DateTime.utc_now() |> Calendar.strftime("%Y-%m-%d %H:%M")}",
+      report_type: "custom",
+      format: "table",
+      config: %{
+        "category" => "qa",
         "summary" => summary,
         "failures" => failures,
         "generated_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-      }
+      },
+      workspace_id: workspace_id,
+      tags: ["qa", "automation"],
+      last_generated_at: DateTime.utc_now() |> DateTime.truncate(:second)
     })
     |> Repo.insert()
   end

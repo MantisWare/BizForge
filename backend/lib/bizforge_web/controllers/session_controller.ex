@@ -500,18 +500,23 @@ defmodule BizforgeWeb.SessionController do
       data = file["data"]
 
       if is_binary(data) do
-        decoded = Base.decode64!(data)
-        ext = Path.extname(name)
-        filename = "#{Ecto.UUID.generate()}#{ext}"
-        dest = Path.join(base_dir, filename)
-        File.write!(dest, decoded)
+        case Base.decode64(data) do
+          {:ok, decoded} ->
+            ext = Path.extname(name)
+            filename = "#{Ecto.UUID.generate()}#{ext}"
+            dest = Path.join(base_dir, filename)
+            File.write!(dest, decoded)
 
-        %{
-          "name" => name,
-          "mime_type" => mime,
-          "path" => dest,
-          "size_bytes" => byte_size(decoded)
-        }
+            %{
+              "name" => name,
+              "mime_type" => mime,
+              "path" => dest,
+              "size_bytes" => byte_size(decoded)
+            }
+
+          :error ->
+            nil
+        end
       else
         path = file["path"]
 

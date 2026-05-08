@@ -120,11 +120,11 @@ defmodule Bizforge.IssueLifecycle do
 
   def handle_cast({:qa_report, issue_id, report}, state) do
     case Repo.get(Issue, issue_id) do
-      %Issue{status: "in_progress"} = qa_issue ->
+      %Issue{} = qa_issue ->
         handle_qa_result(qa_issue, report)
 
-      _ ->
-        :ok
+      nil ->
+        Logger.warning("[IssueLifecycle] QA report for unknown issue #{issue_id}")
     end
 
     {:noreply, state}
@@ -166,11 +166,9 @@ defmodule Bizforge.IssueLifecycle do
   end
 
   defp transition_to_testing(issue) do
-    {:ok, updated} = issue |> change(status: "in_review") |> Repo.update()
+    spawn_qa_child(issue)
 
-    spawn_qa_child(updated)
-
-    Logger.info("[IssueLifecycle] Issue #{updated.id} → testing (QA child spawned)")
+    Logger.info("[IssueLifecycle] Issue #{issue.id} → testing (QA child spawned, parent stays in_review until QA completes)")
   end
 
   defp transition_back_to_progress(issue) do

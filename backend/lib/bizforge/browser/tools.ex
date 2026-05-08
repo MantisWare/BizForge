@@ -26,7 +26,8 @@ defmodule Bizforge.Browser.Tools do
   def dispatch(method, params, agent_id) when method in @browser_methods do
     case check_permission(agent_id) do
       :ok ->
-        Bizforge.Browser.Sidecar.call(method, params)
+        enriched_params = Map.put_new(params, "session_id", params["session_id"] || "default")
+        Bizforge.Browser.Sidecar.call(method, enriched_params)
 
       {:error, _} = err ->
         err

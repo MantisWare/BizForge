@@ -54,9 +54,32 @@ defmodule Bizforge.CodeReview.GithubAdapter do
     {:ok, %{handle | status: "approved"}}
   end
 
+  @doc "Called by the reviewer agent after approving — drives the lifecycle FSM."
+  def approve_and_notify(handle, issue_id) do
+    case approve(handle) do
+      {:ok, updated} ->
+        Bizforge.IssueLifecycle.notify_review_approved(issue_id)
+        {:ok, updated}
+
+      err ->
+        err
+    end
+  end
+
   @impl true
-  def request_changes(handle, _reason) do
+  def request_changes(handle, reason) do
     {:ok, %{handle | status: "changes_requested"}}
+  end
+
+  def request_changes_and_notify(handle, reason, issue_id) do
+    case request_changes(handle, reason) do
+      {:ok, updated} ->
+        Bizforge.IssueLifecycle.notify_changes_requested(issue_id)
+        {:ok, updated}
+
+      err ->
+        err
+    end
   end
 
   @impl true

@@ -66,7 +66,8 @@ defmodule Bizforge.Adapters.Gemini do
          %{
            api_key: api_key,
            model: config["model"] || @default_model,
-           max_output_tokens: config["max_output_tokens"] || @default_max_tokens
+           max_output_tokens: config["max_output_tokens"] || @default_max_tokens,
+           attachments: config["attachments"] || []
          }}
     end
   end
@@ -91,6 +92,10 @@ defmodule Bizforge.Adapters.Gemini do
   end
 
   @impl true
+  def send_message(%{api_key: api_key, model: model, max_output_tokens: max_tokens, attachments: attachments}, message) do
+    call_gemini_stream(api_key, model, message, max_tokens, attachments || [])
+  end
+
   def send_message(%{api_key: api_key, model: model, max_output_tokens: max_tokens}, message) do
     call_gemini_stream(api_key, model, message, max_tokens, [])
   end
@@ -106,16 +111,16 @@ defmodule Bizforge.Adapters.Gemini do
   defp call_gemini_stream(api_key, model, prompt, max_tokens, attachments \\ []) do
     url = "#{@api_base}/#{model}:generateContent?key=#{api_key}"
 
-    parts = [%{text: prompt}] ++ build_image_parts(attachments)
+    parts = [%{"text" => prompt}] ++ build_image_parts(attachments)
 
     body = %{
-      contents: [
+      "contents" => [
         %{
-          parts: parts
+          "parts" => parts
         }
       ],
-      generationConfig: %{
-        maxOutputTokens: max_tokens
+      "generationConfig" => %{
+        "maxOutputTokens" => max_tokens
       }
     }
 
@@ -200,9 +205,9 @@ defmodule Bizforge.Adapters.Gemini do
       case read_attachment_base64(a) do
         {:ok, b64} ->
           %{
-            inline_data: %{
-              mime_type: a["mime_type"],
-              data: b64
+            "inlineData" => %{
+              "mimeType" => a["mime_type"],
+              "data" => b64
             }
           }
 

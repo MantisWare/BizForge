@@ -520,6 +520,12 @@ export interface GoalTreeNode extends Goal {
 
 export type ProjectStatus = "active" | "completed" | "archived";
 
+export interface ProjectConfig {
+  auto_assign?: boolean;
+  lifecycle?: string;
+  qa?: { allow_workspace_fallback?: boolean };
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -527,6 +533,7 @@ export interface Project {
   status: ProjectStatus;
   workspace_id?: string;
   output_path: string | null;
+  config: ProjectConfig;
   goal_count: number;
   issue_count: number;
   agent_count: number;

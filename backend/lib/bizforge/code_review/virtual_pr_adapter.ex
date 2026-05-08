@@ -73,14 +73,15 @@ defmodule Bizforge.CodeReview.VirtualPRAdapter do
         {:error, :not_found}
 
       issue ->
-        author = opts[:author] || "reviewer"
+        agent_id = opts[:agent_id]
 
         {:ok, c} =
           %Comment{}
           |> Comment.changeset(%{
             issue_id: issue.id,
             body: "[PR Review] #{comment}",
-            author: author
+            author_type: "agent",
+            author_id: agent_id || "00000000-0000-0000-0000-000000000000"
           })
           |> Repo.insert()
 

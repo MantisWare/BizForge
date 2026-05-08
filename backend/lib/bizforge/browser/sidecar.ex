@@ -130,8 +130,6 @@ defmodule Bizforge.Browser.Sidecar do
           [
             :binary,
             :exit_status,
-            {:line, 65_536},
-            :stderr_to_stdout,
             args: [sidecar_path]
           ]
         )
