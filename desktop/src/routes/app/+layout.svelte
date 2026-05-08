@@ -16,6 +16,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import CommandPalette from '$lib/components/layout/CommandPalette.svelte';
   import ActivityWidget from '$lib/components/activity/ActivityWidget.svelte';
   import LlmInspectorPanel from '$lib/components/inspector/LlmInspectorPanel.svelte';
+  import WorkspaceWizard from '$lib/components/wizard/WorkspaceWizard.svelte';
   import { activityStore } from '$lib/stores/activity.svelte';
   import { llmInspectorStore, bindAgentsStore } from '$lib/stores/llmInspector.svelte';
   import { sessionsStore } from '$lib/stores/sessions.svelte';
@@ -25,6 +26,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
   import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
+  import { wizardStore } from '$lib/stores/wizard.svelte';
 
   let { children } = $props();
 
@@ -174,7 +176,9 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     // (written during onboarding; no-op in browser dev mode)
     void settingsStore.loadFromTauriStore();
 
-    paletteStore.registerBuiltins(goto, {});
+    paletteStore.registerBuiltins(goto, {
+      newWorkspace: () => { wizardStore.reset(); wizardStore.open(); },
+    });
     return () => {
       stopPolling?.();
       activityStore.unsubscribe();
@@ -194,8 +198,15 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       const idx = ['1', '2', '3'].indexOf(e.key);
       if (idx !== -1) { e.preventDefault(); goto(NAV_ROUTES[idx]); }
     }
+    function preventGlobalDrop(e: DragEvent) { e.preventDefault(); }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('dragover', preventGlobalDrop);
+    window.addEventListener('drop', preventGlobalDrop);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('dragover', preventGlobalDrop);
+      window.removeEventListener('drop', preventGlobalDrop);
+    };
   });
 
   // Log panel state
@@ -233,6 +244,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
 <CommandPalette />
 <ToastContainer />
 <ActivityWidget />
+<WorkspaceWizard />
 
 <style>
   .app-shell {

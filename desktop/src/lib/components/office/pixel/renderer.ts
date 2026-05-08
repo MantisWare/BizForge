@@ -44,6 +44,7 @@ import {
   TABLE_RECT_SPRITE,
   LAPTOP_SPRITE,
   LAPTOP_SPRITE_2,
+  TABLE_ROUND_SPRITE,
 } from "./sprites";
 import {
   CORRIDOR_H_START,
@@ -173,6 +174,8 @@ function getFurnitureSprite(
       return TV_SPRITE;
     case FurnitureType.TABLE_RECT:
       return TABLE_RECT_SPRITE;
+    case FurnitureType.TABLE_ROUND:
+      return TABLE_ROUND_SPRITE;
     case FurnitureType.LAPTOP:
       return null; // handled separately with animation
     default:

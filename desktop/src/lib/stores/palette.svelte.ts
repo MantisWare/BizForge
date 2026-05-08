@@ -106,6 +106,12 @@ class PaletteStore {
         name: "Restart Backend",
         action: actions["restartBackend"] ?? (() => {}),
       },
+      {
+        id: "new-workspace",
+        name: "New Workspace",
+        description: "Launch the workspace setup wizard",
+        action: actions["newWorkspace"] ?? (() => {}),
+      },
     ];
   }
 

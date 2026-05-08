@@ -102,8 +102,11 @@ defmodule BizforgeWeb.ProjectController do
   end
 
   def workspaces(conn, %{"project_id" => _project_id}) do
-    # Projects are workspace-scoped; the parent workspace is accessible via the project record
     json(conn, %{workspaces: []})
+  end
+
+  def lifecycle_templates(conn, _params) do
+    json(conn, %{templates: Bizforge.LifecycleConfigs.all()})
   end
 
   # --- Private helpers ---
@@ -143,6 +146,8 @@ defmodule BizforgeWeb.ProjectController do
       status: p.status,
       workspace_id: p.workspace_id,
       output_path: p.output_path,
+      config: p.config || %{},
+      lifecycle_config: p.lifecycle_config || %{},
       inserted_at: p.inserted_at,
       updated_at: p.updated_at
     }

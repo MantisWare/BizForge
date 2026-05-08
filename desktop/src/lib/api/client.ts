@@ -1451,6 +1451,52 @@ export const messages = {
     }),
 };
 
+// ── Sprints ───────────────────────────────────────────────────────────────────
+
+export const sprints = {
+  list: async (projectId?: string): Promise<import("./types").Sprint[]> => {
+    const qs = projectId ? `?project_id=${projectId}` : "";
+    const data = await request<{ sprints: import("./types").Sprint[] }>(`/sprints${qs}`);
+    return data.sprints ?? [];
+  },
+  get: (id: string) => request<{ sprint: import("./types").Sprint }>(`/sprints/${id}`),
+  create: (body: {
+    name: string;
+    project_id: string;
+    goal?: string;
+    start_date?: string;
+    end_date?: string;
+    velocity_target?: number;
+  }) =>
+    request<{ sprint: import("./types").Sprint }>("/sprints", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: Partial<import("./types").Sprint>) =>
+    request<{ sprint: import("./types").Sprint }>(`/sprints/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<{ ok: boolean }>(`/sprints/${id}`, { method: "DELETE" }),
+  start: (id: string) =>
+    request<{ sprint: import("./types").Sprint }>(`/sprints/${id}/start`, { method: "POST" }),
+  complete: (id: string) =>
+    request<{ sprint: import("./types").Sprint; velocity: number }>(`/sprints/${id}/complete`, {
+      method: "POST",
+    }),
+  assignIssues: (sprintId: string, issueIds: string[]) =>
+    request<{ ok: boolean; assigned: number }>(`/sprints/${sprintId}/assign-issues`, {
+      method: "POST",
+      body: JSON.stringify({ issue_ids: issueIds }),
+    }),
+  unassignIssues: (sprintId: string, issueIds: string[]) =>
+    request<{ ok: boolean; unassigned: number }>(`/sprints/${sprintId}/unassign-issues`, {
+      method: "POST",
+      body: JSON.stringify({ issue_ids: issueIds }),
+    }),
+};
+
 // ── Schedules ─────────────────────────────────────────────────────────────────
 
 export const schedules = {

@@ -476,6 +476,7 @@ export interface Issue {
   assignee_name: string | null;
   project_id: string | null;
   goal_id: string | null;
+  sprint_id: string | null;
   labels: string[];
   comments_count: number;
   created_by: string;
@@ -526,6 +527,14 @@ export interface ProjectConfig {
   qa?: { allow_workspace_fallback?: boolean };
 }
 
+export interface LifecycleConfig {
+  states?: string[];
+  transitions?: { from: string; to: string; trigger: string }[];
+  auto_review?: boolean;
+  auto_qa?: boolean;
+  require_approval_to_merge?: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -534,9 +543,32 @@ export interface Project {
   workspace_id?: string;
   output_path: string | null;
   config: ProjectConfig;
+  lifecycle_config: LifecycleConfig;
   goal_count: number;
   issue_count: number;
   agent_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Sprints ───────────────────────────────────────────────────────────────────
+
+export type SprintStatus = "planned" | "active" | "complete" | "cancelled";
+
+export interface Sprint {
+  id: string;
+  name: string;
+  goal: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: SprintStatus;
+  velocity_target: number | null;
+  velocity_actual: number | null;
+  config: Record<string, unknown>;
+  project_id: string;
+  workspace_id: string;
+  issue_count?: number;
+  done_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1795,6 +1827,63 @@ export interface ReportCreateRequest {
   schedule?: string;
   format?: ReportFormat;
   tags?: string[];
+}
+
+// ── Workspace Wizard ──────────────────────────────────────────────────────────
+
+export interface WizardDocument {
+  id: string;
+  name: string;
+  content: string;
+  format: DocumentFormat;
+  size: number;
+}
+
+export interface WizardAgent {
+  id: string;
+  name: string;
+  emoji: string;
+  role: string;
+  adapter: string;
+  model: string;
+  skills: string[];
+  system_prompt: string;
+  teamId: string;
+  teamName: string;
+}
+
+export interface WizardTask {
+  id: string;
+  title: string;
+  description: string;
+  priority: "low" | "medium" | "high" | "critical";
+  labels: string[];
+  sprintName: string | null;
+  dependsOn: string[];
+  selected: boolean;
+}
+
+export interface WizardSprintGroup {
+  name: string;
+  goal: string;
+  tasks: WizardTask[];
+}
+
+export interface CompanyRecommendation {
+  primary: {
+    templateId: string;
+    templateName: string;
+    reason: string;
+    fitScore: number;
+    teamIds: string[];
+  };
+  alternatives: Array<{
+    templateId: string;
+    templateName: string;
+    reason: string;
+    fitScore: number;
+    teamIds: string[];
+  }>;
 }
 
 // ── LLM Inspector ─────────────────────────────────────────────────────────────

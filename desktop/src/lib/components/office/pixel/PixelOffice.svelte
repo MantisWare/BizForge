@@ -8,7 +8,7 @@
   import { CharacterState } from './types';
   import { createDefaultLayout, findPath, SEATS } from './layout';
   import { renderOffice, renderMinimap, hitTestCharacter } from './renderer';
-  import { clearSpriteCache } from './sprites';
+  import { clearSpriteCache, agentPalette } from './sprites';
 
   interface Props {
     agents: BizforgeAgent[];
@@ -29,6 +29,7 @@
   let showMinimap = $state(true);
   let showEvents = $state(true);
   let showSidebar = $state(true);
+  let filterMode = $state<'all' | 'working' | 'idle'>('all');
   let events = $state<{ time: string; text: string; color: string }[]>([]);
 
   const layout = createDefaultLayout();
@@ -54,6 +55,14 @@
   let characters: OfficeCharacter[] = $state([]);
 
   // ─── Agent → Character sync ─────────────────────────────
+  function djb2(str: string): number {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+  }
+
   function statusToColor(status: string): string {
     switch (status) {
       case 'running': return '#6ee7b7';
@@ -118,12 +127,13 @@
       } else {
         // Create new character at seat
         const orgInfo = agentOrgMap.get(agent.id);
+        const palette = agentPalette(djb2(agent.id));
         newChars.push({
           id: agent.id,
           name: agent.display_name ?? agent.name,
-          color: '',
-          skinTone: '',
-          hairColor: '',
+          color: palette.body,
+          skinTone: palette.skin,
+          hairColor: palette.hair,
           state: newState,
           facing: seat.facing,
           gridX: seat.gridX,
@@ -360,6 +370,12 @@
   const activeCount = $derived(agents.filter(a => a.status === 'running' || a.status === 'idle').length);
   const awayCount = $derived(agents.length - activeCount);
   const zoomPct = $derived(Math.round(camera.targetZoom * 100 / 3));
+
+  const filteredAgents = $derived.by(() => {
+    if (filterMode === 'working') return agents.filter(a => a.status === 'running');
+    if (filterMode === 'idle') return agents.filter(a => a.status !== 'running');
+    return agents;
+  });
 </script>
 
 <div class="po-root">
@@ -371,12 +387,12 @@
         <span class="po-team-count">{agents.length} agents</span>
       </div>
       <div class="po-sidebar-tabs">
-        <button class="po-tab po-tab--active">All</button>
-        <button class="po-tab">Working</button>
-        <button class="po-tab">Idle</button>
+        <button class="po-tab" class:po-tab--active={filterMode === 'all'} onclick={() => { filterMode = 'all'; }}>All</button>
+        <button class="po-tab" class:po-tab--active={filterMode === 'working'} onclick={() => { filterMode = 'working'; }}>Working</button>
+        <button class="po-tab" class:po-tab--active={filterMode === 'idle'} onclick={() => { filterMode = 'idle'; }}>Idle</button>
       </div>
       <div class="po-sidebar-list">
-        {#each agents as agent (agent.id)}
+        {#each filteredAgents as agent (agent.id)}
           <button
             class="po-agent-row"
             class:po-agent-row--selected={selectedAgentId === agent.id}
@@ -395,8 +411,8 @@
             </div>
           </button>
         {/each}
-        {#if agents.length === 0}
-          <div class="po-empty">No agents yet. Click a room/desk or run an action.</div>
+        {#if filteredAgents.length === 0}
+          <div class="po-empty">{filterMode === 'all' ? 'No agents yet. Click a room/desk or run an action.' : `No ${filterMode} agents.`}</div>
         {/if}
       </div>
     </div>

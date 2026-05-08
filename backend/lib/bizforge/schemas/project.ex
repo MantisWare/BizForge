@@ -11,6 +11,7 @@ defmodule Bizforge.Schemas.Project do
     field :status, :string, default: "active"
     field :output_path, :string
     field :config, :map, default: %{}
+    field :lifecycle_config, :map, default: %{}
 
     belongs_to :workspace, Bizforge.Schemas.Workspace
     has_many :goals, Bizforge.Schemas.Goal
@@ -23,7 +24,7 @@ defmodule Bizforge.Schemas.Project do
 
   def changeset(project, attrs) do
     project
-    |> cast(attrs, [:name, :description, :status, :workspace_id, :output_path, :config])
+    |> cast(attrs, [:name, :description, :status, :workspace_id, :output_path, :config, :lifecycle_config])
     |> validate_required([:name, :workspace_id])
     |> validate_inclusion(:status, ~w(active archived completed))
     |> foreign_key_constraint(:workspace_id)

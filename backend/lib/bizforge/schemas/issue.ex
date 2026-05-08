@@ -14,6 +14,7 @@ defmodule Bizforge.Schemas.Issue do
     belongs_to :workspace, Bizforge.Schemas.Workspace
     belongs_to :project, Bizforge.Schemas.Project
     belongs_to :goal, Bizforge.Schemas.Goal
+    belongs_to :sprint, Bizforge.Schemas.Sprint
     belongs_to :assignee, Bizforge.Schemas.Agent
     belongs_to :checked_out_by_agent, Bizforge.Schemas.Agent, foreign_key: :checked_out_by
     field :checked_out_at, :utc_datetime
@@ -35,6 +36,7 @@ defmodule Bizforge.Schemas.Issue do
       :workspace_id,
       :project_id,
       :goal_id,
+      :sprint_id,
       :assignee_id,
       :checked_out_by,
       :adapter_override,

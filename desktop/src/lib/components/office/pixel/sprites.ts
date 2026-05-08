@@ -1628,6 +1628,56 @@ const CHAR_DOWN_SLEEP: PaletteKey[][] = CHAR_DOWN.map((row, i) => {
   return row;
 });
 
+// Walk frames for UP direction — leg variations at rows 18-21
+const CHAR_UP_WALK1: PaletteKey[][] = CHAR_UP.map((row, i) => {
+  if (i === 18)
+    return ["_","_","_","_","_","o","o","o","_","_","o","o","_","_","_","_"];
+  if (i === 19)
+    return ["_","_","_","_","o","o","o","_","_","_","o","o","_","_","_","_"];
+  if (i === 20)
+    return ["_","_","_","S","S","S","_","_","_","_","o","o","o","_","_","_"];
+  if (i === 21)
+    return ["_","_","_","_","_","_","_","_","_","_","S","S","S","_","_","_"];
+  return row;
+});
+
+const CHAR_UP_WALK2: PaletteKey[][] = CHAR_UP.map((row, i) => {
+  if (i === 18)
+    return ["_","_","_","_","_","o","o","_","_","o","o","o","_","_","_","_"];
+  if (i === 19)
+    return ["_","_","_","_","_","o","o","_","_","_","o","o","o","_","_","_"];
+  if (i === 20)
+    return ["_","_","_","_","o","o","o","_","_","_","S","S","S","_","_","_"];
+  if (i === 21)
+    return ["_","_","_","S","S","S","_","_","_","_","_","_","_","_","_","_"];
+  return row;
+});
+
+// Walk frames for RIGHT direction — leg variations at rows 19-22
+const CHAR_RIGHT_WALK1: PaletteKey[][] = CHAR_RIGHT.map((row, i) => {
+  if (i === 19)
+    return ["_","_","_","_","_","_","o","o","_","_","o","o","_","_","_","_"];
+  if (i === 20)
+    return ["_","_","_","_","_","S","S","_","_","_","o","o","_","_","_","_"];
+  if (i === 21)
+    return ["_","_","_","_","_","_","_","_","_","_","S","S","S","_","_","_"];
+  if (i === 22)
+    return ["_","_","_","_","_","_","_","_","_","_","_","_","_","_","_","_"];
+  return row;
+});
+
+const CHAR_RIGHT_WALK2: PaletteKey[][] = CHAR_RIGHT.map((row, i) => {
+  if (i === 19)
+    return ["_","_","_","_","_","_","o","o","o","_","_","o","_","_","_","_"];
+  if (i === 20)
+    return ["_","_","_","_","_","_","S","S","S","_","_","o","o","_","_","_"];
+  if (i === 21)
+    return ["_","_","_","_","_","_","_","_","_","_","S","S","_","_","_","_"];
+  if (i === 22)
+    return ["_","_","_","_","_","_","_","_","_","_","_","_","_","_","_","_"];
+  return row;
+});
+
 /** Mirror a sprite horizontally */
 function mirrorSprite(sprite: PaletteKey[][]): PaletteKey[][] {
   return sprite.map((row) => [...row].reverse());
@@ -1643,10 +1693,12 @@ export function getCharFrames(dir: Direction, state: string): PaletteKey[][][] {
       if (state === "sleep") return [CHAR_DOWN_SLEEP];
       return [CHAR_DOWN];
     case "up":
-      if (state === "walk") return [CHAR_UP]; // simplified — just 1 frame
+      if (state === "walk")
+        return [CHAR_UP, CHAR_UP_WALK1, CHAR_UP, CHAR_UP_WALK2];
       return [CHAR_UP];
     case "right":
-      if (state === "walk") return [CHAR_RIGHT]; // simplified
+      if (state === "walk")
+        return [CHAR_RIGHT, CHAR_RIGHT_WALK1, CHAR_RIGHT, CHAR_RIGHT_WALK2];
       return [CHAR_RIGHT];
     case "left": {
       const frames = getCharFrames("right", state);
@@ -2794,6 +2846,20 @@ export function corridorTile(
   }
   return tile;
 }
+
+/** Round coffee/lounge table sprite (10x10 pixels) — dark wood with lighter surface */
+export const TABLE_ROUND_SPRITE: string[][] = [
+  ["", "", "", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "", "", ""],
+  ["", "", "#5a4a3a", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#5a4a3a", "", ""],
+  ["", "#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a", ""],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#a89888", "#a89888", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#9a8a78", "#a89888", "#a89888", "#a89888", "#a89888", "#9a8a78", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#9a8a78", "#a89888", "#a89888", "#a89888", "#a89888", "#9a8a78", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#a89888", "#a89888", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["", "#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a", ""],
+  ["", "", "#484038", "", "#484038", "#484038", "", "#484038", "", ""],
+  ["", "", "#3a3430", "", "#3a3430", "#3a3430", "", "#3a3430", "", ""],
+];
 
 // ─── Decoration sprites ──────────────────────────────────────
 

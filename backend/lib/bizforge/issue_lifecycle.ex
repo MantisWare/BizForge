@@ -83,9 +83,16 @@ defmodule Bizforge.IssueLifecycle do
 
   @impl true
   def handle_cast({:session_complete, issue_id, _agent_id, _work_product_id}, state) do
-    case Repo.get(Issue, issue_id) do
+    case Repo.get(Issue, issue_id) |> Repo.preload(:project) do
       %Issue{status: "in_progress"} = issue ->
-        transition_to_review(issue)
+        lifecycle = get_lifecycle_config(issue)
+
+        if lifecycle["auto_review"] !== false do
+          transition_to_review(issue)
+        else
+          {:ok, _} = issue |> change(status: "done", checked_out_by: nil) |> Repo.update()
+          Logger.info("[IssueLifecycle] Issue #{issue.id} → done (no auto_review)")
+        end
 
       _ ->
         :ok
@@ -335,4 +342,16 @@ defmodule Bizforge.IssueLifecycle do
   defp map_severity_to_priority("high"), do: "high"
   defp map_severity_to_priority("medium"), do: "medium"
   defp map_severity_to_priority(_), do: "medium"
+
+  defp get_lifecycle_config(%Issue{project: %{lifecycle_config: config}}) when is_map(config) and config != %{} do
+    config
+  end
+
+  defp get_lifecycle_config(%Issue{project: %{config: config}}) when is_map(config) do
+    config["lifecycle"] || Bizforge.LifecycleConfigs.generic_development()
+  end
+
+  defp get_lifecycle_config(_issue) do
+    Bizforge.LifecycleConfigs.generic_development()
+  end
 end

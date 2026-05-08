@@ -90,6 +90,14 @@ defmodule BizforgeWeb.Router do
     # QA report ingestion
     post "/qa-reports", QaReportController, :create
 
+    # Sprints
+    resources "/sprints", SprintController, except: [:new, :edit] do
+      post "/start", SprintController, :start, as: :start
+      post "/complete", SprintController, :complete, as: :complete
+      post "/assign-issues", SprintController, :assign_issues, as: :assign_issues
+      post "/unassign-issues", SprintController, :unassign_issues, as: :unassign_issues
+    end
+
     # Workflows
     resources "/workflows", WorkflowController, except: [:new, :edit] do
       get "/steps", WorkflowController, :steps, as: :steps
@@ -153,6 +161,7 @@ defmodule BizforgeWeb.Router do
     end
 
     # Projects
+    get "/projects/lifecycle-templates", ProjectController, :lifecycle_templates
     resources "/projects", ProjectController, except: [:new, :edit] do
       get "/goals", ProjectController, :goals, as: :goals
       get "/workspaces", ProjectController, :workspaces, as: :workspaces

@@ -1,11 +1,19 @@
 <!-- src/lib/components/office/Scene3D.svelte -->
 <!-- The 3D scene: floor zones, walls, corridor, desks, agent characters, lighting -->
 <script lang="ts">
-  import { T } from '@threlte/core';
+  import { T, useTask } from '@threlte/core';
   import { OrbitControls, Text } from '@threlte/extras';
+  import { untrack } from 'svelte';
   import type { BizforgeAgent } from '$api/types';
   import type { AgentOrgInfo } from '$lib/utils/orgColors';
   import AgentDesk3D from './AgentDesk3D.svelte';
+  import {
+    type Character3D,
+    buildWalkableGrid,
+    syncAgentsToCharacters3D,
+    tick3D,
+    getInterpolatedPos,
+  } from './characterState';
 
   interface Props {
     agents: BizforgeAgent[];
@@ -18,9 +26,9 @@
 
   // ─── Zone definitions matching pixel office layout ───────
   const ZONES = [
-    { id: 'engineering', label: 'ENGINEERING', color: '#3a3665', labelColor: '#fdba74', glowColor: '#ffdd88', neonColor: '#ff9020', x: -7.5, z: -5, w: 7, d: 5.5, seats: 7 },
-    { id: 'product', label: 'PRODUCT', color: '#2d3a50', labelColor: '#93c5fd', glowColor: '#90d0ff', neonColor: '#40a0ff', x: 4.5, z: -5, w: 7, d: 5.5, seats: 6 },
-    { id: 'operations', label: 'OPERATIONS', color: '#283840', labelColor: '#6ee7b7', glowColor: '#60ffb0', neonColor: '#20e080', x: -7.5, z: 4, w: 7, d: 5, seats: 4 },
+    { id: 'engineering', label: 'ENGINEERING', color: '#3a3665', labelColor: '#fdba74', glowColor: '#ffdd88', neonColor: '#ff9020', x: -7.5, z: -5, w: 7, d: 5.5, seats: 9 },
+    { id: 'product', label: 'PRODUCT', color: '#2d3a50', labelColor: '#93c5fd', glowColor: '#90d0ff', neonColor: '#40a0ff', x: 4.5, z: -5, w: 7, d: 5.5, seats: 10 },
+    { id: 'operations', label: 'OPERATIONS', color: '#283840', labelColor: '#6ee7b7', glowColor: '#60ffb0', neonColor: '#20e080', x: -7.5, z: 4, w: 7, d: 5, seats: 8 },
     { id: 'research', label: 'RESEARCH', color: '#3a2d40', labelColor: '#f9a8d4', glowColor: '#ff90c0', neonColor: '#ff50a0', x: 4.5, z: 4, w: 5, d: 5, seats: 3 },
     { id: 'lounge', label: 'LOUNGE', color: '#3a3030', labelColor: '#fcd6a5', glowColor: '#ffcc70', neonColor: '#ffa030', x: 10, z: 4, w: 3.5, d: 5, seats: 2 },
   ] as const;
@@ -29,7 +37,7 @@
   const CONF_TABLES: readonly { zoneId: string; cx: number; cz: number; w: number; d: number }[] = [
     { zoneId: 'engineering', cx: -4, cz: -2.5, w: 4.5, d: 1.4 },
     { zoneId: 'product',     cx: 8,  cz: -2.5, w: 4.5, d: 1.4 },
-    { zoneId: 'operations',  cx: -4, cz: 6.5,  w: 4.5, d: 1.4 },
+    { zoneId: 'operations',  cx: -4, cz: 6.5,  w: 5, d: 1.4 },
   ] as const;
 
   type SeatDef = { pos: [number, number, number]; deskType: 'desk' | 'conference'; facingZ: number };
@@ -45,8 +53,10 @@
       { pos: [-5.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
       { pos: [-4,   0, -3.7], deskType: 'conference', facingZ: 1 },
       { pos: [-2.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
-      // 1 perimeter desk (wall)
+      // 3 perimeter desks (walls)
       { pos: [-7,   0, -4.2], deskType: 'desk', facingZ: 1 },
+      { pos: [-1,   0, -4.2], deskType: 'desk', facingZ: 1 },
+      { pos: [-7,   0, -0.8], deskType: 'desk', facingZ: -1 },
     ],
     product: [
       { pos: [6.5, 0, -1.3], deskType: 'conference', facingZ: -1 },
@@ -55,12 +65,22 @@
       { pos: [6.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
       { pos: [8,   0, -3.7], deskType: 'conference', facingZ: 1 },
       { pos: [9.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
+      // 4 perimeter desks (walls)
+      { pos: [5,   0, -4.2], deskType: 'desk', facingZ: 1 },
+      { pos: [11,  0, -4.2], deskType: 'desk', facingZ: 1 },
+      { pos: [5,   0, -0.8], deskType: 'desk', facingZ: -1 },
+      { pos: [11,  0, -0.8], deskType: 'desk', facingZ: -1 },
     ],
     operations: [
       { pos: [-5.5, 0, 5.7], deskType: 'conference', facingZ: 1 },
       { pos: [-4,   0, 5.7], deskType: 'conference', facingZ: 1 },
+      { pos: [-2.5, 0, 5.7], deskType: 'conference', facingZ: 1 },
       { pos: [-5.5, 0, 7.3], deskType: 'conference', facingZ: -1 },
       { pos: [-4,   0, 7.3], deskType: 'conference', facingZ: -1 },
+      { pos: [-2.5, 0, 7.3], deskType: 'conference', facingZ: -1 },
+      // 2 perimeter desks (walls)
+      { pos: [-7,   0, 4.8], deskType: 'desk', facingZ: 1 },
+      { pos: [-1,   0, 4.8], deskType: 'desk', facingZ: 1 },
     ],
     research: [
       { pos: [6.5, 0, 6.5], deskType: 'desk', facingZ: 1 },
@@ -101,6 +121,49 @@
       case 'terminated': return '#ef4444';
       default: return '#64748b';
     }
+  }
+
+  // ─── Character state management ─────────────────────────
+  // Flatten all seats into a single ordered list for character assignment
+  const ALL_SEATS: { pos: [number, number, number]; facingZ: number; deskType: 'desk' | 'conference'; zoneId: string }[] = [];
+  for (const zone of ZONES) {
+    for (const seat of (ZONE_SEATS[zone.id] ?? [])) {
+      ALL_SEATS.push({ ...seat, zoneId: zone.id });
+    }
+  }
+
+  // Build walkable grid once — corridor bands in grid coords
+  // Grid: x from -11 to 14 (cols 0-25), z from -8 to 10 (rows 0-18)
+  // Horizontal corridor at z ~ 0..2 → grid rows 8-10, Vertical corridor at x ~ 0..2 → grid cols 11-13
+  const walkable = buildWalkableGrid(
+    ZONES.map(z => ({ id: z.id, x: z.x, z: z.z, w: z.w, d: z.d })),
+    [8, 10],
+    [11, 13],
+  );
+
+  let characters = $state<Character3D[]>([]);
+
+  // Sync agents to characters when agents change
+  $effect(() => {
+    const _agents = agents;
+    const existing = untrack(() => characters);
+    characters = syncAgentsToCharacters3D(
+      _agents,
+      existing,
+      ALL_SEATS.map(s => ({ pos: s.pos, facingZ: s.facingZ })),
+      walkable,
+    );
+  });
+
+  // Animation tick
+  useTask((delta) => {
+    const dt = Math.min(delta, 0.1);
+    tick3D(characters, dt, walkable, agents);
+  });
+
+  // Helper to find character data for an agent
+  function getCharFor(agentId: string): Character3D | undefined {
+    return characters.find(c => c.id === agentId);
   }
 
   // Corridor dimensions
@@ -460,13 +523,15 @@
 <!-- ─── Agents at desks / conference seats ─────────── -->
 {#each agents as agent, i (agent.id)}
   {@const placement = agentPosition(agent, i)}
+  {@const char3d = getCharFor(agent.id)}
+  {@const interpPos = char3d !== undefined ? getInterpolatedPos(char3d) : [placement.pos[0], placement.pos[2]]}
   {@const isSelected = selectedAgentId === agent.id}
   {@const emissive = statusEmissive(agent.status)}
   {@const zone = ZONES.find(z => z.id === placement.zoneId)}
   {@const orgInfo = agentOrgMap.get(agent.id)}
   <AgentDesk3D
     {agent}
-    position={placement.pos}
+    position={[interpPos[0], 0, interpPos[1]]}
     selected={isSelected}
     {emissive}
     zoneColor={zone?.labelColor ?? '#8888a0'}
@@ -474,6 +539,8 @@
     divisionColor={orgInfo?.divisionColor ?? undefined}
     deskType={placement.deskType}
     facingZ={placement.facingZ}
+    charState={char3d?.state ?? 'idle'}
+    facingAngle={char3d?.facingAngle ?? (placement.facingZ > 0 ? 0 : Math.PI)}
     onclick={() => onAgentClick?.(agent)}
   />
 {/each}

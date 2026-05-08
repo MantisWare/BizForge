@@ -7,6 +7,7 @@
   import { approvalsStore } from '$lib/stores/approvals.svelte';
   import { notificationsStore } from '$lib/stores/notifications.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
+  import { wizardStore } from '$lib/stores/wizard.svelte';
   import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
   import SidebarNavItem from './SidebarNavItem.svelte';
   import SidebarSection from './SidebarSection.svelte';
@@ -146,6 +147,16 @@
           <path d={ICONS.hamburger} />
         </svg>
       </button>
+      <button
+        class="sb-toggle sb-new-ws-collapsed"
+        onclick={() => { wizardStore.reset(); wizardStore.open(); }}
+        aria-label="New Workspace"
+        title="New Workspace Wizard"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ICONS.plus} />
+        </svg>
+      </button>
     </div>
   {/if}
 
@@ -153,6 +164,21 @@
     <!-- Workspace Switcher -->
     <div class="sb-workspace">
       <WorkspaceSwitcher />
+    </div>
+
+    <!-- New Workspace -->
+    <div class="sb-new-ws-row">
+      <button
+        class="sb-new-ws"
+        onclick={() => { wizardStore.reset(); wizardStore.open(); }}
+        aria-label="New Workspace Wizard"
+        title="Create a new workspace with the setup wizard"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ICONS.plus} />
+        </svg>
+        <span class="sb-new-ws-label">New Workspace</span>
+      </button>
     </div>
 
     <!-- Search -->
@@ -477,6 +503,21 @@
   .sb-workspace {
     padding: 4px 8px;
     flex-shrink: 0;
+  }
+
+  /* New Workspace */
+  .sb-new-ws-row { padding: 4px 8px 0; flex-shrink: 0; }
+  .sb-new-ws {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 6px 10px; border-radius: 6px;
+    background: rgba(249,115,22,0.08); border: 1px dashed rgba(249,115,22,0.25);
+    color: var(--accent, #f97316); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sb-new-ws:hover { background: rgba(249,115,22,0.14); border-color: rgba(249,115,22,0.4); }
+  .sb-new-ws-label { white-space: nowrap; }
+  .sb-new-ws-collapsed {
+    color: var(--accent, #f97316) !important; margin-top: 4px;
   }
 
   /* Search */

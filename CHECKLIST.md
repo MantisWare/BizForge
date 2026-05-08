@@ -572,6 +572,18 @@ Active development phases and their progress.
 - [x] OfficeDetailPanel: Organization section showing team/division name with color pips, "Assign to Team" / "Change Team" / "Remove from Team" buttons with team picker dropdown
 - [x] Collapsible team/division legend overlay (bottom-left) — groups teams by division with color swatches and agent counts
 
+### 14d. Virtual Office Sprite & Animation Gap Fixes
+
+- [x] Unify seat counts between 2D (32) and 3D (32) — added perimeter wall desks to Engineering (+2), Product (+4), Operations (+4)
+- [x] Add 3D character walking and wandering — `characterState.ts` module with BFS pathfinding, idle random wandering, interpolated positions
+- [x] Integrate 3D character state into Scene3D — `$state` characters array, `$effect` sync, `useTask` tick loop, dynamic agent positions
+- [x] Add 3D walk animation to AgentDesk3D — walking mode with leg swing, directional rotation, walk bounce; seated mode for idle/type/sleep
+- [x] Add 2D walk-cycle frames for up/right/left directions — `CHAR_UP_WALK1/2`, `CHAR_RIGHT_WALK1/2` (left via `mirrorSprite`), 4-frame cycles in `getCharFrames()`
+- [x] Add diverse skin tones in 3D — `SKIN_TONES` array with `djb2` hash selection per agent ID (replaces hardcoded `#e8d5c4`)
+- [x] Add `TABLE_ROUND_SPRITE` (10x10 dark wood circular table) in sprites.ts, wired to `getFurnitureSprite()` in renderer.ts
+- [x] Populate `color`, `skinTone`, `hairColor` fields on `OfficeCharacter` creation using `agentPalette(djb2(agent.id))`
+- [x] Wire up sidebar filter tabs — `filterMode` state (`all`/`working`/`idle`), conditional filtering in agent list, active tab highlighting
+
 ## Phase: QA Automation Skill & Agent Architecture
 
 > End-to-end QA automation pipeline — skills and agents that start applications, run functional tests (browser/API/CLI), and produce structured reports with failure diagnostics.
@@ -929,4 +941,93 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Implemented Agent Task Resilience & Supervisor Escalation — fixed `execute_and_stream` silent failure (adapter errors no longer swallowed as zero-cost success), created `SupervisorEscalation` module (walks `reports_to` chain with cycle guard to escalate failures), created `AdapterCircuitBreaker` GenServer (per-adapter health tracking, 3-failure threshold, 120s cooldown), extended Watchdog to clean up orphaned sessions/issues and escalate after 10 recovery attempts, fixed Delegation to broadcast `issue.assigned` for auto-dispatch, enforced `max_concurrent_runs` in IssueDispatcher, added Heartbeat-level retry with exponential backoff (3 attempts), added DFS cycle detection in GoalDecomposer to strip circular `depends_on` edges on 2026-05-06.
 > **Auto-updated by Cursor:** Fixed app stuck on splash screen — PostgreSQL was not running; hardened `BudgetEnforcer` and `IssueDispatcher` `init/1` to defer DB queries to `handle_continue` with automatic retry on failure, preventing supervision tree crash when database is unavailable at startup; wrapped `Scheduler.load_schedules` in deferred Task with rescue; added `_ensure-postgres` justfile recipe that auto-detects and starts PostgreSQL before any backend launch (`dev`, `app`, `backend`, `headless`); added `_ensure-migrations` recipe that auto-detects and runs pending Ecto migrations before backend launch; updated `start.sh` to call both preflights on 2026-05-08.
 > **Auto-updated by Cursor:** Added compact pixel office miniview to LLM Inspector panel — zoomed-out overview of the full pixel office rendered at the top of the inspector using `renderMinimap`, shows active agent count, togglable via header button with icon highlight, visibility persisted to localStorage on 2026-05-08.
+> **Auto-updated by Cursor:** Implemented Sprint Management & Project Lifecycle Configuration — `sprints` table with full CRUD + start/complete lifecycle + issue assignment, `Sprint` schema (planned/active/complete/cancelled), `sprint_id` on Issues, `lifecycle_config` map on Projects, `Bizforge.LifecycleConfigs` module with 3 default templates (Domo Development, Generic Development, Minimal), `SprintController` with REST endpoints + lifecycle actions, `/projects/lifecycle-templates` endpoint, `IssueLifecycle` now reads `lifecycle_config` from project and respects `auto_review`/`auto_qa` flags, Sprint + LifecycleConfig TypeScript types, `sprints` API client with list/get/create/update/delete/start/complete/assignIssues, 5 `bizforge_sprint_*` MCP tools on 2026-05-08.
 > **Auto-updated by Cursor:** Implemented End-to-End Dev Team Pipeline (ERD → Tasks → Dev → Review → QA → Done) — Phase 1: multimodal `attached_files` on `messages.send` with base64 upload, vision-aware Gemini adapter; Phase 2: Playwright sidecar package (`desktop/playwright-sidecar/`) with JSON-RPC over stdio, `Bizforge.Browser.Sidecar` GenServer, `Bizforge.Browser.Tools` with `ToolPermission`-gated dispatch, `BrowserController` REST surface, `browser/automation` library skill, `browser_automation` tool permission; Phase 3: `data-modeling/erd-parse` skill (DBML/SQL/mermaid/image), ERD-aware prompt injection in `GenerateIssuesModal`, `DocumentFormat` union extended; Phase 4: `Bizforge.Dispatch.SkillRouter` scoring by skill overlap + team affinity + load, auto-assign in `Work.create_issue` when `project.config.auto_assign = true`, 70+ Domo keyword→skill mappings; Phase 5: `Bizforge.IssueLifecycle` GenServer FSM (backlog→in_progress→in_review→testing→done), `notify_session_complete` replaces direct heartbeat status-set, QA child issue fan-out via `SkillRouter.choose`, auto bug creation on QA fail; Phase 6: `Bizforge.CodeReview.Adapter` behaviour with `GithubAdapter`, `VirtualPRAdapter` (diff-based fallback when no git integration bound), `open_code_review` called on `in_review` transition; Phase 8: `resolve_integration_env` in Heartbeat injects `DOMO_INSTANCE`/`DOMO_TOKEN`/`GITHUB_TOKEN`/etc. from `IntegrationResolver` into adapter params, bash adapter passes env to Port; Phase 9: `qa/startup-probe-domo` skill (domo login + domo dev + TLS probe); Phase 10: `QaReportController` ingests QA reports, creates WorkProduct + Report rows, broadcasts `qa.report_ready`, `bizforge_qa_report_ingest` + `bizforge_browser_*` MCP tools added on 2026-05-08.
+> **Auto-updated by Cursor:** Fixed all Virtual Office sprite and animation gaps — unified 2D/3D seat counts to 32 (added perimeter wall desks to Engineering/Product/Operations), created `characterState.ts` with BFS pathfinding and idle wandering for 3D agents, integrated dynamic character positions into Scene3D via `$effect` sync + `useTask` tick loop, added walking animation to AgentDesk3D (leg swing, directional rotation, walk bounce vs seated breathing), added 4-frame walk cycles for up/right/left directions in 2D sprites (`CHAR_UP_WALK1/2`, `CHAR_RIGHT_WALK1/2`), diverse skin tones in 3D via djb2-hashed `SKIN_TONES` array, `TABLE_ROUND_SPRITE` for lounge round table, populated `color`/`skinTone`/`hairColor` fields on OfficeCharacter creation, wired sidebar filter tabs (All/Working/Idle) with `filterMode` state on 2026-05-08.
+
+## Phase: New Workspace Wizard
+
+> One-click workspace setup wizard: name, upload docs, AI-enhanced context, AI-recommended team selection, agent customization, project configuration, AI task generation with sprint grouping, and automated launch sequence.
+
+### 1. Wizard Infrastructure
+
+- [x] Create `WizardDocument`, `WizardAgent`, `WizardTask`, `WizardSprintGroup`, `CompanyRecommendation` TypeScript interfaces in `types.ts`
+- [x] Create `wizard.svelte.ts` Svelte 5 rune store — full wizard state (7 steps), step navigation, document/agent/task management, launch step tracking
+- [x] Create `WizardProgress.svelte` — horizontal step indicator with numbered dots, checkmarks for completed steps, clickable navigation to previous steps
+
+### 2. Wizard Modal Shell
+
+- [x] Create `WorkspaceWizard.svelte` — full-viewport modal overlay with backdrop blur, step content area, Back/Next/Skip footer navigation, slide transitions between steps, close confirmation dialog
+- [x] Mount `WorkspaceWizard` as global overlay in `app/+layout.svelte`
+
+### 3. Step 1: Name Your Workspace
+
+- [x] Workspace name input (required) with auto-generated slug for directory path
+- [x] Description textarea
+- [x] Directory picker (native Tauri folder dialog) with text input fallback, tilde expansion
+
+### 4. Step 2: Documentation & Context
+
+- [x] Drag-and-drop file upload zone accepting .md, .txt, .json, .yaml, .csv, .sql, .dbml, .pdf, .doc, .docx, .xls, .xlsx
+- [x] Fixed drag-and-drop with proper dragenter/dragleave handling, pointer-events on children, and Tauri `dragDropEnabled: false`
+- [x] Global window-level dragover/drop prevention to stop webview file navigation
+- [x] Client-side file content extraction into `WizardDocument[]` with format detection
+- [x] Uploaded file list with name, size, remove button
+- [x] Project context freeform textarea
+- [x] "Enhance with AI" button — sends docs + context to primary model via session/SSE streaming, produces structured project brief (domain, tech stack, deliverables, team needs, risks, architecture)
+- [x] Enhanced context preview with streaming cursor animation, redo button
+
+### 5. Step 3: Company & Team Selection
+
+- [x] AI recommendation engine — analyzes enhanced context, recommends primary + alternative team templates with fit scores and justifications
+- [x] Recommendation cards with fit score progress bars, "Best Match" badge on primary
+- [x] Collapsible "Browse all templates" section with search filter and 14 team template cards
+- [x] Multi-select support — select multiple teams, agents auto-populated from `TEMPLATE_AGENTS`
+- [x] Selected teams summary with removable chips showing team count and total agent count
+- [x] Mock-mode AI recommendation fallback
+
+### 6. Step 4: Team Review & Customization
+
+- [x] Agents grouped by team with expandable detail panels
+- [x] Inline editing for agent name, role, adapter, model, system prompt
+- [x] Skill tag chips per agent
+- [x] Remove individual agents
+- [x] Shared configuration panel (adapter + model) with "Apply to all" button
+- [x] Skill resolution summary (total skills, new vs already active)
+
+### 7. Step 5: Project Setup
+
+- [x] Project name (auto-populated from workspace name), description (auto-populated from enhanced context)
+- [x] Output directory picker with scaffold preview (code/, docs/, media/, data/, reports/, transcripts/, issues/)
+- [x] Lifecycle template dropdown (Generic Development, Domo Development, Minimal) loaded from backend `/projects/lifecycle-templates`
+- [x] Auto-assign tasks toggle
+
+### 8. Step 6: AI Task Generation
+
+- [x] "Generate Task Backlog" button with sparkle icon
+- [x] AI generates tasks grouped into sprints via session/SSE streaming
+- [x] Sprint groups with header (name + goal) and expandable task cards
+- [x] Each task: title (double-click to edit), description, priority badge (color-coded), labels
+- [x] Checkbox selection per task, select all / deselect all
+- [x] Priority filter toolbar (All / Critical / High / Medium / Low)
+- [x] Regenerate button
+- [x] Mock-mode task generation with 3 sprints and 11 realistic tasks
+
+### 9. Step 7: Review & Launch
+
+- [x] Summary grid: workspace name, team count, agent count, project name, document count, task count, sprint count, lifecycle template
+- [x] Output directory and workspace path display
+- [x] "Launch Workspace" button with rocket icon and gradient styling
+- [x] 10-step automated launch sequence: create workspace, activate, set up organization, install skills, create agents, create project, upload documents, create sprints, create issues, navigate
+- [x] Real-time step progress indicators (pending/running/done/error/skipped)
+- [x] Intelligent step skipping (no org if no company template, no docs if none uploaded, no sprints if no tasks)
+- [x] Error handling per step with error message display
+- [x] Completion screen with success checkmark and "Open Workspace" button
+
+### 10. Entry Points
+
+- [x] "New Workspace" button in expanded sidebar (below WorkspaceSwitcher, above Search) — dashed orange border, plus icon
+- [x] "New Workspace" icon button in collapsed sidebar
+- [x] "New Workspace" command registered in Command Palette (Cmd+K)
+
+> **Auto-updated by Cursor:** Implemented New Workspace Wizard — 7-step modal wizard (Name → Docs → Company → Team → Project → Tasks → Launch) with AI-enhanced context generation, AI team recommendations with fit scores, agent review/customization, project lifecycle setup, AI task generation with sprint grouping, and automated 10-step launch sequence; entry points in sidebar (expanded + collapsed) and Command Palette; `wizard.svelte.ts` store, `WizardProgress` component, 7 step components, `WorkspaceWizard` modal shell mounted globally on 2026-05-08.

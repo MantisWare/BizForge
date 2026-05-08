@@ -791,6 +791,67 @@ mcpServer.tool(
     ),
 );
 
+// ── Tools: Sprints ──────────────────────────────────────────────────────────
+
+mcpServer.tool(
+  "bizforge_sprints_list",
+  "List sprints for a project",
+  {
+    project_id: z.string().optional().describe("Filter by project ID"),
+  },
+  async ({ project_id }) => {
+    const qs = project_id ? `?project_id=${project_id}` : "";
+    return safeTool(() => api(`/sprints${qs}`));
+  },
+);
+
+mcpServer.tool(
+  "bizforge_sprint_create",
+  "Create a new sprint for a project",
+  {
+    name: z.string().describe("Sprint name"),
+    project_id: z.string().describe("Project ID"),
+    goal: z.string().optional().describe("Sprint goal"),
+    start_date: z.string().optional().describe("Start date (YYYY-MM-DD)"),
+    end_date: z.string().optional().describe("End date (YYYY-MM-DD)"),
+    velocity_target: z.number().optional().describe("Target number of issues to complete"),
+  },
+  async (params) =>
+    safeTool(() => api("/sprints", { method: "POST", body: params })),
+);
+
+mcpServer.tool(
+  "bizforge_sprint_start",
+  "Start a planned sprint (transitions to active)",
+  { sprint_id: z.string().describe("Sprint ID to start") },
+  async ({ sprint_id }) =>
+    safeTool(() => api(`/sprints/${sprint_id}/start`, { method: "POST" })),
+);
+
+mcpServer.tool(
+  "bizforge_sprint_complete",
+  "Complete an active sprint (calculates velocity)",
+  { sprint_id: z.string().describe("Sprint ID to complete") },
+  async ({ sprint_id }) =>
+    safeTool(() => api(`/sprints/${sprint_id}/complete`, { method: "POST" })),
+);
+
+mcpServer.tool(
+  "bizforge_sprint_assign_issues",
+  "Assign issues to a sprint",
+  {
+    sprint_id: z.string().describe("Sprint ID"),
+    issue_ids: z.array(z.string()).describe("Array of issue IDs to assign"),
+  },
+  async ({ sprint_id, issue_ids }) =>
+    safeTool(() =>
+      api(`/sprints/${sprint_id}/assign-issues`, {
+        method: "POST",
+        body: { issue_ids },
+      }),
+    ),
+);
+
 // ── Tools: Webhooks & Integrations ───────────────────────────────────────────
 
 mcpServer.tool(
