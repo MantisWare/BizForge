@@ -1,4 +1,4 @@
-// Skill data — 121 skills across 19 categories
+// Skill data — 124 skills across 20 categories
 
 import type { LibrarySkill } from "./types";
 import type { RawSkill } from "./enrichment";
@@ -327,6 +327,19 @@ const RAW_SKILLS: RawSkill[] = [
     category: "coordination",
     description:
       "Manages task boards and tracks work item status across teams.",
+    required_integrations: [
+      {
+        provider: "jira",
+        config_keys: [
+          { key: "domain", label: "Jira Domain", is_secret: false, required: true },
+          { key: "email", label: "Account Email", is_secret: false, required: true },
+          { key: "api_token", label: "API Token", is_secret: true, required: true },
+          { key: "project_key", label: "Project Key", is_secret: false, required: false },
+        ],
+        optional: true,
+      },
+    ],
+    required_tools: [],
   },
   {
     id: "delegate",
@@ -800,6 +813,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Create, configure, and manage AppDB collections with document CRUD, security filters, and permissions.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-app-publish",
@@ -814,6 +838,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Write and deploy server-side Code Engine functions (JavaScript/Python) inside Domo.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-connector-build",
@@ -828,6 +863,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Create, import, stream, and manage Domo DataSets with schema definitions and PDP policies.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-magic-etl",
@@ -842,6 +888,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Create, trigger, and manage Domo Workflows via API for process automation.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-embed-analytics",
@@ -849,6 +906,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Embed Domo cards, dashboards, and apps into external websites with token auth and filters.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-api-integrate",
@@ -856,6 +924,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Authenticate and interact with Domo's three API tiers for external integration.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-governance",
@@ -863,6 +942,17 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Manage Domo governance — users, groups, SSO, PDP, activity logs, and security controls.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+        ],
+      },
+    ],
+    required_tools: ["bash"],
   },
   {
     id: "domo-data-science",
@@ -870,6 +960,51 @@ const RAW_SKILLS: RawSkill[] = [
     category: "domo",
     description:
       "Leverage Domo's data science stack — Jupyter, AutoML, AI services, and scripting tiles.",
+  },
+  {
+    id: "domo-instance-admin",
+    name: "Domo Instance Admin",
+    category: "domo",
+    description:
+      "Full Domo instance administration — authenticate, manage users/groups, datasets, AppDB collections, PDP policies, pages, audit logs, SSO, and security controls.",
+    required_integrations: [
+      {
+        provider: "domo",
+        config_keys: [
+          { key: "instance_url", label: "Instance URL", is_secret: false, required: true },
+          { key: "client_id", label: "OAuth Client ID", is_secret: true, required: true },
+          { key: "client_secret", label: "OAuth Client Secret", is_secret: true, required: true },
+          { key: "developer_token", label: "Developer Token", is_secret: true, required: false },
+        ],
+      },
+    ],
+    required_tools: ["bash", "web-search"],
+  },
+
+  // qa (3)
+  {
+    id: "qa-automate",
+    name: "QA Automate",
+    category: "qa",
+    description:
+      "End-to-end QA automation pipeline — detect app type, start the application, run functional tests (browser, API, or CLI), collect artifacts, and produce structured reports.",
+    required_tools: ["bash"],
+  },
+  {
+    id: "qa-report",
+    name: "QA Report",
+    category: "qa",
+    description:
+      "Transform raw test runner output into structured QA reports with failure diagnostics, artifact references, trend comparisons, and actionable recommendations.",
+    required_tools: ["bash"],
+  },
+  {
+    id: "qa-startup-probe",
+    name: "Startup Probe",
+    category: "qa",
+    description:
+      "Detect application type from project files, start the app with the correct command, and verify readiness via HTTP, TCP, or stdout probes.",
+    required_tools: ["bash"],
   },
 ];
 

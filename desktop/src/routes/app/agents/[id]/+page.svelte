@@ -11,8 +11,11 @@
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { environmentStore } from '$lib/stores/environment.svelte';
   import { gatewaysStore } from '$lib/stores/gateways.svelte';
-  import { agents as agentsApi } from '$api/client';
-  import type { BizforgeAgent, AgentStatus, AgentLifecycleAction, Session, InboxItem, AdapterType } from '$api/types';
+  import { integrationsStore } from '$lib/stores/integrations.svelte';
+  import { agents as agentsApi, integrationBindings as bindingsApi } from '$api/client';
+  import IntegrationBindingSelector from '$lib/components/integrations/IntegrationBindingSelector.svelte';
+  import { SKILLS } from '$api/mock/library/skills';
+  import type { BizforgeAgent, AgentStatus, AgentLifecycleAction, Session, InboxItem, AdapterType, IntegrationBinding, SkillIntegrationRequirement } from '$api/types';
 
   const agentId = $derived($page.params.id ?? '');
 
@@ -73,6 +76,55 @@
 
   let accessFetched = $state(false);
 
+  // Integration bindings state
+  let agentBindings = $state<IntegrationBinding[]>([]);
+
+  const agentRequiredIntegrations = $derived.by((): SkillIntegrationRequirement[] => {
+    if (agent === null) return [];
+    const agentSkillIds = agent.skills ?? [];
+    const requirements: SkillIntegrationRequirement[] = [];
+    const seenProviders = new Set<string>();
+
+    for (const skillId of agentSkillIds) {
+      const librarySkill = SKILLS.find(s => s.id === skillId);
+      if (librarySkill === undefined) continue;
+      for (const req of librarySkill.required_integrations) {
+        if (!seenProviders.has(req.provider)) {
+          seenProviders.add(req.provider);
+          requirements.push(req);
+        }
+      }
+    }
+    return requirements;
+  });
+
+  async function fetchAgentBindings() {
+    if (agent === null) return;
+    try {
+      agentBindings = await bindingsApi.list('agent', agent.id);
+    } catch {
+      agentBindings = [];
+    }
+  }
+
+  async function handleBindIntegration(provider: string, integrationId: string) {
+    if (agent === null) return;
+    await bindingsApi.create({
+      owner_type: 'agent',
+      owner_id: agent.id,
+      provider,
+      integration_id: integrationId,
+      config_overrides: {},
+    });
+    await fetchAgentBindings();
+  }
+
+  async function handleUnbindIntegration(provider: string) {
+    if (agent === null) return;
+    await bindingsApi.removeByOwnerAndProvider('agent', agent.id, provider);
+    await fetchAgentBindings();
+  }
+
   function adapterDescription(adapter: AdapterType): string {
     return ADAPTER_OPTIONS.find(a => a.value === adapter)?.description ?? '';
   }
@@ -125,15 +177,22 @@
   ];
 
   onMount(async () => {
-    // Try store first, then fetch
     agent = agentsStore.getById(agentId) ?? await agentsStore.fetchAgent(agentId);
     isLoading = false;
+    void integrationsStore.fetchIntegrations();
+    void fetchAgentBindings();
   });
 
   $effect(() => {
     // Keep agent in sync when store updates
     const fresh = agentsStore.getById(agentId);
     if (fresh) agent = fresh;
+  });
+
+  $effect(() => {
+    if (agentId) {
+      void fetchAgentBindings();
+    }
   });
 
   $effect(() => {
@@ -580,6 +639,18 @@
               bind:value={localSystemPrompt}
               aria-label="Agent system prompt"
             ></textarea>
+          </section>
+
+          <!-- Service Access (Integration Bindings) -->
+          <section class="ad-card" aria-label="Service access configuration">
+            <IntegrationBindingSelector
+              ownerType="agent"
+              ownerId={agent.id}
+              requiredIntegrations={agentRequiredIntegrations}
+              bindings={agentBindings}
+              onBind={handleBindIntegration}
+              onUnbind={handleUnbindIntegration}
+            />
           </section>
 
           <!-- Save -->

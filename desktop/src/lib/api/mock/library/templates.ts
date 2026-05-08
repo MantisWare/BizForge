@@ -876,9 +876,9 @@ const RAW_TEMPLATES: RawTemplate[] = [
     name: "Domo Development",
     emoji: "globe",
     description:
-      "Full end-to-end Domo platform development team — project management, UI and backend development, custom app engineering, data pipeline architecture, workflow automation, and quality assurance using Domo-specific tooling, APIs, and documentation.",
-    size: sizeFromCount(8),
-    agent_count: 8,
+      "Full end-to-end Domo platform development team — project management, UI and backend development, custom app engineering, data pipeline architecture, workflow automation, instance administration, and quality assurance using Domo-specific tooling, APIs, and documentation.",
+    size: sizeFromCount(9),
+    agent_count: 9,
     required_skills: [
       "domo-app-scaffold",
       "domo-appdb-manage",
@@ -892,9 +892,26 @@ const RAW_TEMPLATES: RawTemplate[] = [
       "domo-api-integrate",
       "domo-governance",
       "domo-data-science",
+      "domo-instance-admin",
       "sprint-planning",
       "delegate",
       "board",
+    ],
+  },
+  {
+    id: "domo-administration",
+    name: "Domo Administration",
+    emoji: "shield-check",
+    description:
+      "Domo instance administration team — evaluates incoming tasks for admin relevance, then provisions users and groups, manages datasets and AppDB collections, configures PDP policies and pages, audits activity logs, sets up SSO, and enforces security controls on client Domo instances.",
+    size: sizeFromCount(4),
+    agent_count: 4,
+    required_skills: [
+      "domo-instance-admin",
+      "domo-governance",
+      "domo-api-integrate",
+      "domo-appdb-manage",
+      "domo-dataset-manage",
     ],
   },
 ];

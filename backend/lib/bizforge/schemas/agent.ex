@@ -28,6 +28,8 @@ defmodule Bizforge.Schemas.Agent do
     has_many :app_permissions, Bizforge.Schemas.AppPermission
     has_many :tool_permissions, Bizforge.Schemas.ToolPermission
     has_many :agent_apps, Bizforge.Schemas.AgentApp
+    has_many :integration_bindings, Bizforge.Schemas.IntegrationBinding,
+      where: [owner_type: "agent"], foreign_key: :owner_id
     many_to_many :skills, Bizforge.Schemas.Skill, join_through: "agent_skills"
 
     timestamps()

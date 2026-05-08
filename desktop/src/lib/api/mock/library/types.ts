@@ -1,5 +1,7 @@
 // Library type definitions
 
+import type { SkillIntegrationRequirement } from "../../types";
+
 export type Visibility = "public" | "unlisted" | "private";
 
 export interface CompositionMember {
@@ -34,6 +36,8 @@ export interface LibrarySkill {
   visibility: Visibility;
   version: string;
   isOfficial: boolean;
+  required_integrations: SkillIntegrationRequirement[];
+  required_tools: string[];
 }
 
 export interface LibraryOperation {

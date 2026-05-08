@@ -5,7 +5,7 @@ defmodule Bizforge.Schemas.ToolPermission do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @valid_tools ~w(computer_use file_system shell web_fetch knowledge code_execution)
+  @valid_tools ~w(computer_use file_system shell web_fetch knowledge code_execution browser_automation)
 
   schema "tool_permissions" do
     field :tool_name, :string

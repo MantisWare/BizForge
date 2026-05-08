@@ -9,7 +9,7 @@ reportsTo: api-tester
 budget: 500
 adapter: osa
 signal: S=(data, report, inform, markdown, test-analysis)
-skills: [analysis/stats, analysis/error-analysis, analysis/graph, content/summarize, content/write]
+skills: [analysis/stats, analysis/error-analysis, analysis/graph, content/summarize, content/write, qa/automate, qa/report, qa/startup-probe]
 role: test results analyzer
 title: Test Results Analyzer
 context_tier: l1

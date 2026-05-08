@@ -7,7 +7,7 @@ let mockProjects: Project[] = [
     description:
       "Primary project workspace. Manage agents, goals, and issues from here.",
     status: "active",
-    workspace_path: "~/.bizforge/projects/alpha",
+    output_path: "~/projects/alpha",
     goal_count: 5,
     issue_count: 8,
     agent_count: 7,
@@ -19,7 +19,7 @@ let mockProjects: Project[] = [
     name: "Beta Project",
     description: "Secondary project workspace for parallel workstreams.",
     status: "active",
-    workspace_path: "~/.bizforge/projects/beta",
+    output_path: "~/projects/beta",
     goal_count: 4,
     issue_count: 6,
     agent_count: 4,

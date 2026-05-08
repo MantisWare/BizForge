@@ -32,15 +32,48 @@ defmodule Bizforge.Work do
 
     case result do
       {:ok, issue} ->
+        issue = maybe_auto_assign(issue)
+
         Bizforge.EventBus.broadcast(
           Bizforge.EventBus.workspace_topic(issue.workspace_id),
           %{event: "issue.created", issue_id: issue.id, title: issue.title}
         )
 
+        if issue.assignee_id do
+          Bizforge.EventBus.broadcast(
+            Bizforge.EventBus.workspace_topic(issue.workspace_id),
+            %{event: "issue.assigned", issue_id: issue.id, agent_id: issue.assignee_id}
+          )
+        end
+
         {:ok, issue}
 
       error ->
         error
+    end
+  end
+
+  defp maybe_auto_assign(%Issue{assignee_id: aid} = issue) when not is_nil(aid), do: issue
+
+  defp maybe_auto_assign(%Issue{} = issue) do
+    project = if issue.project_id, do: Repo.get(Project, issue.project_id), else: nil
+    auto_assign? = project !== nil && Map.get(project.config || %{}, "auto_assign", false)
+
+    if auto_assign? do
+      case Bizforge.Dispatch.SkillRouter.choose(issue, project_id: issue.project_id) do
+        {:ok, agent_id} ->
+          {:ok, updated} =
+            issue
+            |> Ecto.Changeset.change(assignee_id: agent_id)
+            |> Repo.update()
+
+          updated
+
+        {:error, _} ->
+          issue
+      end
+    else
+      issue
     end
   end
 

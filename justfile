@@ -46,7 +46,7 @@ doctor:
 # ── Development ──────────────────────────────────────────────────────────────
 
 # Start full stack (backend :9089 + desktop :5200)
-dev: _ensure-dirs
+dev: _ensure-dirs _ensure-postgres _ensure-migrations
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -92,7 +92,7 @@ dev: _ensure-dirs
     printf "\nUse 'just status' to check, 'just logs backend' to tail, 'just stop' to shut down.\n"
 
 # Start full stack with native Tauri app
-app: _ensure-dirs
+app: _ensure-dirs _ensure-postgres _ensure-migrations
     #!/usr/bin/env bash
     set -euo pipefail
     just stop 2>/dev/null || true
@@ -134,7 +134,7 @@ app: _ensure-dirs
 
 # Start backend only (Phoenix on :9089)
 [group('services')]
-backend: _ensure-dirs
+backend: _ensure-dirs _ensure-postgres _ensure-migrations
     #!/usr/bin/env bash
     set -euo pipefail
     just stop-backend 2>/dev/null || true
@@ -297,7 +297,7 @@ format:
 
 # Run workspace in headless mode (no GUI, agents only)
 [group('headless')]
-headless workspace_path: _ensure-dirs
+headless workspace_path: _ensure-dirs _ensure-postgres _ensure-migrations
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -421,3 +421,92 @@ clean: stop
 [private]
 _ensure-dirs:
     @mkdir -p {{pid_dir}} {{log_dir}}
+
+[private]
+_ensure-postgres:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    pg_ready=""
+    pg_ctl=""
+    pg_data=""
+
+    # Locate pg_isready / pg_ctl — check PATH first, then known Homebrew paths
+    for candidate in \
+        "pg_isready" \
+        "/usr/local/opt/postgresql@15/bin/pg_isready" \
+        "/opt/homebrew/opt/postgresql@15/bin/pg_isready" \
+        "/usr/local/opt/postgresql@16/bin/pg_isready" \
+        "/opt/homebrew/opt/postgresql@16/bin/pg_isready"; do
+        if command -v "$candidate" >/dev/null 2>&1 || [ -x "$candidate" ]; then
+            pg_ready="$candidate"
+            break
+        fi
+    done
+
+    for candidate in \
+        "pg_ctl" \
+        "/usr/local/opt/postgresql@15/bin/pg_ctl" \
+        "/opt/homebrew/opt/postgresql@15/bin/pg_ctl" \
+        "/usr/local/opt/postgresql@16/bin/pg_ctl" \
+        "/opt/homebrew/opt/postgresql@16/bin/pg_ctl"; do
+        if command -v "$candidate" >/dev/null 2>&1 || [ -x "$candidate" ]; then
+            pg_ctl="$candidate"
+            break
+        fi
+    done
+
+    for candidate in \
+        "/usr/local/var/postgresql@15" \
+        "/opt/homebrew/var/postgresql@15" \
+        "/usr/local/var/postgresql@16" \
+        "/opt/homebrew/var/postgresql@16" \
+        "/usr/local/var/postgres" \
+        "/opt/homebrew/var/postgres"; do
+        if [ -d "$candidate" ]; then
+            pg_data="$candidate"
+            break
+        fi
+    done
+
+    if [ -z "$pg_ready" ]; then
+        printf "\033[33m⚠ pg_isready not found — cannot verify PostgreSQL. Continuing anyway.\033[0m\n"
+        exit 0
+    fi
+
+    if "$pg_ready" -q 2>/dev/null; then
+        printf "  PostgreSQL: running\n"
+        exit 0
+    fi
+
+    printf "  PostgreSQL: not running\n"
+
+    if [ -z "$pg_ctl" ] || [ -z "$pg_data" ]; then
+        printf "\033[31mError: pg_ctl or data directory not found — cannot auto-start PostgreSQL.\033[0m\n"
+        printf "  Start it manually:  brew services start postgresql@15\n"
+        exit 1
+    fi
+
+    printf "  Starting PostgreSQL (data: %s)...\n" "$pg_data"
+    "$pg_ctl" -D "$pg_data" start -s -w -t 30 -l "$pg_data/server.log" 2>&1
+
+    if "$pg_ready" -q 2>/dev/null; then
+        printf "  PostgreSQL: started successfully\n"
+    else
+        printf "\033[31mError: PostgreSQL failed to start. Check logs.\033[0m\n"
+        exit 1
+    fi
+
+[private]
+_ensure-migrations:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{backend}}
+    pending=$(mix ecto.migrations 2>/dev/null | grep -c "down" || true)
+    if [ "$pending" -gt 0 ]; then
+        printf "  Migrations: %s pending — running now...\n" "$pending"
+        mix ecto.migrate
+        printf "  Migrations: applied successfully\n"
+    else
+        printf "  Migrations: up to date\n"
+    fi

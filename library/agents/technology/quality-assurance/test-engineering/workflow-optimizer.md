@@ -9,7 +9,7 @@ reportsTo: api-tester
 budget: 500
 adapter: osa
 signal: S=(linguistic, spec, direct, markdown, workflow-optimization)
-skills: [analysis/audit, analysis/stats, strategy/plan, strategy/brainstorm, content/write]
+skills: [analysis/audit, analysis/stats, strategy/plan, strategy/brainstorm, content/write, qa/automate, qa/report, qa/startup-probe]
 role: workflow optimizer
 title: Workflow Optimizer
 context_tier: l1

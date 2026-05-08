@@ -8,7 +8,7 @@ reportsTo: null
 budget: 500
 adapter: osa
 signal: "S=(linguistic, spec, inform, markdown, structured)"
-skills: [analysis/audit, analysis/stats, strategy/plan, strategy/brainstorm, content/write]
+skills: [analysis/audit, analysis/stats, strategy/plan, strategy/brainstorm, content/write, qa/automate, qa/report, qa/startup-probe]
 ---
 
 # Workflow Optimizer Agent Personality

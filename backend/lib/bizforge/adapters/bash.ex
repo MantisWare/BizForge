@@ -32,6 +32,9 @@ defmodule Bizforge.Adapters.Bash do
   def execute_heartbeat(params) do
     command = params["context"] || "echo 'No heartbeat command configured'"
     cwd = params["working_dir"] || "."
+    extra_env = params["env"] || %{}
+
+    env_list = Enum.map(extra_env, fn {k, v} -> {String.to_charlist(k), String.to_charlist(v)} end)
 
     Stream.resource(
       fn ->
@@ -43,7 +46,8 @@ defmodule Bizforge.Adapters.Bash do
               :exit_status,
               :stderr_to_stdout,
               args: ["-c", command],
-              cd: to_charlist(cwd)
+              cd: to_charlist(cwd),
+              env: env_list
             ]
           )
 

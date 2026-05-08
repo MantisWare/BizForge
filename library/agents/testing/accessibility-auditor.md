@@ -5,7 +5,7 @@ color: "#0077B6"
 emoji: "\u267F"
 vibe: If it's not tested with a screen reader, it's not accessible.
 tools: Read, Write, Edit, Bash
-skills: [analysis/audit, development/test, development/code-review, content/write, analysis/error-analysis]
+skills: [analysis/audit, development/test, development/code-review, content/write, analysis/error-analysis, qa/automate, qa/report, qa/startup-probe]
 reportsTo: testing-lead
 budget: 3000
 adapter: osa

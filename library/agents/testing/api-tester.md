@@ -8,7 +8,7 @@ reportsTo: null
 budget: 500
 adapter: osa
 signal: "S=(linguistic, spec, inform, markdown, structured)"
-skills: [development/test, development/tdd, development/debug, development/code-review, security/security-scan, analysis/stats]
+skills: [development/test, development/tdd, development/debug, development/code-review, security/security-scan, analysis/stats, qa/automate, qa/report, qa/startup-probe]
 ---
 
 # API Tester Agent Personality

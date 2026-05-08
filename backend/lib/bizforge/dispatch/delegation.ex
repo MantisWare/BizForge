@@ -71,6 +71,13 @@ defmodule Bizforge.Dispatch.Delegation do
           "[Delegation] Created subtask #{issue.id} (#{adapter_type}) from parent #{parent_task.id}"
         )
 
+        if issue.assignee_id do
+          Bizforge.EventBus.broadcast(
+            Bizforge.EventBus.workspace_topic(issue.workspace_id),
+            %{event: "issue.assigned", issue_id: issue.id, agent_id: issue.assignee_id}
+          )
+        end
+
         {:ok, issue}
 
       {:error, changeset} ->

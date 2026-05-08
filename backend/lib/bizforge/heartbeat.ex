@@ -24,6 +24,9 @@ defmodule Bizforge.Heartbeat do
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
 
+  @max_heartbeat_retries 2
+  @heartbeat_backoff_base_ms 5_000
+
   @doc """
   Run a heartbeat for the given agent.
 
@@ -50,6 +53,7 @@ defmodule Bizforge.Heartbeat do
     with %Agent{} = agent <- Repo.get(Agent, agent_id),
          :clear <- Bizforge.Governance.Gate.heartbeat_blocked?(agent_id),
          {:ok, adapter_mod} <- resolve_adapter(prefetched_issue, agent) do
+      try do
       session =
         if existing_session_id do
           Repo.get!(Session, existing_session_id)
@@ -134,81 +138,58 @@ defmodule Bizforge.Heartbeat do
             context
         end
 
+      integration_env = resolve_integration_env(agent, prefetched_issue)
+
       params = %{
         "context" => full_context,
         "model" => agent.model,
         "working_dir" => workspace.path,
         "workspace_path" => workspace.path,
-        "url" => agent.config["url"]
+        "url" => agent.config["url"],
+        "env" => integration_env
       }
 
       Logger.info(
-        "[Heartbeat] Executing agent #{agent.name} (#{agent.id}) via #{agent.adapter} in #{workspace.path}"
+        "[Heartbeat] Executing agent #{agent.name} (#{agent.id}) via #{agent.adapter} in #{workspace.path} (#{map_size(integration_env)} env vars from integrations)"
       )
 
-      totals =
-        try do
-          execute_and_stream(adapter_mod, params, session, agent)
-        rescue
-          e ->
-            Logger.error(
-              "[Heartbeat] FATAL: #{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
-            )
+      unless Bizforge.AdapterCircuitBreaker.available?(agent.adapter) do
+        Logger.warning(
+          "[Heartbeat] Circuit breaker OPEN for adapter #{agent.adapter} — skipping execution"
+        )
 
-            fail_session!(session, Exception.message(e))
-            agent |> change(status: "error") |> Repo.update!()
+        fail_session!(session, "Adapter #{agent.adapter} circuit breaker is open")
+        agent |> change(status: "idle") |> Repo.update!()
 
-            if issue_id do
-              Repo.transaction(fn ->
-                case Repo.one(
-                       from i in Bizforge.Schemas.Issue,
-                         where: i.id == ^issue_id,
-                         lock: "FOR UPDATE"
-                     ) do
-                  nil ->
-                    :ok
-
-                  issue ->
-                    issue |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
-
-                    Logger.info(
-                      "[Heartbeat] Rolled back issue #{issue_id} to backlog after failure"
-                    )
-                end
-              end)
+        if issue_id do
+          Repo.transaction(fn ->
+            case Repo.one(from i in Bizforge.Schemas.Issue, where: i.id == ^issue_id, lock: "FOR UPDATE") do
+              nil -> :ok
+              issue -> issue |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
             end
-
-            broadcast_workspace(agent, %{
-              event: "run.failed",
-              agent_id: agent.id,
-              session_id: session.id,
-              error: Exception.message(e)
-            })
-
-            BizforgeWeb.Endpoint.broadcast("activity:global", "new_event", %{
-              event: "run.failed",
-              agent_id: agent.id,
-              session_id: session.id,
-              timestamp: DateTime.utc_now()
-            })
-
-            persist_activity_event(
-              agent,
-              "run.failed",
-              "Agent #{agent.name} run failed: #{Exception.message(e)}",
-              %{session_id: session.id}
-            )
-
-            Bizforge.Notifications.Dispatcher.notify_system_alert(
-              "Agent failure: #{agent.name}",
-              "Heartbeat run failed: #{Exception.message(e)}",
-              "error",
-              agent.workspace_id
-            )
-
-            raise e
+          end)
         end
 
+        Bizforge.SupervisorEscalation.escalate(agent, "Adapter #{agent.adapter} is unavailable (circuit breaker open)", %{
+          session_id: session.id,
+          issue_id: issue_id
+        })
+
+        throw({:circuit_open, agent.adapter})
+      end
+
+      stream_result = execute_with_retries(adapter_mod, params, session, agent, 0)
+
+      case stream_result do
+        {:error, reason, _partial_totals} ->
+          handle_run_failure(session, agent, issue_id, reason)
+          throw({:execution_failed, reason})
+
+        _totals ->
+          :ok
+      end
+
+      totals = stream_result
       session = complete_session!(session, totals)
       agent |> change(status: "idle") |> Repo.update!()
 
@@ -224,34 +205,30 @@ defmodule Bizforge.Heartbeat do
       end
 
       if issue_id do
-        case Repo.get(Bizforge.Schemas.Issue, issue_id) do
-          nil ->
-            Logger.warning("[Heartbeat] Issue #{issue_id} not found, skipping completion")
+        wp_id =
+          case %WorkProduct{}
+               |> WorkProduct.changeset(%{
+                 title: "Heartbeat output for issue #{issue_id}",
+                 product_type: "heartbeat",
+                 issue_id: issue_id,
+                 session_id: session.id,
+                 agent_id: agent.id,
+                 workspace_id: agent.workspace_id
+               })
+               |> Repo.insert() do
+            {:ok, wp} ->
+              Logger.info("[Heartbeat] Created WorkProduct #{wp.id} for issue #{issue_id}")
+              wp.id
 
-          issue ->
-            issue |> change(status: "done", checked_out_by: nil) |> Repo.update!()
-            Logger.info("[Heartbeat] Marked issue #{issue_id} as done")
+            {:error, changeset} ->
+              Logger.warning(
+                "[Heartbeat] Failed to create WorkProduct for issue #{issue_id}: #{inspect(changeset.errors)}"
+              )
+              nil
+          end
 
-            %WorkProduct{}
-            |> WorkProduct.changeset(%{
-              title: "Heartbeat output for issue #{issue_id}",
-              product_type: "heartbeat",
-              issue_id: issue_id,
-              session_id: session.id,
-              agent_id: agent.id,
-              workspace_id: agent.workspace_id
-            })
-            |> Repo.insert()
-            |> case do
-              {:ok, wp} ->
-                Logger.info("[Heartbeat] Created WorkProduct #{wp.id} for issue #{issue_id}")
-
-              {:error, changeset} ->
-                Logger.warning(
-                  "[Heartbeat] Failed to create WorkProduct for issue #{issue_id}: #{inspect(changeset.errors)}"
-                )
-            end
-        end
+        Bizforge.IssueLifecycle.notify_session_complete(issue_id, agent.id, wp_id)
+        Logger.info("[Heartbeat] Notified IssueLifecycle for issue #{issue_id}")
       end
 
       cleanup_workspace(workspace)
@@ -291,6 +268,17 @@ defmodule Bizforge.Heartbeat do
       )
 
       {:ok, session.id}
+      catch
+        {:circuit_open, adapter} ->
+          {:error, {:circuit_open, adapter}}
+
+        {:execution_failed, reason} ->
+          {:error, {:execution_failed, reason}}
+      rescue
+        e ->
+          Logger.error("[Heartbeat] Unhandled error in run/2: #{Exception.message(e)}")
+          {:error, {:unhandled, Exception.message(e)}}
+      end
     else
       nil ->
         {:error, :agent_not_found}
@@ -333,6 +321,61 @@ defmodule Bizforge.Heartbeat do
       cost_cents: totals.cost
     })
     |> Repo.update!()
+  end
+
+  defp handle_run_failure(session, agent, issue_id, reason) do
+    fail_session!(session, reason)
+    agent |> change(status: "error") |> Repo.update!()
+
+    if issue_id !== nil do
+      Repo.transaction(fn ->
+        case Repo.one(
+               from i in Bizforge.Schemas.Issue,
+                 where: i.id == ^issue_id,
+                 lock: "FOR UPDATE"
+             ) do
+          nil ->
+            :ok
+
+          issue ->
+            issue |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
+            Logger.info("[Heartbeat] Rolled back issue #{issue_id} to backlog after failure")
+        end
+      end)
+    end
+
+    broadcast_workspace(agent, %{
+      event: "run.failed",
+      agent_id: agent.id,
+      session_id: session.id,
+      error: reason
+    })
+
+    BizforgeWeb.Endpoint.broadcast("activity:global", "new_event", %{
+      event: "run.failed",
+      agent_id: agent.id,
+      session_id: session.id,
+      timestamp: DateTime.utc_now()
+    })
+
+    persist_activity_event(
+      agent,
+      "run.failed",
+      "Agent #{agent.name} run failed: #{reason}",
+      %{session_id: session.id}
+    )
+
+    Bizforge.Notifications.Dispatcher.notify_system_alert(
+      "Agent failure: #{agent.name}",
+      "Heartbeat run failed: #{reason}",
+      "error",
+      agent.workspace_id
+    )
+
+    Bizforge.SupervisorEscalation.escalate(agent, reason, %{
+      session_id: session.id,
+      issue_id: issue_id
+    })
   end
 
   defp fail_session!(session, reason) do
@@ -397,46 +440,108 @@ defmodule Bizforge.Heartbeat do
     Bizforge.ExecutionWorkspace.cleanup(workspace)
   end
 
-  defp execute_and_stream(adapter_mod, params, session, agent) do
-    try do
-      adapter_mod.execute_heartbeat(params)
-      |> Enum.reduce(%{input: 0, output: 0, cache: 0, cost: 0}, fn raw_event, acc ->
-        event = normalize_event(raw_event)
-        event_type = event["event_type"] || "run.output"
-        data = event["data"] || %{}
+  defp execute_with_retries(adapter_mod, params, session, agent, attempt) do
+    result =
+      try do
+        execute_and_stream(adapter_mod, params, session, agent)
+      rescue
+        e ->
+          Logger.error(
+            "[Heartbeat] FATAL (attempt #{attempt + 1}): #{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
+          )
 
-        persist_event!(event_type, data, raw_event, session)
+          {:error, Exception.message(e), %{input: 0, output: 0, cache: 0, cost: 0}}
+      end
 
-        Bizforge.EventBus.broadcast(
-          Bizforge.EventBus.session_topic(session.id),
-          %{
-            event: event_type,
-            data: data,
-            session_id: session.id,
-            agent_id: agent.id
-          }
+    case result do
+      {:error, reason, partial} when attempt < @max_heartbeat_retries ->
+        backoff = (@heartbeat_backoff_base_ms * :math.pow(2, attempt)) |> round()
+
+        Logger.warning(
+          "[Heartbeat] Adapter failure (attempt #{attempt + 1}/#{@max_heartbeat_retries + 1}): #{reason} — retrying in #{backoff}ms"
         )
 
-        input_tokens = raw_event[:tokens_input] || raw_event["tokens_input"] || raw_event[:tokens] || raw_event["tokens"] || 0
-        output_tokens = raw_event[:tokens_output] || raw_event["tokens_output"] || 0
-        cache_tokens = raw_event[:tokens_cache] || raw_event["tokens_cache"] || 0
+        Process.sleep(backoff)
+        execute_with_retries(adapter_mod, params, session, agent, attempt + 1)
 
-        new_input = acc.input + input_tokens
-        new_output = acc.output + output_tokens
-        new_cache = acc.cache + cache_tokens
-        cost = estimate_cost(new_input, new_output, new_cache, agent.model)
-
-        %{acc | input: new_input, output: new_output, cache: new_cache, cost: cost}
-      end)
-    rescue
-      e ->
-        Logger.error(
-          "[Heartbeat] Execution error for agent #{agent.id}: #{Exception.message(e)}\n" <>
-            Exception.format_stacktrace(__STACKTRACE__)
-        )
-
-        %{input: 0, output: 0, cache: 0, cost: 0}
+      other ->
+        other
     end
+  end
+
+  defp execute_and_stream(adapter_mod, params, session, agent) do
+    result =
+      try do
+        totals =
+          adapter_mod.execute_heartbeat(params)
+          |> Enum.reduce(%{input: 0, output: 0, cache: 0, cost: 0, had_failure: false}, fn raw_event, acc ->
+            event = normalize_event(raw_event)
+            event_type = event["event_type"] || "run.output"
+            data = event["data"] || %{}
+
+            persist_event!(event_type, data, raw_event, session)
+
+            Bizforge.EventBus.broadcast(
+              Bizforge.EventBus.session_topic(session.id),
+              %{
+                event: event_type,
+                data: data,
+                session_id: session.id,
+                agent_id: agent.id
+              }
+            )
+
+            input_tokens = raw_event[:tokens_input] || raw_event["tokens_input"] || raw_event[:tokens] || raw_event["tokens"] || 0
+            output_tokens = raw_event[:tokens_output] || raw_event["tokens_output"] || 0
+            cache_tokens = raw_event[:tokens_cache] || raw_event["tokens_cache"] || 0
+
+            new_input = acc.input + input_tokens
+            new_output = acc.output + output_tokens
+            new_cache = acc.cache + cache_tokens
+            cost = estimate_cost(new_input, new_output, new_cache, agent.model)
+
+            had_failure = acc.had_failure or event_type == "run.failed"
+
+            %{acc | input: new_input, output: new_output, cache: new_cache, cost: cost, had_failure: had_failure}
+          end)
+
+        {:ok, totals}
+      rescue
+        e ->
+          Logger.error(
+            "[Heartbeat] Execution error for agent #{agent.id}: #{Exception.message(e)}\n" <>
+              Exception.format_stacktrace(__STACKTRACE__)
+          )
+
+          Bizforge.AdapterCircuitBreaker.record_failure(agent.adapter)
+          {:error, Exception.message(e), %{input: 0, output: 0, cache: 0, cost: 0}}
+      end
+
+    case result do
+      {:ok, %{had_failure: true} = totals} ->
+        has_output = session_has_output_events?(session.id)
+
+        if has_output do
+          Map.delete(totals, :had_failure)
+        else
+          Bizforge.AdapterCircuitBreaker.record_failure(agent.adapter)
+          {:error, "Adapter returned run.failed with no output", Map.delete(totals, :had_failure)}
+        end
+
+      {:ok, totals} ->
+        Bizforge.AdapterCircuitBreaker.record_success(agent.adapter)
+        Map.delete(totals, :had_failure)
+
+      {:error, _reason, _partial} = err ->
+        err
+    end
+  end
+
+  defp session_has_output_events?(session_id) do
+    Repo.exists?(
+      from e in SessionEvent,
+        where: e.session_id == ^session_id and e.event_type in ["run.output", "run.result"]
+    )
   end
 
   defp normalize_event(event) when is_map(event) do
@@ -531,6 +636,58 @@ defmodule Bizforge.Heartbeat do
   defp resolve_adapter(issue, agent) do
     Bizforge.Dispatch.Router.resolve(issue, agent)
   end
+
+  defp resolve_integration_env(agent, issue) do
+    project_id = if issue, do: issue.project_id, else: nil
+
+    resolutions =
+      if project_id do
+        case Bizforge.IntegrationResolver.resolve_for_agent_in_project(agent, project_id) do
+          {:ok, list} -> list
+          {:error, _} -> []
+        end
+      else
+        case Bizforge.IntegrationResolver.resolve_for_agent(agent) do
+          {:ok, list} -> list
+          {:error, _} -> []
+        end
+      end
+
+    Enum.reduce(resolutions, %{}, fn resolution, acc ->
+      provider_env = build_provider_env(resolution)
+      Map.merge(acc, provider_env)
+    end)
+  rescue
+    e ->
+      Logger.warning("[Heartbeat] Integration resolution failed: #{Exception.message(e)}")
+      %{}
+  end
+
+  @provider_env_mapping %{
+    "domo" => [{"DOMO_INSTANCE", "instance"}, {"DOMO_TOKEN", "token"}, {"DOMO_PROXY_ID", "proxy_id"}],
+    "github" => [{"GITHUB_TOKEN", "token"}, {"GITHUB_REPO", "repo"}, {"GITHUB_OWNER", "owner"}],
+    "gitlab" => [{"GITLAB_TOKEN", "token"}, {"GITLAB_PROJECT_ID", "project_id"}],
+    "slack" => [{"SLACK_BOT_TOKEN", "bot_token"}, {"SLACK_SIGNING_SECRET", "signing_secret"}],
+    "linear" => [{"LINEAR_API_KEY", "api_key"}, {"LINEAR_TEAM_ID", "team_id"}],
+    "jira" => [{"JIRA_EMAIL", "email"}, {"JIRA_TOKEN", "token"}, {"JIRA_DOMAIN", "domain"}],
+    "notion" => [{"NOTION_TOKEN", "token"}],
+    "datadog" => [{"DATADOG_API_KEY", "api_key"}, {"DATADOG_APP_KEY", "app_key"}]
+  }
+
+  defp build_provider_env(%{provider: provider, config: config, secrets: secrets}) do
+    mappings = Map.get(@provider_env_mapping, provider, [])
+
+    Enum.reduce(mappings, %{}, fn {env_name, config_key}, acc ->
+      value = secrets[config_key] || config[config_key]
+      if is_binary(value) && value != "" do
+        Map.put(acc, env_name, value)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp build_provider_env(_), do: %{}
 
   defp persist_activity_event(agent, event_type, message, metadata) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)

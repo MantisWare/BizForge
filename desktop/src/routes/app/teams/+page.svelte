@@ -9,10 +9,13 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
   import { toastStore } from '$lib/stores/toasts.svelte';
-  import { teams as teamsApi } from '$api/client';
+  import { integrationsStore } from '$lib/stores/integrations.svelte';
+  import { teams as teamsApi, integrationBindings as bindingsApi } from '$api/client';
+  import IntegrationBindingSelector from '$lib/components/integrations/IntegrationBindingSelector.svelte';
+  import { SKILLS } from '$api/mock/library/skills';
   import { HIREABLE_TEAM_TEMPLATES, TEMPLATE_AGENTS } from '$lib/data/team-templates';
   import type { TeamTemplateId } from '$lib/data/team-templates';
-  import type { Team, BizforgeAgent, AgentCreateRequest, AdapterType } from '$api/types';
+  import type { Team, BizforgeAgent, AgentCreateRequest, AdapterType, IntegrationBinding, SkillIntegrationRequirement } from '$api/types';
 
   $effect(() => {
     const orgId = organizationsStore.current?.id;
@@ -20,7 +23,55 @@
     void hierarchyStore.fetchDepartments();
     void hierarchyStore.fetchTeams();
     void agentsStore.fetchAgents();
+    void integrationsStore.fetchIntegrations();
   });
+
+  // ── Integration bindings (team-level) ─────────────────────────────────────
+  let teamBindingsMap = $state<Map<string, IntegrationBinding[]>>(new Map());
+
+  function getTeamRequiredIntegrations(members: BizforgeAgent[]): SkillIntegrationRequirement[] {
+    const requirements: SkillIntegrationRequirement[] = [];
+    const seenProviders = new Set<string>();
+    for (const agent of members) {
+      const agentSkillIds = agent.skills ?? [];
+      for (const skillId of agentSkillIds) {
+        const librarySkill = SKILLS.find(s => s.id === skillId);
+        if (librarySkill === undefined) continue;
+        for (const req of librarySkill.required_integrations) {
+          if (!seenProviders.has(req.provider)) {
+            seenProviders.add(req.provider);
+            requirements.push(req);
+          }
+        }
+      }
+    }
+    return requirements;
+  }
+
+  async function fetchTeamBindings(teamId: string) {
+    try {
+      const bindings = await bindingsApi.list('team', teamId);
+      teamBindingsMap = new Map([...teamBindingsMap, [teamId, bindings]]);
+    } catch {
+      teamBindingsMap = new Map([...teamBindingsMap, [teamId, []]]);
+    }
+  }
+
+  async function handleTeamBind(teamId: string, provider: string, integrationId: string) {
+    await bindingsApi.create({
+      owner_type: 'team',
+      owner_id: teamId,
+      provider,
+      integration_id: integrationId,
+      config_overrides: {},
+    });
+    await fetchTeamBindings(teamId);
+  }
+
+  async function handleTeamUnbind(teamId: string, provider: string) {
+    await bindingsApi.removeByOwnerAndProvider('team', teamId, provider);
+    await fetchTeamBindings(teamId);
+  }
 
   let searchQuery = $state('');
   let filterDepartment = $state('');
@@ -77,6 +128,7 @@
         loadingMembers = null;
       }
     }
+    void fetchTeamBindings(teamId);
   }
 
   function agentInitials(agent: BizforgeAgent): string {
@@ -435,6 +487,18 @@
                     {/each}
                   </ul>
                 {/if}
+
+                <!-- Team-level integration bindings -->
+                <div class="tm-integrations-section">
+                  <IntegrationBindingSelector
+                    ownerType="team"
+                    ownerId={team.id}
+                    requiredIntegrations={getTeamRequiredIntegrations(members)}
+                    bindings={teamBindingsMap.get(team.id) ?? []}
+                    onBind={(provider, integrationId) => handleTeamBind(team.id, provider, integrationId)}
+                    onUnbind={(provider) => handleTeamUnbind(team.id, provider)}
+                  />
+                </div>
               </div>
             {/if}
           </article>
@@ -1362,5 +1426,11 @@
     border: 1px solid rgba(59, 130, 246, 0.2);
     font-size: 12px;
     color: var(--text-secondary);
+  }
+
+  .tm-integrations-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-default);
   }
 </style>

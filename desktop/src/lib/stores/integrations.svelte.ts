@@ -125,6 +125,30 @@ class IntegrationsStore {
       this.loading = false;
     }
   }
+
+  async remove(slug: string): Promise<void> {
+    this.loading = true;
+    try {
+      await integrationsApi.remove(slug);
+      await this.fetchIntegrations();
+      this.error = null;
+      toastStore.success("Integration removed", slug);
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.error = msg;
+      toastStore.error("Failed to remove integration", msg);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async toggleStatus(slug: string, currentStatus: string): Promise<void> {
+    if (currentStatus === "connected") {
+      await this.disconnect(slug);
+    } else {
+      await this.connect(slug);
+    }
+  }
 }
 
 export const integrationsStore = new IntegrationsStore();

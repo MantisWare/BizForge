@@ -309,7 +309,6 @@
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.5 : 0.5;
     camera.targetZoom = Math.max(1, Math.min(8, camera.targetZoom + delta));
-    clearSpriteCache();
   }
 
   function handleResize() {
@@ -324,13 +323,12 @@
   }
 
   // ─── Zoom controls ──────────────────────────────────────
-  function zoomIn() { camera.targetZoom = Math.min(8, camera.targetZoom + 1); clearSpriteCache(); }
-  function zoomOut() { camera.targetZoom = Math.max(1, camera.targetZoom - 1); clearSpriteCache(); }
+  function zoomIn() { camera.targetZoom = Math.min(8, camera.targetZoom + 1); }
+  function zoomOut() { camera.targetZoom = Math.max(1, camera.targetZoom - 1); }
   function resetView() {
     camera.targetX = layout.cols * layout.tileSize / 2;
     camera.targetY = layout.rows * layout.tileSize / 2;
     camera.targetZoom = 3;
-    clearSpriteCache();
   }
 
   // Center on selected agent
@@ -448,7 +446,7 @@
     <div class="po-zoom">
       <span class="po-zoom-pct">{zoomPct}%</span>
       <button class="po-zoom-btn" onclick={zoomIn}>+</button>
-      <button class="po-zoom-btn" onclick={resetView}>Reset</button>
+      <button class="po-zoom-btn" onclick={resetView}>R</button>
       <button class="po-zoom-btn" onclick={zoomOut}>-</button>
     </div>
 
@@ -623,11 +621,11 @@
   }
   .po-status-text {
     font-size: 10px;
-    color: var(--text-tertiary, #6b7a8d);
+    color: var(--text-secondary, #c8d1dc);
   }
   .po-empty {
     padding: 16px;
-    color: var(--text-muted, #3d4a5c);
+    color: var(--text-secondary, #c8d1dc);
     font-size: 11px;
     text-align: center;
   }
@@ -686,7 +684,7 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--text-tertiary, #6b7a8d);
+    color: var(--text-secondary, #c8d1dc);
   }
   .po-dot {
     width: 6px;
@@ -751,7 +749,7 @@
     font-size: 10px;
     font-weight: 600;
     background: transparent;
-    color: var(--text-tertiary, #6b7a8d);
+    color: var(--text-secondary, #c8d1dc);
     cursor: pointer;
     letter-spacing: 0.5px;
   }
@@ -760,7 +758,7 @@
     color: white;
   }
   .po-time-btn:hover:not(.po-time-btn--active) {
-    color: var(--text-secondary, #a8b2c1);
+    color: var(--text-primary, #e2e8f0);
   }
 
   /* ─── Minimap ─── */
@@ -777,7 +775,7 @@
   .po-minimap-label {
     font-size: 9px;
     font-weight: 700;
-    color: var(--text-tertiary, #6b7a8d);
+    color: var(--text-secondary, #c8d1dc);
     letter-spacing: 1px;
     padding: 3px 6px;
     background: var(--bg-primary, #0f1117);
@@ -810,7 +808,7 @@
     gap: 6px;
     padding: 5px 10px;
     font-size: 10px;
-    color: var(--text-tertiary, #6b7a8d);
+    color: var(--text-secondary, #c8d1dc);
     border-bottom: 1px solid var(--border-default, rgba(148, 163, 184, 0.12));
   }
   .po-events-list {
@@ -820,7 +818,7 @@
   }
   .po-events-empty {
     font-size: 11px;
-    color: var(--text-muted, #3d4a5c);
+    color: var(--text-secondary, #c8d1dc);
     padding: 4px;
   }
   .po-event {
@@ -831,7 +829,7 @@
   }
   .po-event-time {
     font-size: 10px;
-    color: var(--text-muted, #3d4a5c);
+    color: var(--text-tertiary, #94a3b8);
     font-family: monospace;
   }
   .po-event-dot {
@@ -842,6 +840,6 @@
   }
   .po-event-text {
     font-size: 11px;
-    color: var(--text-secondary, #a8b2c1);
+    color: var(--text-primary, #e2e8f0);
   }
 </style>

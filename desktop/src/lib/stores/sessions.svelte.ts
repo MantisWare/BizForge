@@ -8,6 +8,7 @@ import {
   sessionChain as sessionChainApi,
 } from "$api/client";
 import { connectSSE, type StreamController } from "$api/sse";
+import { isTauri } from "$lib/utils/platform";
 import { toastStore } from "./toasts.svelte";
 
 export type SessionSortKey = "date" | "duration" | "cost" | "tokens";
@@ -400,6 +401,28 @@ class SessionsStore {
               : new Date().toISOString(),
         };
       }
+    }
+  }
+  /**
+   * Export the current transcript to a project's output directory on disk.
+   * Writes a markdown file to {outputPath}/transcripts/{session-id}.md
+   */
+  async exportTranscriptToDisk(outputPath: string): Promise<void> {
+    if (!isTauri() || this.selectedSession === null) return;
+    const session = this.selectedSession;
+    const lines = this.transcript.map(
+      (m) => `### ${m.role.toUpperCase()} — ${m.timestamp}\n\n${m.content}`,
+    );
+    const header = `# Session Transcript: ${session.title ?? session.id}\n\nAgent: ${session.agent_name}\nStatus: ${session.status}\nStarted: ${session.started_at}\n\n---\n\n`;
+    const content = header + lines.join("\n\n---\n\n");
+    const filename = `session-${session.id}.md`;
+    const diskPath = `${outputPath.replace(/\/+$/, "")}/transcripts/${filename}`;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("write_project_file", { path: diskPath, content });
+      toastStore.success("Transcript exported", `Saved to transcripts/${filename}`);
+    } catch (e) {
+      toastStore.error("Export failed", (e as Error).message);
     }
   }
 }

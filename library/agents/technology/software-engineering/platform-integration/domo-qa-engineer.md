@@ -10,7 +10,7 @@ emoji: shield-check
 adapter: osa
 signal: S=(data, spec, evaluate, markdown, domo-test-report)
 tools: [read, write, edit, bash, search]
-skills: [domo/app-scaffold, domo/appdb-manage, domo/dataset-manage, domo/api-integrate, domo/governance]
+skills: [domo/app-scaffold, domo/appdb-manage, domo/dataset-manage, domo/api-integrate, domo/governance, qa/automate, qa/report, qa/startup-probe]
 context_tier: l1
 team: platform-integration
 department: software-engineering

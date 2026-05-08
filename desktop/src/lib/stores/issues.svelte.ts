@@ -1,6 +1,7 @@
 // src/lib/stores/issues.svelte.ts
 import type { Issue, IssueStatus, IssuePriority } from "$api/types";
 import { issues as issuesApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
 import { toastStore } from "./toasts.svelte";
 import { agentsStore } from "./agents.svelte";
 
@@ -195,7 +196,10 @@ class IssuesStore {
     }
   }
 
-  async batchCreateIssues(items: Partial<Issue>[]): Promise<Issue[]> {
+  async batchCreateIssues(
+    items: Partial<Issue>[],
+    outputPath?: string | null,
+  ): Promise<Issue[]> {
     const created: Issue[] = [];
     const errors: string[] = [];
     for (const data of items) {
@@ -217,11 +221,34 @@ class IssuesStore {
           ? `${errors.length} failed — see details`
           : `Batch-created from documentation analysis`,
       );
+
+      if (outputPath !== undefined && outputPath !== null && isTauri()) {
+        void this._exportIssuesToDisk(created, outputPath);
+      }
     }
     if (errors.length > 0 && created.length === 0) {
       toastStore.error('Failed to create issues', errors[0]);
     }
     return created;
+  }
+
+  private async _exportIssuesToDisk(
+    issues: Issue[],
+    outputPath: string,
+  ): Promise<void> {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const lines = issues.map(
+        (issue) =>
+          `## ${issue.title}\n\n**Priority:** ${issue.priority}\n**Status:** ${issue.status}\n**Labels:** ${(issue.labels ?? []).join(", ") || "none"}\n\n${issue.description ?? ""}`,
+      );
+      const content = `# Generated Issues\n\nCreated: ${new Date().toISOString()}\n\n---\n\n${lines.join("\n\n---\n\n")}`;
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const diskPath = `${outputPath.replace(/\/+$/, "")}/issues/generated-${timestamp}.md`;
+      await invoke("write_project_file", { path: diskPath, content });
+    } catch {
+      // Best-effort disk export; issues are already in the API
+    }
   }
 
   selectIssue(issue: Issue | null): void {

@@ -82,8 +82,42 @@ defmodule Bizforge.BudgetEnforcer do
       write_concurrency: true
     ])
 
-    load_current_month_costs()
-    {:ok, %{table: table}}
+    {:ok, %{table: table}, {:continue, :load_costs}}
+  end
+
+  @cost_load_retry_ms :timer.seconds(5)
+
+  @impl true
+  def handle_continue(:load_costs, state) do
+    try do
+      load_current_month_costs()
+      {:noreply, state}
+    rescue
+      e ->
+        Logger.warning(
+          "[BudgetEnforcer] Failed to load costs from DB (will retry in #{div(@cost_load_retry_ms, 1_000)}s): #{Exception.message(e)}"
+        )
+
+        Process.send_after(self(), :retry_load_costs, @cost_load_retry_ms)
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info(:retry_load_costs, state) do
+    try do
+      load_current_month_costs()
+      Logger.info("[BudgetEnforcer] Successfully loaded costs from DB")
+      {:noreply, state}
+    rescue
+      e ->
+        Logger.warning(
+          "[BudgetEnforcer] Still unable to load costs (will retry in #{div(@cost_load_retry_ms, 1_000)}s): #{Exception.message(e)}"
+        )
+
+        Process.send_after(self(), :retry_load_costs, @cost_load_retry_ms)
+        {:noreply, state}
+    end
   end
 
   @impl true

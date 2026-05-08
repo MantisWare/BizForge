@@ -25,27 +25,70 @@
     { id: 'lounge', label: 'LOUNGE', color: '#3a3030', labelColor: '#fcd6a5', glowColor: '#ffcc70', neonColor: '#ffa030', x: 10, z: 4, w: 3.5, d: 5, seats: 2 },
   ] as const;
 
-  // Map each agent to a zone and position within it
-  function agentPosition(agent: BizforgeAgent, index: number): { pos: [number, number, number]; zoneId: string } {
-    // Distribute agents across zones based on index
+  // Conference table definitions — center of each zone (except research/lounge)
+  const CONF_TABLES: readonly { zoneId: string; cx: number; cz: number; w: number; d: number }[] = [
+    { zoneId: 'engineering', cx: -4, cz: -2.5, w: 4.5, d: 1.4 },
+    { zoneId: 'product',     cx: 8,  cz: -2.5, w: 4.5, d: 1.4 },
+    { zoneId: 'operations',  cx: -4, cz: 6.5,  w: 4.5, d: 1.4 },
+  ] as const;
+
+  type SeatDef = { pos: [number, number, number]; deskType: 'desk' | 'conference'; facingZ: number };
+
+  // Seat positions per zone — conference seats around the table, desk seats along perimeter
+  const ZONE_SEATS: Record<string, SeatDef[]> = {
+    engineering: [
+      // 3 seats on the near side (facing table, facingZ = -1 → face toward -z)
+      { pos: [-5.5, 0, -1.3], deskType: 'conference', facingZ: -1 },
+      { pos: [-4,   0, -1.3], deskType: 'conference', facingZ: -1 },
+      { pos: [-2.5, 0, -1.3], deskType: 'conference', facingZ: -1 },
+      // 3 seats on the far side (facing table, facingZ = 1 → face toward +z)
+      { pos: [-5.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
+      { pos: [-4,   0, -3.7], deskType: 'conference', facingZ: 1 },
+      { pos: [-2.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
+      // 1 perimeter desk (wall)
+      { pos: [-7,   0, -4.2], deskType: 'desk', facingZ: 1 },
+    ],
+    product: [
+      { pos: [6.5, 0, -1.3], deskType: 'conference', facingZ: -1 },
+      { pos: [8,   0, -1.3], deskType: 'conference', facingZ: -1 },
+      { pos: [9.5, 0, -1.3], deskType: 'conference', facingZ: -1 },
+      { pos: [6.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
+      { pos: [8,   0, -3.7], deskType: 'conference', facingZ: 1 },
+      { pos: [9.5, 0, -3.7], deskType: 'conference', facingZ: 1 },
+    ],
+    operations: [
+      { pos: [-5.5, 0, 5.7], deskType: 'conference', facingZ: 1 },
+      { pos: [-4,   0, 5.7], deskType: 'conference', facingZ: 1 },
+      { pos: [-5.5, 0, 7.3], deskType: 'conference', facingZ: -1 },
+      { pos: [-4,   0, 7.3], deskType: 'conference', facingZ: -1 },
+    ],
+    research: [
+      { pos: [6.5, 0, 6.5], deskType: 'desk', facingZ: 1 },
+      { pos: [8.5, 0, 6.0], deskType: 'desk', facingZ: 1 },
+      { pos: [8.5, 0, 8.5], deskType: 'desk', facingZ: -1 },
+    ],
+    lounge: [
+      { pos: [11, 0, 5.0], deskType: 'desk', facingZ: 1 },
+      { pos: [11, 0, 8.0], deskType: 'desk', facingZ: -1 },
+    ],
+  };
+
+  // Map each agent to a zone and specific seat
+  function agentPosition(agent: BizforgeAgent, index: number): { pos: [number, number, number]; zoneId: string; deskType: 'desk' | 'conference'; facingZ: number } {
     let accumulated = 0;
     for (const zone of ZONES) {
-      if (index < accumulated + zone.seats) {
-        const seatIdx = index - accumulated;
-        const cols = Math.min(zone.seats, 3);
-        const col = seatIdx % cols;
-        const row = Math.floor(seatIdx / cols);
-        const x = zone.x + 1.5 + col * 2.2;
-        const z = zone.z + 1.5 + row * 2.5;
-        return { pos: [x, 0, z], zoneId: zone.id };
+      const seats = ZONE_SEATS[zone.id] ?? [];
+      if (index < accumulated + seats.length) {
+        const seat = seats[index - accumulated];
+        return { pos: seat.pos, zoneId: zone.id, deskType: seat.deskType, facingZ: seat.facingZ };
       }
-      accumulated += zone.seats;
+      accumulated += seats.length;
     }
-    // Overflow: put in operations
+    // Overflow: place as standard desk in operations
     const zone = ZONES[2];
     const x = zone.x + 1.5 + (index % 3) * 2.2;
     const z = zone.z + 1.5 + Math.floor(index / 3) * 2.5;
-    return { pos: [x, 0, z], zoneId: zone.id };
+    return { pos: [x, 0, z], zoneId: zone.id, deskType: 'desk', facingZ: 1 };
   }
 
   // Status to emissive color
@@ -389,7 +432,32 @@
   <T.MeshStandardMaterial color="#88c8e8" roughness={0.3} metalness={0.1} transparent opacity={0.7} />
 </T.Mesh>
 
-<!-- ─── Agents at desks ────────────────────────────── -->
+<!-- ─── Conference tables (Engineering, Product, Operations) ─── -->
+{#each CONF_TABLES as ct}
+  <T.Group position={[ct.cx, 0, ct.cz]}>
+    <!-- Table top — warm walnut -->
+    <T.Mesh position.y={0.5} castShadow>
+      <T.BoxGeometry args={[ct.w, 0.1, ct.d]} />
+      <T.MeshStandardMaterial color="#6a5a4a" roughness={0.6} metalness={0.12} />
+    </T.Mesh>
+    <!-- Table edge trim (slightly inset, darker) -->
+    <T.Mesh position.y={0.495}>
+      <T.BoxGeometry args={[ct.w + 0.04, 0.04, ct.d + 0.04]} />
+      <T.MeshStandardMaterial color="#5a4a3a" roughness={0.7} metalness={0.1} />
+    </T.Mesh>
+    <!-- Metal legs (4 corners) -->
+    {#each [[-1, -1], [1, -1], [-1, 1], [1, 1]] as corner}
+      <T.Mesh position={[(ct.w / 2 - 0.15) * corner[0], 0.225, (ct.d / 2 - 0.1) * corner[1]]}>
+        <T.CylinderGeometry args={[0.04, 0.04, 0.45, 8]} />
+        <T.MeshStandardMaterial color="#808090" roughness={0.3} metalness={0.6} />
+      </T.Mesh>
+    {/each}
+    <!-- Subtle overhead light for the table -->
+    <T.PointLight position.y={2.5} intensity={0.2} color="#ffe8c0" distance={4} decay={2} />
+  </T.Group>
+{/each}
+
+<!-- ─── Agents at desks / conference seats ─────────── -->
 {#each agents as agent, i (agent.id)}
   {@const placement = agentPosition(agent, i)}
   {@const isSelected = selectedAgentId === agent.id}
@@ -404,6 +472,8 @@
     zoneColor={zone?.labelColor ?? '#8888a0'}
     teamColor={orgInfo?.teamColor ?? undefined}
     divisionColor={orgInfo?.divisionColor ?? undefined}
+    deskType={placement.deskType}
+    facingZ={placement.facingZ}
     onclick={() => onAgentClick?.(agent)}
   />
 {/each}

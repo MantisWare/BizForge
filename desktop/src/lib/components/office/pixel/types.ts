@@ -59,6 +59,8 @@ export enum FurnitureType {
   COFFEE_MACHINE = "coffee_machine",
   FRIDGE = "fridge",
   TV = "tv",
+  TABLE_RECT = "table_rect",
+  LAPTOP = "laptop",
 }
 
 export type FloorPattern = "checker" | "grid" | "herringbone" | "dot" | "carpet";

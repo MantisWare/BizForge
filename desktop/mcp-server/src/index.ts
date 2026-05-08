@@ -214,11 +214,17 @@ mcpServer.tool(
 
 mcpServer.tool(
   "bizforge_session_message",
-  "Send a message to an active agent session",
+  "Send a message to an active agent session, optionally with file attachments (images, PDFs, ERDs)",
   {
     session_id: z.string().describe("The session ID"),
     content: z.string().describe("Message content to send"),
     role: z.string().optional().describe("Message role (defaults to 'user')"),
+    attached_files: z.array(z.object({
+      name: z.string().describe("File name with extension"),
+      mime_type: z.string().describe("MIME type (e.g. image/png, application/pdf)"),
+      data: z.string().optional().describe("Base64-encoded file content"),
+      path: z.string().optional().describe("Absolute file path on disk (alternative to data)"),
+    })).optional().describe("Files to attach to the message (images for vision, ERDs, docs)"),
   },
   async ({ session_id, ...body }) =>
     safeTool(() =>
@@ -336,6 +342,7 @@ mcpServer.tool(
     name: z.string().describe("Project name"),
     description: z.string().optional().describe("Project description"),
     status: z.string().optional().describe("Initial status"),
+    output_path: z.string().optional().describe("Absolute path on disk where project artifacts are written"),
   },
   async (args) =>
     safeTool(() => api("/projects", { method: "POST", body: args })),
@@ -454,16 +461,39 @@ mcpServer.tool(
 
 mcpServer.tool(
   "bizforge_document_write",
-  "Create or update a document",
+  "Create or update a document. If project_id is provided and the project has an output_path, the document is also written to the project's docs/ directory on disk.",
   {
     path: z.string().describe("Document path"),
     content: z.string().describe("Document content (markdown)"),
     title: z.string().optional().describe("Document title"),
+    project_id: z.string().optional().describe("Project ID — if provided, also writes to project output_path/docs/"),
   },
-  async ({ path, ...body }) =>
-    safeTool(() =>
-      api(`/documents/${path}`, { method: "PUT", body }),
-    ),
+  async ({ path, project_id, ...body }) =>
+    safeTool(async () => {
+      const result = await api(`/documents/${path}`, { method: "PUT", body: { ...body, content: body.content } });
+
+      if (project_id !== undefined) {
+        try {
+          const projResult = await api(`/projects/${project_id}`);
+          const project = (projResult as { project?: { output_path?: string } }).project;
+          const outputPath = project?.output_path;
+          if (outputPath !== undefined && outputPath !== null) {
+            const { mkdir, writeFile } = await import("node:fs/promises");
+            const { join, dirname, resolve } = await import("node:path");
+            const filename = path.split("/").pop() ?? path;
+            const fullPath = resolve(join(outputPath, "docs", filename));
+            if (fullPath.startsWith(resolve(outputPath))) {
+              await mkdir(dirname(fullPath), { recursive: true });
+              await writeFile(fullPath, body.content, "utf-8");
+            }
+          }
+        } catch {
+          // Disk mirror is best-effort; API write already succeeded
+        }
+      }
+
+      return result;
+    }),
 );
 
 mcpServer.tool(
@@ -476,6 +506,94 @@ mcpServer.tool(
     safeTool(() =>
       api("/documents", { params: { project_id } }),
     ),
+);
+
+mcpServer.tool(
+  "bizforge_project_write_file",
+  "Write a file to a project's output directory on disk. The project must have an output_path configured. Standard subdirectories: code/src/ (source code), code/tests/ (tests), docs/specs/ (PRDs, specs), docs/guides/ (user guides), docs/api/ (API docs), docs/architecture/ (arch docs), media/images/ (images), media/videos/ (videos), media/diagrams/ (diagrams), data/exports/ (data exports), data/fixtures/ (test data), reports/ (generated reports), transcripts/ (session logs), issues/ (issue exports).",
+  {
+    project_id: z.string().describe("The project ID to write to"),
+    relative_path: z.string().describe("File path relative to project output_path (e.g. 'code/src/index.ts', 'docs/specs/requirements.md', 'media/diagrams/arch.svg')"),
+    content: z.string().describe("File content to write"),
+  },
+  async ({ project_id, relative_path, content }) =>
+    safeTool(async () => {
+      const result = await api(`/projects/${project_id}`);
+      const project = (result as { project?: { output_path?: string } }).project;
+      const outputPath = project?.output_path;
+      if (outputPath === undefined || outputPath === null) {
+        throw new Error("Project does not have an output_path configured");
+      }
+      const { mkdir, writeFile } = await import("node:fs/promises");
+      const { join, dirname, resolve } = await import("node:path");
+      const fullPath = resolve(join(outputPath, relative_path));
+      if (!fullPath.startsWith(resolve(outputPath))) {
+        throw new Error("Path traversal not allowed");
+      }
+      await mkdir(dirname(fullPath), { recursive: true });
+      await writeFile(fullPath, content, "utf-8");
+      return { written: fullPath };
+    }),
+);
+
+mcpServer.tool(
+  "bizforge_project_read_file",
+  "Read a file from a project's output directory on disk.",
+  {
+    project_id: z.string().describe("The project ID to read from"),
+    relative_path: z.string().describe("File path relative to project output_path"),
+  },
+  async ({ project_id, relative_path }) =>
+    safeTool(async () => {
+      const result = await api(`/projects/${project_id}`);
+      const project = (result as { project?: { output_path?: string } }).project;
+      const outputPath = project?.output_path;
+      if (outputPath === undefined || outputPath === null) {
+        throw new Error("Project does not have an output_path configured");
+      }
+      const { readFile } = await import("node:fs/promises");
+      const { join, resolve } = await import("node:path");
+      const fullPath = resolve(join(outputPath, relative_path));
+      if (!fullPath.startsWith(resolve(outputPath))) {
+        throw new Error("Path traversal not allowed");
+      }
+      const content = await readFile(fullPath, "utf-8");
+      return { path: fullPath, content };
+    }),
+);
+
+mcpServer.tool(
+  "bizforge_project_list_files",
+  "List files in a project's output directory (optionally within a subdirectory).",
+  {
+    project_id: z.string().describe("The project ID"),
+    subdir: z.string().optional().describe("Subdirectory to list (e.g. 'src'). Lists root if omitted."),
+  },
+  async ({ project_id, subdir }) =>
+    safeTool(async () => {
+      const result = await api(`/projects/${project_id}`);
+      const project = (result as { project?: { output_path?: string } }).project;
+      const outputPath = project?.output_path;
+      if (outputPath === undefined || outputPath === null) {
+        throw new Error("Project does not have an output_path configured");
+      }
+      const { readdir } = await import("node:fs/promises");
+      const { join, resolve } = await import("node:path");
+      const targetDir = subdir !== undefined
+        ? resolve(join(outputPath, subdir))
+        : resolve(outputPath);
+      if (!targetDir.startsWith(resolve(outputPath))) {
+        throw new Error("Path traversal not allowed");
+      }
+      const entries = await readdir(targetDir, { withFileTypes: true });
+      return {
+        directory: targetDir,
+        entries: entries.map((e) => ({
+          name: e.name,
+          type: e.isDirectory() ? "directory" : "file",
+        })),
+      };
+    }),
 );
 
 // ── Tools: Memory ────────────────────────────────────────────────────────────
@@ -685,6 +803,114 @@ mcpServer.tool(
   "bizforge_integrations_list",
   "List all external integrations and their status",
   async () => safeTool(() => api("/integrations")),
+);
+
+// ── Tools: QA Report Ingestion ──────────────────────────────────────────────
+
+mcpServer.tool(
+  "bizforge_qa_report_ingest",
+  "Ingest a QA automation report — creates a WorkProduct, a Report entry, and triggers the lifecycle FSM (pass/fail routing)",
+  {
+    issue_id: z.string().describe("The issue ID this QA run covers"),
+    session_id: z.string().optional().describe("The session ID that produced the report"),
+    agent_id: z.string().optional().describe("The QA agent's ID"),
+    workspace_id: z.string().optional().describe("Workspace ID"),
+    summary: z.object({
+      total: z.number().describe("Total tests"),
+      passed: z.number().describe("Passed tests"),
+      failed: z.number().describe("Failed tests"),
+      skipped: z.number().optional().describe("Skipped tests"),
+      duration_ms: z.number().optional().describe("Total duration in ms"),
+      pass_rate: z.number().optional().describe("Pass rate percentage"),
+    }).describe("Test summary metrics"),
+    failures: z.array(z.object({
+      test: z.string().optional().describe("Test name"),
+      name: z.string().optional().describe("Test name (alternative)"),
+      file: z.string().optional().describe("Test file path"),
+      line: z.number().optional().describe("Line number"),
+      error: z.string().optional().describe("Error message"),
+      severity: z.string().optional().describe("critical, high, medium, low"),
+      screenshot: z.string().optional().describe("Path to failure screenshot"),
+    })).optional().describe("Array of test failure details"),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/qa-reports", { method: "POST", body: params }),
+    ),
+);
+
+// ── Tools: Browser Automation ───────────────────────────────────────────────
+
+mcpServer.tool(
+  "bizforge_browser_navigate",
+  "Navigate the browser to a URL (requires browser_automation permission on the agent)",
+  {
+    url: z.string().describe("URL to navigate to"),
+    agent_id: z.string().optional().describe("Agent ID for permission check"),
+    session_id: z.string().optional().describe("Session ID (resolves agent)"),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/browser/browser_navigate", { method: "POST", body: params }),
+    ),
+);
+
+mcpServer.tool(
+  "bizforge_browser_snapshot",
+  "Get the accessibility tree of the current page",
+  {
+    take_screenshot_afterwards: z.boolean().optional().describe("Also capture a screenshot"),
+    agent_id: z.string().optional(),
+    session_id: z.string().optional(),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/browser/browser_snapshot", { method: "POST", body: params }),
+    ),
+);
+
+mcpServer.tool(
+  "bizforge_browser_click",
+  "Click an element in the browser",
+  {
+    selector: z.string().optional().describe("CSS selector to click"),
+    ref: z.string().optional().describe("Element ref from snapshot"),
+    agent_id: z.string().optional(),
+    session_id: z.string().optional(),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/browser/browser_click", { method: "POST", body: params }),
+    ),
+);
+
+mcpServer.tool(
+  "bizforge_browser_fill",
+  "Fill an input field in the browser",
+  {
+    selector: z.string().optional().describe("CSS selector"),
+    ref: z.string().optional().describe("Element ref from snapshot"),
+    value: z.string().describe("Value to fill"),
+    agent_id: z.string().optional(),
+    session_id: z.string().optional(),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/browser/browser_fill", { method: "POST", body: params }),
+    ),
+);
+
+mcpServer.tool(
+  "bizforge_browser_screenshot",
+  "Take a screenshot of the current browser viewport",
+  {
+    agent_id: z.string().optional(),
+    session_id: z.string().optional(),
+  },
+  async (params) =>
+    safeTool(() =>
+      api("/browser/browser_take_screenshot", { method: "POST", body: params }),
+    ),
 );
 
 // ── Main ─────────────────────────────────────────────────────────────────────

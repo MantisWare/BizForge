@@ -11,12 +11,14 @@
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
+  import { relativeDocPath } from '$lib/utils/project-paths';
   import DOMPurify from 'dompurify';
 
   interface Props {
     projectId: string;
     projectName: string;
     projectDescription: string | null;
+    outputPath: string | null;
     onClose: () => void;
     onSaved: () => void;
   }
@@ -25,6 +27,7 @@
     projectId,
     projectName,
     projectDescription,
+    outputPath,
     onClose,
     onSaved,
   }: Props = $props();
@@ -289,12 +292,15 @@
         ? (customType.trim().toLowerCase().replace(/\s+/g, '-') || 'document')
         : docType.replace(/_/g, '-');
       const path = `${projectName.toLowerCase().replace(/\s+/g, '-')}/${slug}.md`;
+      const diskSubdir = relativeDocPath(docType, '').replace(/\/$/, '');
       await documentsStore.createDocument({
         title: docTypeLabel,
         path,
         content: generatedContent,
         format: 'markdown',
         project_id: projectId,
+        output_path: outputPath,
+        disk_subdir: diskSubdir,
       });
       onSaved();
     } catch (err) {

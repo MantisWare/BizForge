@@ -9,7 +9,7 @@ reportsTo: api-tester
 budget: 500
 adapter: osa
 signal: S=(data, report, inform, markdown, benchmark-results)
-skills: [development/test, analysis/stats, analysis/health, development/debug, content/write]
+skills: [development/test, analysis/stats, analysis/health, development/debug, content/write, qa/automate, qa/report, qa/startup-probe]
 role: performance benchmarker
 title: Performance Benchmarker
 context_tier: l1

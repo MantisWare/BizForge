@@ -1,4 +1,4 @@
-// Operation data (companies) — 5 operations
+// Operation data (companies) — 6 operations
 
 import type { LibraryOperation } from "./types";
 import type { RawOperation } from "./enrichment";
@@ -78,6 +78,34 @@ const RAW_OPERATIONS: RawOperation[] = [
       "context-inject", "compare", "cite",
     ],
     category: "productivity",
+  },
+  {
+    id: "domo-consultancy",
+    name: "Domo Consultancy",
+    emoji: "globe",
+    description:
+      "Full-service Domo design, development, and administration consultancy — 9 specialized agents spanning project management, UI/UX development, backend engineering, custom app building, data pipeline architecture, workflow automation, quality assurance, and instance administration. Covers the entire Domo lifecycle from initial instance setup and user provisioning through app scaffolding, data integration, and production deployment.",
+    agent_count: 9,
+    skill_count: 13,
+    required_skills: [
+      "domo-app-scaffold",
+      "domo-appdb-manage",
+      "domo-app-publish",
+      "domo-code-engine",
+      "domo-connector-build",
+      "domo-dataset-manage",
+      "domo-magic-etl",
+      "domo-workflow-automate",
+      "domo-embed-analytics",
+      "domo-api-integrate",
+      "domo-governance",
+      "domo-data-science",
+      "domo-instance-admin",
+      "sprint-planning",
+      "delegate",
+      "board",
+    ],
+    category: "domo",
   },
 ];
 

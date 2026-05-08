@@ -1,15 +1,157 @@
 <!-- src/lib/components/inspector/LlmInspectorPanel.svelte -->
 <script lang="ts">
-  import { llmInspectorStore } from '$lib/stores/llmInspector.svelte';
+  import { llmInspectorStore, type InspectorFilter } from '$lib/stores/llmInspector.svelte';
+  import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
+  import { agentsStore } from '$lib/stores/agents.svelte';
   import type { LlmLogEntry } from '$api/types';
+  import { browser } from '$app/environment';
+  import OfficeMiniview from './OfficeMiniview.svelte';
 
   let expandedIds = $state<Set<string>>(new Set());
   let dragging = $state(false);
+  let filterDropdownOpen = $state(false);
+
+  let showMiniview = $state(true);
+  $effect(() => {
+    if (!browser) return;
+    const stored = localStorage.getItem('bizforge-inspector-miniview');
+    if (stored !== null) showMiniview = stored !== 'false';
+  });
+  function toggleMiniview(): void {
+    showMiniview = !showMiniview;
+    if (browser) localStorage.setItem('bizforge-inspector-miniview', String(showMiniview));
+  }
 
   const isOpen = $derived(llmInspectorStore.isOpen);
   const panelWidth = $derived(llmInspectorStore.panelWidth);
   const fontSize = $derived(llmInspectorStore.fontSize);
-  const entries = $derived(llmInspectorStore.entries);
+  const allEntries = $derived(llmInspectorStore.entries);
+  const searchQuery = $derived(llmInspectorStore.searchQuery);
+  const activeFilter = $derived(llmInspectorStore.activeFilter);
+
+  // ── Build agent-to-hierarchy lookup from the tree ─────────────────────
+  interface AgentOrgInfo {
+    teamId: string;
+    teamName: string;
+    departmentId: string;
+    departmentName: string;
+    divisionId: string;
+    divisionName: string;
+  }
+
+  const agentOrgMap = $derived.by<Map<string, AgentOrgInfo>>(() => {
+    const map = new Map<string, AgentOrgInfo>();
+    const tree = hierarchyStore.tree;
+    if (tree === null) return map;
+    for (const div of tree.divisions) {
+      for (const dept of div.departments) {
+        for (const team of dept.teams) {
+          for (const agent of team.agents) {
+            map.set(agent.id, {
+              teamId: team.id,
+              teamName: team.name,
+              departmentId: dept.id,
+              departmentName: dept.name,
+              divisionId: div.id,
+              divisionName: div.name,
+            });
+          }
+        }
+      }
+    }
+    return map;
+  });
+
+  // ── Build filter options from hierarchy tree ──────────────────────────
+  interface FilterOption {
+    filter: InspectorFilter;
+    indent: number;
+  }
+
+  const filterOptions = $derived.by<FilterOption[]>(() => {
+    const opts: FilterOption[] = [
+      { filter: { level: 'all', id: '', label: 'All' }, indent: 0 },
+    ];
+    const tree = hierarchyStore.tree;
+    if (tree === null) return opts;
+    for (const div of tree.divisions) {
+      opts.push({ filter: { level: 'division', id: div.id, label: div.name }, indent: 0 });
+      for (const dept of div.departments) {
+        opts.push({ filter: { level: 'department', id: dept.id, label: dept.name }, indent: 1 });
+        for (const team of dept.teams) {
+          opts.push({ filter: { level: 'team', id: team.id, label: team.name }, indent: 2 });
+          for (const agent of team.agents) {
+            opts.push({ filter: { level: 'agent', id: agent.id, label: agent.display_name || agent.name }, indent: 3 });
+          }
+        }
+      }
+    }
+    // Add unassigned agents (those with no team or not in the tree)
+    const treeAgentIds = new Set(agentOrgMap.keys());
+    const unassigned = agentsStore.agents.filter((a) => !treeAgentIds.has(a.id));
+    if (unassigned.length > 0) {
+      for (const agent of unassigned) {
+        opts.push({ filter: { level: 'agent', id: agent.id, label: agent.display_name || agent.name }, indent: 0 });
+      }
+    }
+    return opts;
+  });
+
+  // ── Collect matching agent IDs for hierarchy filters ──────────────────
+  function getMatchingAgentIds(filter: InspectorFilter): Set<string> | null {
+    if (filter.level === 'all') return null;
+    if (filter.level === 'agent') return new Set([filter.id]);
+
+    const ids = new Set<string>();
+    const tree = hierarchyStore.tree;
+    if (tree === null) return ids;
+
+    for (const div of tree.divisions) {
+      if (filter.level === 'division' && div.id !== filter.id) continue;
+      for (const dept of div.departments) {
+        if (filter.level === 'department' && dept.id !== filter.id) continue;
+        for (const team of dept.teams) {
+          if (filter.level === 'team' && team.id !== filter.id) continue;
+          for (const agent of team.agents) {
+            ids.add(agent.id);
+          }
+        }
+      }
+    }
+    return ids;
+  }
+
+  // ── Filtered entries ──────────────────────────────────────────────────
+  const entries = $derived.by<LlmLogEntry[]>(() => {
+    let result = allEntries;
+
+    const matchingIds = getMatchingAgentIds(activeFilter);
+    if (matchingIds !== null) {
+      result = result.filter((e) => {
+        if (e.agentId === undefined) return false;
+        return matchingIds.has(e.agentId);
+      });
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    if (q !== '') {
+      result = result.filter((e) =>
+        (e.agentName?.toLowerCase().includes(q) ?? false)
+        || e.providerName.toLowerCase().includes(q)
+        || e.providerSlug.toLowerCase().includes(q)
+        || e.model.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  });
+
+  const isFiltered = $derived(activeFilter.level !== 'all' || searchQuery.trim() !== '');
+
+  function selectFilter(filter: InspectorFilter): void {
+    llmInspectorStore.setFilter(filter);
+    filterDropdownOpen = false;
+  }
 
   function toggleEntry(id: string): void {
     const next = new Set(expandedIds);
@@ -82,6 +224,14 @@
     if (entry.status === 'success') return 'lip-status--success';
     return 'lip-status--pending';
   }
+
+  function getLevelIcon(level: string): string {
+    if (level === 'division') return '◆';
+    if (level === 'department') return '◇';
+    if (level === 'team') return '▸';
+    if (level === 'agent') return '●';
+    return '○';
+  }
 </script>
 
 {#if !isOpen}
@@ -126,11 +276,28 @@
           <path d="M5 6h6M5 8.5h4" />
         </svg>
         <span class="lip-header-title">LLM Inspector</span>
-        {#if entries.length > 0}
-          <span class="lip-header-count">{entries.length}</span>
+        {#if allEntries.length > 0}
+          <span class="lip-header-count" title="{isFiltered ? `${entries.length} of ${allEntries.length}` : `${allEntries.length} entries`}">
+            {#if isFiltered}{entries.length}/{allEntries.length}{:else}{allEntries.length}{/if}
+          </span>
         {/if}
       </div>
       <div class="lip-header-right">
+        <button
+          class="lip-header-btn"
+          class:lip-header-btn--active={showMiniview}
+          onclick={toggleMiniview}
+          title="{showMiniview ? 'Hide' : 'Show'} office overview"
+          aria-label="{showMiniview ? 'Hide' : 'Show'} office overview"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" width="13" height="13">
+            <rect x="1" y="3" width="14" height="10" rx="1.5" />
+            <rect x="3" y="5" width="4" height="3" rx="0.5" />
+            <rect x="9" y="5" width="4" height="3" rx="0.5" />
+            <rect x="3" y="9" width="4" height="2" rx="0.5" />
+            <rect x="9" y="9" width="4" height="2" rx="0.5" />
+          </svg>
+        </button>
         <div class="lip-font-controls" title="Font size: {fontSize}px">
           <button
             class="lip-font-btn"
@@ -174,6 +341,73 @@
       </div>
     </div>
 
+    <!-- Office miniview -->
+    {#if showMiniview}
+      <OfficeMiniview />
+    {/if}
+
+    <!-- Filter bar -->
+    <div class="lip-filter-bar">
+      <div class="lip-filter-dropdown-wrap">
+        <button
+          class="lip-filter-trigger"
+          class:lip-filter-trigger--active={activeFilter.level !== 'all'}
+          onclick={() => { filterDropdownOpen = !filterDropdownOpen; }}
+          aria-expanded={filterDropdownOpen}
+          aria-haspopup="listbox"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="12" height="12">
+            <path d="M2 4h12M4 8h8M6 12h4" />
+          </svg>
+          <span class="lip-filter-label">{activeFilter.label}</span>
+          <svg class="lip-filter-caret" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="10" height="10">
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
+
+        {#if filterDropdownOpen}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="lip-filter-backdrop" onclick={() => { filterDropdownOpen = false; }}></div>
+          <div class="lip-filter-dropdown" role="listbox">
+            {#each filterOptions as opt (opt.filter.level + ':' + opt.filter.id)}
+              <button
+                class="lip-filter-option"
+                class:lip-filter-option--active={activeFilter.level === opt.filter.level && activeFilter.id === opt.filter.id}
+                style="padding-left: {8 + opt.indent * 14}px"
+                onclick={() => selectFilter(opt.filter)}
+                role="option"
+                aria-selected={activeFilter.level === opt.filter.level && activeFilter.id === opt.filter.id}
+              >
+                <span class="lip-filter-icon">{getLevelIcon(opt.filter.level)}</span>
+                <span class="lip-filter-option-label">{opt.filter.label}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <input
+        type="text"
+        class="lip-search"
+        placeholder="Search agent, provider, model..."
+        value={searchQuery}
+        oninput={(e) => { llmInspectorStore.searchQuery = (e.target as HTMLInputElement).value; }}
+      />
+
+      {#if isFiltered}
+        <button
+          class="lip-filter-clear"
+          onclick={() => llmInspectorStore.clearFilter()}
+          title="Clear filters"
+          aria-label="Clear filters"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="11" height="11">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      {/if}
+    </div>
+
     <!-- Entry list -->
     <div class="lip-entries" style="--lip-fs: {fontSize}px">
       {#if entries.length === 0}
@@ -182,8 +416,13 @@
             <rect x="2" y="3" width="12" height="10" rx="1.5" />
             <path d="M5 6h6M5 8.5h4" />
           </svg>
-          <span>No LLM requests captured yet.</span>
-          <span class="lip-empty-hint">Requests will appear here when AI providers are called.</span>
+          {#if isFiltered}
+            <span>No matching requests.</span>
+            <span class="lip-empty-hint">Try adjusting the filter or search query.</span>
+          {:else}
+            <span>No LLM requests captured yet.</span>
+            <span class="lip-empty-hint">Requests will appear here when AI providers are called.</span>
+          {/if}
         </div>
       {:else}
         {#each entries as entry (entry.id)}
@@ -197,6 +436,9 @@
             >
               <span class="lip-provider-dot" style="background: {color}"></span>
               <span class="lip-provider-name" style="color: {color}">{entry.providerName}</span>
+              {#if entry.agentName}
+                <span class="lip-agent-name">{entry.agentName}</span>
+              {/if}
               <span class="lip-direction" class:lip-direction--sent={entry.direction === 'sent'} class:lip-direction--received={entry.direction === 'received'}>
                 {getDirectionIcon(entry.direction)}
                 <span class="lip-direction-label">{getDirectionLabel(entry.direction)}</span>
@@ -402,6 +644,10 @@
     cursor: not-allowed;
   }
 
+  .lip-header-btn--active {
+    color: var(--accent-primary);
+  }
+
   /* ── Font size controls ───────────────────────────────────────────── */
 
   .lip-font-controls {
@@ -444,6 +690,162 @@
     min-width: 18px;
     text-align: center;
     user-select: none;
+  }
+
+  /* ── Filter bar ────────────────────────────────────────────────────── */
+
+  .lip-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 16px;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+    margin-left: var(--inspector-gutter-width);
+  }
+
+  .lip-filter-dropdown-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .lip-filter-trigger {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .lip-filter-trigger:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-surface);
+  }
+
+  .lip-filter-trigger--active {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+  }
+
+  .lip-filter-label {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lip-filter-caret {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .lip-filter-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  .lip-filter-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 100;
+    min-width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    padding: 4px 0;
+  }
+
+  .lip-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+
+  .lip-filter-option:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+
+  .lip-filter-option--active {
+    color: var(--accent-primary);
+    font-weight: 600;
+  }
+
+  .lip-filter-icon {
+    font-size: 8px;
+    width: 12px;
+    text-align: center;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .lip-filter-option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lip-search {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xs);
+    outline: none;
+    transition: border-color var(--transition-fast);
+  }
+
+  .lip-search:focus {
+    border-color: var(--border-focus);
+  }
+
+  .lip-search::placeholder {
+    color: var(--text-muted);
+  }
+
+  .lip-filter-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .lip-filter-clear:hover {
+    color: var(--accent-error);
+    background: rgba(239, 68, 68, 0.08);
   }
 
   /* ── Entries container ────────────────────────────────────────────── */
@@ -517,6 +919,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .lip-agent-name {
+    font-size: calc(var(--lip-fs, 11px) - 1px);
+    font-weight: 500;
+    color: var(--text-tertiary);
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 1px 5px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xs);
   }
 
   .lip-direction {

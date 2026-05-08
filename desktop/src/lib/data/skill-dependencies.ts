@@ -69,6 +69,19 @@ export const AGENT_SKILL_TAG_MAP: Readonly<Record<string, readonly string[]>> = 
   train:      ["stats", "validate"],
   evaluate:   ["validate", "stats"],
 
+  // ide supervision
+  supervise:  ["code-review", "delegate", "ide-orchestrate"],
+  instruct:   ["delegate", "ide-orchestrate"],
+
+  // qa automation
+  qa_automate:    ["qa-automate", "qa-report", "qa-startup-probe"],
+  qa_test:        ["qa-automate", "test", "tdd"],
+  qa_report:      ["qa-report", "error-analysis"],
+  startup_probe:  ["qa-startup-probe"],
+  "qa-automate":  ["qa-automate"],
+  "qa-report":    ["qa-report"],
+  "qa-startup-probe": ["qa-startup-probe"],
+
   // domo-specific (passthrough — these are already library skill IDs)
   "domo-app-scaffold":       ["domo-app-scaffold"],
   "domo-api-integrate":      ["domo-api-integrate"],
@@ -82,6 +95,7 @@ export const AGENT_SKILL_TAG_MAP: Readonly<Record<string, readonly string[]>> = 
   "domo-magic-etl":          ["domo-magic-etl"],
   "domo-data-science":       ["domo-data-science"],
   "domo-workflow-automate":  ["domo-workflow-automate"],
+  "domo-instance-admin":     ["domo-instance-admin"],
 } as const;
 
 /**

@@ -63,7 +63,13 @@ import {
   deleteWebhook,
 } from "./webhooks";
 import { mockAlertRules, addAlertRule, deleteAlertRule } from "./alerts";
-import { mockIntegrations, mockAdapters, mockConnectIntegration, mockDisconnectIntegration } from "./integrations";
+import { mockIntegrations, mockAdapters, mockConnectIntegration, mockDisconnectIntegration, mockRemoveIntegration } from "./integrations";
+import {
+  getIntegrationBindings,
+  createIntegrationBinding,
+  deleteIntegrationBinding,
+  deleteIntegrationBindingByOwnerAndProvider,
+} from "./integration-bindings";
 import {
   mockGateways,
   addGateway,
@@ -954,8 +960,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
           description: (body.description as string | null) ?? null,
           status: "active",
           workspace_id: (body.workspace_id as string | undefined),
-          workspace_path:
-            (body.workspace_path as string) ?? "~/.bizforge/projects",
+          output_path: (body.output_path as string | null) ?? null,
           goal_count: 0,
           issue_count: 0,
           agent_count: 0,
@@ -1552,7 +1557,7 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
       const slug = path.split("/")[2];
       const method = (options.method ?? "GET").toUpperCase();
       if (method === "DELETE") {
-        mockDisconnectIntegration(slug);
+        mockRemoveIntegration(slug);
         return { ok: true };
       }
       const all = mockIntegrations();
@@ -1566,6 +1571,64 @@ const routes: Array<{ pattern: RegExp; handler: RouteHandler }> = [
   {
     pattern: /^\/adapters$/,
     handler: () => ({ adapters: mockAdapters() }),
+  },
+
+  // ── Integration Bindings ────────────────────────────────────────────────────
+  {
+    pattern: /^\/integration-bindings$/,
+    handler: (_cleanPath, options, fullPath) => {
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "POST" && options.body !== undefined && options.body !== null) {
+        try {
+          const body = JSON.parse(typeof options.body === "string" ? options.body : JSON.stringify(options.body)) as Record<string, unknown>;
+          const binding = createIntegrationBinding(
+            body.owner_type as string as import("../types").IntegrationBindingOwner,
+            body.owner_id as string,
+            body.provider as string,
+            body.integration_id as string,
+            (body.integration_name as string) ?? "",
+            body.config_overrides as Record<string, unknown> | undefined,
+          );
+          return { binding };
+        } catch {
+          return { error: "invalid_body" };
+        }
+      }
+      const url = new URL(fullPath ?? _cleanPath, "http://localhost");
+      const ownerType = url.searchParams.get("owner_type") as import("../types").IntegrationBindingOwner | null;
+      const ownerId = url.searchParams.get("owner_id");
+      if (ownerType !== null && ownerId !== null) {
+        return { bindings: getIntegrationBindings(ownerType, ownerId) };
+      }
+      return { bindings: getIntegrationBindings() };
+    },
+  },
+  {
+    pattern: /^\/integration-bindings\/([^/]+)$/,
+    handler: (path, options) => {
+      const id = path.split("/")[2];
+      const method = (options.method ?? "GET").toUpperCase();
+      if (method === "DELETE") {
+        const ok = deleteIntegrationBinding(id);
+        return { ok };
+      }
+      return { error: "not_found" };
+    },
+  },
+  {
+    pattern: /^\/integration-bindings\/by-owner\/([^/]+)\/([^/]+)\/([^/]+)$/,
+    handler: (path, options) => {
+      const parts = path.split("/");
+      const ownerType = parts[3] as import("../types").IntegrationBindingOwner;
+      const ownerId = parts[4];
+      const provider = parts[5];
+      const method = (options.method ?? "DELETE").toUpperCase();
+      if (method === "DELETE") {
+        const ok = deleteIntegrationBindingByOwnerAndProvider(ownerType, ownerId, provider);
+        return { ok };
+      }
+      return { error: "method_not_allowed" };
+    },
   },
 
   // ── Gateways ──────────────────────────────────────────────────────────────────

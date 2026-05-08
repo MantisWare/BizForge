@@ -74,78 +74,97 @@ const ROOMS: OfficeRoom[] = [
 
 // ─── Furniture placement ──────────────────────────────────
 const FURNITURE: Furniture[] = [
-  // Engineering — 2 rows of desks with PCs
+  // Engineering — central rectangular table with laptops + perimeter desks
+  // Central conference table (spans tiles 4-6, row 4)
+  { type: FurnitureType.TABLE_RECT, x: 4, y: 3, facing: "down" },
+  { type: FurnitureType.TABLE_RECT, x: 6, y: 3, facing: "down" },
+  // Laptops on the conference table
+  { type: FurnitureType.LAPTOP, x: 4, y: 3, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 5, y: 3, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 6, y: 3, facing: "down" },
+  // Chairs around the conference table
+  { type: FurnitureType.CHAIR, x: 4, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 5, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 6, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 4, y: 4, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 5, y: 4, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 6, y: 4, facing: "up" },
+  // Side wall desks (individual workstations)
   { type: FurnitureType.DESK, x: 2, y: 2, facing: "down" },
   { type: FurnitureType.PC, x: 2, y: 2, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 2, y: 3, facing: "up" },
-  { type: FurnitureType.DESK, x: 4, y: 2, facing: "down" },
-  { type: FurnitureType.PC, x: 4, y: 2, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 4, y: 3, facing: "up" },
-  { type: FurnitureType.DESK, x: 6, y: 2, facing: "down" },
-  { type: FurnitureType.PC, x: 6, y: 2, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 6, y: 3, facing: "up" },
   { type: FurnitureType.DESK, x: 8, y: 2, facing: "down" },
   { type: FurnitureType.PC, x: 8, y: 2, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 8, y: 3, facing: "up" },
-
+  // Bottom row side desks
   { type: FurnitureType.DESK, x: 2, y: 5, facing: "down" },
   { type: FurnitureType.PC, x: 2, y: 5, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 2, y: 6, facing: "up" },
-  { type: FurnitureType.DESK, x: 4, y: 5, facing: "down" },
-  { type: FurnitureType.PC, x: 4, y: 5, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 4, y: 6, facing: "up" },
-  { type: FurnitureType.DESK, x: 6, y: 5, facing: "down" },
-  { type: FurnitureType.PC, x: 6, y: 5, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 6, y: 6, facing: "up" },
 
   { type: FurnitureType.WHITEBOARD, x: 9, y: 1, facing: "left" },
   { type: FurnitureType.PLANT, x: 1, y: 1, facing: "down" },
 
-  // Engineering rugs (decorative, under desk rows)
-  { type: FurnitureType.RUG, x: 2, y: 3, facing: "down" },
-  { type: FurnitureType.RUG, x: 4, y: 3, facing: "down" },
-  { type: FurnitureType.RUG, x: 6, y: 3, facing: "down" },
+  // Engineering rugs (decorative, under table area)
+  { type: FurnitureType.RUG, x: 4, y: 4, facing: "down" },
+  { type: FurnitureType.RUG, x: 6, y: 4, facing: "down" },
 
-  // Product — 2 rows of desks
+  // Product — central rectangular table with laptops + perimeter desks
+  // Central conference table (spans tiles 17-19, row 4)
+  { type: FurnitureType.TABLE_RECT, x: 17, y: 3, facing: "down" },
+  { type: FurnitureType.TABLE_RECT, x: 19, y: 3, facing: "down" },
+  // Laptops on the conference table
+  { type: FurnitureType.LAPTOP, x: 17, y: 3, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 18, y: 3, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 19, y: 3, facing: "down" },
+  // Chairs around the conference table
+  { type: FurnitureType.CHAIR, x: 17, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 18, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 19, y: 2, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 17, y: 4, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 18, y: 4, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 19, y: 4, facing: "up" },
+  // Side wall desks (individual workstations)
   { type: FurnitureType.DESK, x: 15, y: 2, facing: "down" },
   { type: FurnitureType.PC, x: 15, y: 2, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 15, y: 3, facing: "up" },
-  { type: FurnitureType.DESK, x: 17, y: 2, facing: "down" },
-  { type: FurnitureType.PC, x: 17, y: 2, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 17, y: 3, facing: "up" },
-  { type: FurnitureType.DESK, x: 19, y: 2, facing: "down" },
-  { type: FurnitureType.PC, x: 19, y: 2, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 19, y: 3, facing: "up" },
   { type: FurnitureType.DESK, x: 21, y: 2, facing: "down" },
   { type: FurnitureType.PC, x: 21, y: 2, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 21, y: 3, facing: "up" },
-
+  // Bottom row side desks
   { type: FurnitureType.DESK, x: 15, y: 5, facing: "down" },
   { type: FurnitureType.PC, x: 15, y: 5, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 15, y: 6, facing: "up" },
-  { type: FurnitureType.DESK, x: 17, y: 5, facing: "down" },
-  { type: FurnitureType.PC, x: 17, y: 5, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 17, y: 6, facing: "up" },
+  { type: FurnitureType.DESK, x: 21, y: 5, facing: "down" },
+  { type: FurnitureType.PC, x: 21, y: 5, facing: "down", state: "off" },
+  { type: FurnitureType.CHAIR, x: 21, y: 6, facing: "up" },
 
   { type: FurnitureType.BOOKSHELF, x: 22, y: 1, facing: "left" },
   { type: FurnitureType.PLANT, x: 14, y: 1, facing: "down" },
   { type: FurnitureType.WALL_ART, x: 18, y: 1, facing: "down" },
 
   // Product rugs
-  { type: FurnitureType.RUG, x: 15, y: 3, facing: "down" },
-  { type: FurnitureType.RUG, x: 17, y: 3, facing: "down" },
-  { type: FurnitureType.RUG, x: 19, y: 3, facing: "down" },
+  { type: FurnitureType.RUG, x: 17, y: 4, facing: "down" },
+  { type: FurnitureType.RUG, x: 19, y: 4, facing: "down" },
 
-  // Operations — desks
+  // Operations — central rectangular table with laptops + perimeter desks
+  // Central conference table (spans tiles 4-6, row 14)
+  { type: FurnitureType.TABLE_RECT, x: 4, y: 14, facing: "down" },
+  { type: FurnitureType.TABLE_RECT, x: 6, y: 14, facing: "down" },
+  // Laptops on the conference table
+  { type: FurnitureType.LAPTOP, x: 4, y: 14, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 5, y: 14, facing: "down" },
+  { type: FurnitureType.LAPTOP, x: 6, y: 14, facing: "down" },
+  // Chairs around the conference table
+  { type: FurnitureType.CHAIR, x: 4, y: 13, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 5, y: 13, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 6, y: 13, facing: "down" },
+  { type: FurnitureType.CHAIR, x: 4, y: 15, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 5, y: 15, facing: "up" },
+  { type: FurnitureType.CHAIR, x: 6, y: 15, facing: "up" },
+  // Side wall desks (individual workstations)
   { type: FurnitureType.DESK, x: 2, y: 13, facing: "down" },
   { type: FurnitureType.PC, x: 2, y: 13, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 2, y: 14, facing: "up" },
-  { type: FurnitureType.DESK, x: 4, y: 13, facing: "down" },
-  { type: FurnitureType.PC, x: 4, y: 13, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 4, y: 14, facing: "up" },
-  { type: FurnitureType.DESK, x: 6, y: 13, facing: "down" },
-  { type: FurnitureType.PC, x: 6, y: 13, facing: "down", state: "off" },
-  { type: FurnitureType.CHAIR, x: 6, y: 14, facing: "up" },
   { type: FurnitureType.DESK, x: 8, y: 13, facing: "down" },
   { type: FurnitureType.PC, x: 8, y: 13, facing: "down", state: "off" },
   { type: FurnitureType.CHAIR, x: 8, y: 14, facing: "up" },
@@ -201,26 +220,45 @@ export interface Seat {
 }
 
 export const SEATS: Seat[] = [
-  // Engineering seats (at chairs, facing desk)
+  // Engineering — conference table seats (top row facing table)
+  { gridX: 4, gridY: 2, facing: "down", room: "engineering", deskX: 4, deskY: 3 },
+  { gridX: 5, gridY: 2, facing: "down", room: "engineering", deskX: 5, deskY: 3 },
+  { gridX: 6, gridY: 2, facing: "down", room: "engineering", deskX: 6, deskY: 3 },
+  // Engineering — conference table seats (bottom row facing table)
+  { gridX: 4, gridY: 4, facing: "up", room: "engineering", deskX: 4, deskY: 3 },
+  { gridX: 5, gridY: 4, facing: "up", room: "engineering", deskX: 5, deskY: 3 },
+  { gridX: 6, gridY: 4, facing: "up", room: "engineering", deskX: 6, deskY: 3 },
+  // Engineering — side wall desk seats
   { gridX: 2, gridY: 3, facing: "up", room: "engineering", deskX: 2, deskY: 2 },
-  { gridX: 4, gridY: 3, facing: "up", room: "engineering", deskX: 4, deskY: 2 },
-  { gridX: 6, gridY: 3, facing: "up", room: "engineering", deskX: 6, deskY: 2 },
   { gridX: 8, gridY: 3, facing: "up", room: "engineering", deskX: 8, deskY: 2 },
   { gridX: 2, gridY: 6, facing: "up", room: "engineering", deskX: 2, deskY: 5 },
-  { gridX: 4, gridY: 6, facing: "up", room: "engineering", deskX: 4, deskY: 5 },
-  { gridX: 6, gridY: 6, facing: "up", room: "engineering", deskX: 6, deskY: 5 },
-  // Product seats
+
+  // Product — conference table seats (top row facing table)
+  { gridX: 17, gridY: 2, facing: "down", room: "product", deskX: 17, deskY: 3 },
+  { gridX: 18, gridY: 2, facing: "down", room: "product", deskX: 18, deskY: 3 },
+  { gridX: 19, gridY: 2, facing: "down", room: "product", deskX: 19, deskY: 3 },
+  // Product — conference table seats (bottom row facing table)
+  { gridX: 17, gridY: 4, facing: "up", room: "product", deskX: 17, deskY: 3 },
+  { gridX: 18, gridY: 4, facing: "up", room: "product", deskX: 18, deskY: 3 },
+  { gridX: 19, gridY: 4, facing: "up", room: "product", deskX: 19, deskY: 3 },
+  // Product — side wall desk seats
   { gridX: 15, gridY: 3, facing: "up", room: "product", deskX: 15, deskY: 2 },
-  { gridX: 17, gridY: 3, facing: "up", room: "product", deskX: 17, deskY: 2 },
-  { gridX: 19, gridY: 3, facing: "up", room: "product", deskX: 19, deskY: 2 },
   { gridX: 21, gridY: 3, facing: "up", room: "product", deskX: 21, deskY: 2 },
   { gridX: 15, gridY: 6, facing: "up", room: "product", deskX: 15, deskY: 5 },
-  { gridX: 17, gridY: 6, facing: "up", room: "product", deskX: 17, deskY: 5 },
-  // Operations seats
+  { gridX: 21, gridY: 6, facing: "up", room: "product", deskX: 21, deskY: 5 },
+
+  // Operations — conference table seats (top row facing table)
+  { gridX: 4, gridY: 13, facing: "down", room: "operations", deskX: 4, deskY: 14 },
+  { gridX: 5, gridY: 13, facing: "down", room: "operations", deskX: 5, deskY: 14 },
+  { gridX: 6, gridY: 13, facing: "down", room: "operations", deskX: 6, deskY: 14 },
+  // Operations — conference table seats (bottom row facing table)
+  { gridX: 4, gridY: 15, facing: "up", room: "operations", deskX: 4, deskY: 14 },
+  { gridX: 5, gridY: 15, facing: "up", room: "operations", deskX: 5, deskY: 14 },
+  { gridX: 6, gridY: 15, facing: "up", room: "operations", deskX: 6, deskY: 14 },
+  // Operations — side wall desk seats
   { gridX: 2, gridY: 14, facing: "up", room: "operations", deskX: 2, deskY: 13 },
-  { gridX: 4, gridY: 14, facing: "up", room: "operations", deskX: 4, deskY: 13 },
-  { gridX: 6, gridY: 14, facing: "up", room: "operations", deskX: 6, deskY: 13 },
   { gridX: 8, gridY: 14, facing: "up", room: "operations", deskX: 8, deskY: 13 },
+
   // Research seats
   { gridX: 15, gridY: 14, facing: "up", room: "research", deskX: 15, deskY: 13 },
   { gridX: 17, gridY: 14, facing: "up", room: "research", deskX: 17, deskY: 13 },
@@ -287,7 +325,8 @@ export function createDefaultLayout(): OfficeLayout {
       f.type === FurnitureType.WHITEBOARD ||
       f.type === FurnitureType.KITCHEN_COUNTER ||
       f.type === FurnitureType.FRIDGE ||
-      f.type === FurnitureType.TV
+      f.type === FurnitureType.TV ||
+      f.type === FurnitureType.TABLE_RECT
     ) {
       if (f.y < ROWS && f.x < COLS) {
         walkable[f.y][f.x] = false;

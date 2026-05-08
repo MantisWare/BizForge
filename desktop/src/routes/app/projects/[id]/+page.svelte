@@ -18,7 +18,11 @@
   import { costsStore } from '$lib/stores/costs.svelte';
   import { documentsStore } from '$lib/stores/documents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
-  import type { Project, Document } from '$lib/api/types';
+  import { integrationsStore } from '$lib/stores/integrations.svelte';
+  import { integrationBindings as bindingsApi } from '$api/client';
+  import IntegrationBindingSelector from '$lib/components/integrations/IntegrationBindingSelector.svelte';
+  import { SKILLS } from '$api/mock/library/skills';
+  import type { Project, Document, IntegrationBinding, SkillIntegrationRequirement } from '$api/types';
 
   // ── Route params ────────────────────────────────────────────────────────────
   const id = $derived(page.params.id ?? '');
@@ -116,6 +120,64 @@
     loadedTabs = new Set<ProjectTab>();
   });
 
+  // ── Integration Bindings (project-level) ─────────────────────────────────────
+  let projectBindings = $state<IntegrationBinding[]>([]);
+
+  const projectRequiredIntegrations = $derived.by((): SkillIntegrationRequirement[] => {
+    const projectAgents = agentsStore.agents.filter(a => a.project_id === id);
+    const requirements: SkillIntegrationRequirement[] = [];
+    const seenProviders = new Set<string>();
+
+    for (const ag of projectAgents) {
+      const agentSkillIds = ag.skills ?? [];
+      for (const skillId of agentSkillIds) {
+        const librarySkill = SKILLS.find(s => s.id === skillId);
+        if (librarySkill === undefined) continue;
+        for (const req of librarySkill.required_integrations) {
+          if (!seenProviders.has(req.provider)) {
+            seenProviders.add(req.provider);
+            requirements.push(req);
+          }
+        }
+      }
+    }
+    return requirements;
+  });
+
+  async function fetchProjectBindings() {
+    if (!id) return;
+    try {
+      projectBindings = await bindingsApi.list('project', id);
+    } catch {
+      projectBindings = [];
+    }
+  }
+
+  async function handleProjectBind(provider: string, integrationId: string) {
+    if (!id) return;
+    await bindingsApi.create({
+      owner_type: 'project',
+      owner_id: id,
+      provider,
+      integration_id: integrationId,
+      config_overrides: {},
+    });
+    await fetchProjectBindings();
+  }
+
+  async function handleProjectUnbind(provider: string) {
+    if (!id) return;
+    await bindingsApi.removeByOwnerAndProvider('project', id, provider);
+    await fetchProjectBindings();
+  }
+
+  $effect(() => {
+    if (id) {
+      void integrationsStore.fetchIntegrations();
+      void fetchProjectBindings();
+    }
+  });
+
   // ── Derived: project-scoped data ─────────────────────────────────────────────
   const projectIssues = $derived(
     issuesStore.issues.filter((i) => i.project_id === id),
@@ -169,6 +231,8 @@
         path: docFormPath.trim(),
         content: docFormContent,
         project_id: project.id,
+        output_path: project.output_path,
+        disk_subdir: 'docs',
       });
       showDocForm = false;
       docFormPath = '';
@@ -416,6 +480,18 @@
             {/if}
           </div>
 
+          <!-- Service Access (project-level integration bindings) -->
+          <div class="pj-card">
+            <IntegrationBindingSelector
+              ownerType="project"
+              ownerId={project.id}
+              requiredIntegrations={projectRequiredIntegrations}
+              bindings={projectBindings}
+              onBind={handleProjectBind}
+              onUnbind={handleProjectUnbind}
+            />
+          </div>
+
           <!-- Project details sidebar info — shown inline in overview -->
           <div class="pj-card">
             <div class="pj-card-header">
@@ -432,10 +508,10 @@
                 <dt class="pj-meta-label">ID</dt>
                 <dd class="pj-meta-value pj-meta-mono">{project.id}</dd>
               </div>
-              {#if project.workspace_path}
+              {#if project.output_path}
                 <div class="pj-meta-row">
-                  <dt class="pj-meta-label">Workspace path</dt>
-                  <dd class="pj-meta-value pj-meta-mono">{project.workspace_path}</dd>
+                  <dt class="pj-meta-label">Output path</dt>
+                  <dd class="pj-meta-value pj-meta-mono">{project.output_path}</dd>
                 </div>
               {/if}
               <div class="pj-meta-row">
@@ -874,6 +950,7 @@
     projectId={project.id}
     projectName={project.name}
     projectDescription={project.description}
+    outputPath={project.output_path}
     onClose={() => { showGenerateDocModal = false; }}
     onSaved={() => { showGenerateDocModal = false; void documentsStore.fetchByProject(project!.id); }}
   />
@@ -884,6 +961,7 @@
   <GenerateIssuesModal
     projectId={project.id}
     projectName={project.name}
+    outputPath={project.output_path}
     documents={projectDocs}
     onClose={() => { showGenerateIssuesModal = false; }}
     onCreated={() => { showGenerateIssuesModal = false; void issuesStore.fetchIssues(workspaceStore.activeWorkspaceId ?? undefined); }}

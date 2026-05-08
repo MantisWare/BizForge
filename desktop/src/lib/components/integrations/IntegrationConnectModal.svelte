@@ -17,6 +17,7 @@
     type: 'text' | 'password' | 'url';
     placeholder: string;
     required: boolean;
+    is_secret?: boolean;
     help?: string;
   }
 
@@ -28,39 +29,58 @@
 
   let { open, integration, onClose }: Props = $props();
 
+  let configName = $state('');
   let configValues = $state<Record<string, string>>({});
   let connecting = $state(false);
   let validationErrors = $state<Record<string, string>>({});
 
   const INTEGRATION_FIELDS: Record<string, ConfigField[]> = {
     github: [
-      { key: 'access_token', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_xxxxxxxxxxxx', required: true, help: 'Generate from GitHub Settings → Developer settings → Personal access tokens' },
+      { key: 'access_token', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_xxxxxxxxxxxx', required: true, is_secret: true, help: 'Generate from GitHub Settings → Developer settings → Personal access tokens' },
       { key: 'organization', label: 'Organization (optional)', type: 'text', placeholder: 'my-org', required: false, help: 'Leave blank to use personal repositories' },
       { key: 'webhook_url', label: 'Webhook URL (optional)', type: 'url', placeholder: 'https://your-server.com/webhooks/github', required: false },
     ],
     linear: [
-      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'lin_api_xxxxxxxxxxxx', required: true, help: 'Generate from Linear Settings → API → Personal API keys' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'lin_api_xxxxxxxxxxxx', required: true, is_secret: true, help: 'Generate from Linear Settings → API → Personal API keys' },
       { key: 'team_id', label: 'Team ID (optional)', type: 'text', placeholder: 'TEAM-123', required: false, help: 'Restrict sync to a specific team' },
     ],
     slack: [
-      { key: 'bot_token', label: 'Bot Token', type: 'password', placeholder: 'xoxb-xxxxxxxxxxxx', required: true, help: 'From your Slack App → OAuth & Permissions → Bot User OAuth Token' },
-      { key: 'signing_secret', label: 'Signing Secret', type: 'password', placeholder: 'xxxxxxxxxxxxxxxx', required: true, help: 'From your Slack App → Basic Information → App Credentials' },
+      { key: 'bot_token', label: 'Bot Token', type: 'password', placeholder: 'xoxb-xxxxxxxxxxxx', required: true, is_secret: true, help: 'From your Slack App → OAuth & Permissions → Bot User OAuth Token' },
+      { key: 'signing_secret', label: 'Signing Secret', type: 'password', placeholder: 'xxxxxxxxxxxxxxxx', required: true, is_secret: true, help: 'From your Slack App → Basic Information → App Credentials' },
       { key: 'default_channel', label: 'Default Channel', type: 'text', placeholder: '#general', required: false, help: 'Channel for notifications when no specific routing is configured' },
     ],
     notion: [
-      { key: 'api_key', label: 'Integration Token', type: 'password', placeholder: 'secret_xxxxxxxxxxxx', required: true, help: 'Create an integration at notion.so/my-integrations' },
+      { key: 'api_key', label: 'Integration Token', type: 'password', placeholder: 'secret_xxxxxxxxxxxx', required: true, is_secret: true, help: 'Create an integration at notion.so/my-integrations' },
       { key: 'root_page_id', label: 'Root Page ID (optional)', type: 'text', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', required: false, help: 'Limit access to a specific page and its children' },
     ],
     jira: [
-      { key: 'email', label: 'Email', type: 'text', placeholder: 'you@company.com', required: true },
-      { key: 'api_token', label: 'API Token', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, help: 'Generate from id.atlassian.com/manage-profile/security/api-tokens' },
       { key: 'domain', label: 'Jira Domain', type: 'url', placeholder: 'https://your-team.atlassian.net', required: true },
-      { key: 'project_key', label: 'Project Key (optional)', type: 'text', placeholder: 'PROJ', required: false },
+      { key: 'email', label: 'Email', type: 'text', placeholder: 'you@company.com', required: true },
+      { key: 'api_token', label: 'API Token', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, is_secret: true, help: 'Generate from id.atlassian.com/manage-profile/security/api-tokens' },
+      { key: 'project_key', label: 'Default Project Key (optional)', type: 'text', placeholder: 'PROJ', required: false },
     ],
     datadog: [
-      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, help: 'From Datadog → Organization Settings → API Keys' },
-      { key: 'app_key', label: 'Application Key', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, help: 'From Datadog → Organization Settings → Application Keys' },
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, is_secret: true, help: 'From Datadog → Organization Settings → API Keys' },
+      { key: 'app_key', label: 'Application Key', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, is_secret: true, help: 'From Datadog → Organization Settings → Application Keys' },
       { key: 'site', label: 'Datadog Site', type: 'text', placeholder: 'datadoghq.com', required: false, help: 'e.g. datadoghq.eu for EU region' },
+    ],
+    domo: [
+      { key: 'instance_url', label: 'Instance URL', type: 'url', placeholder: 'https://company.domo.com', required: true, help: 'Your Domo instance URL (e.g. https://acme.domo.com)' },
+      { key: 'client_id', label: 'OAuth Client ID', type: 'password', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', required: true, is_secret: true, help: 'From Admin → Security → OAuth → Create client' },
+      { key: 'client_secret', label: 'OAuth Client Secret', type: 'password', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx', required: true, is_secret: true, help: 'Generated with your OAuth client' },
+      { key: 'developer_token', label: 'Developer Token (optional)', type: 'password', placeholder: 'xxxxxxxxxxxx', required: false, is_secret: true, help: 'Full-admin token from Admin → Security → Access Tokens. Use only when full access is needed.' },
+      { key: 'scopes', label: 'OAuth Scopes', type: 'text', placeholder: 'data user dashboard account audit', required: false, help: 'Space-separated scopes. Defaults to all if blank.' },
+    ],
+    confluence: [
+      { key: 'domain', label: 'Confluence Domain', type: 'url', placeholder: 'https://your-team.atlassian.net/wiki', required: true },
+      { key: 'email', label: 'Email', type: 'text', placeholder: 'you@company.com', required: true },
+      { key: 'api_token', label: 'API Token', type: 'password', placeholder: 'xxxxxxxxxxxx', required: true, is_secret: true },
+      { key: 'space_key', label: 'Space Key (optional)', type: 'text', placeholder: 'ENG', required: false },
+    ],
+    gitlab: [
+      { key: 'access_token', label: 'Personal Access Token', type: 'password', placeholder: 'glpat-xxxxxxxxxxxx', required: true, is_secret: true, help: 'Generate from GitLab → User Settings → Access Tokens' },
+      { key: 'base_url', label: 'GitLab URL', type: 'url', placeholder: 'https://gitlab.com', required: false, help: 'Leave blank for gitlab.com, or enter your self-hosted URL' },
+      { key: 'group_id', label: 'Group ID (optional)', type: 'text', placeholder: '12345', required: false },
     ],
   };
 
@@ -70,6 +90,7 @@
 
   $effect(() => {
     if (open && integration !== null) {
+      configName = '';
       configValues = {};
       validationErrors = {};
       connecting = false;
@@ -78,11 +99,17 @@
 
   function validate(): boolean {
     const errors: Record<string, string> = {};
+
+    if (configName.trim() === '') {
+      errors['_name'] = 'Configuration name is required';
+    }
+
     for (const field of fields) {
       if (field.required && (configValues[field.key] ?? '').trim() === '') {
         errors[field.key] = `${field.label} is required`;
       }
     }
+
     validationErrors = errors;
     return Object.keys(errors).length === 0;
   }
@@ -101,7 +128,8 @@
         }
       }
 
-      await integrationsStore.connect(integration.slug, config);
+      const slug = `${integration.slug}-${configName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      await integrationsStore.connect(slug, { ...config, _name: configName.trim(), _provider: integration.slug });
       onClose();
     } catch (e) {
       toastStore.error('Connection failed', (e as Error).message);
@@ -114,10 +142,12 @@
     if ((e.target as HTMLElement).classList.contains('icm-overlay')) onClose();
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+  function handleWindowKeyDown(e: KeyboardEvent) {
+    if (open && e.key === 'Escape') onClose();
   }
 </script>
+
+<svelte:window onkeydown={handleWindowKeyDown} />
 
 {#if open && integration !== null}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -125,18 +155,16 @@
   <div
     class="icm-overlay"
     onclick={handleBackdrop}
-    onkeydown={handleKeyDown}
     role="dialog"
     aria-modal="true"
-    aria-label="Connect {integration.name}"
-    tabindex="-1"
+    aria-label="Add {integration.name} Configuration"
   >
     <div class="icm-modal">
       <header class="icm-header">
         <div class="icm-header-left">
           <span class="icm-header-icon" aria-hidden="true">{integration.icon}</span>
           <div class="icm-header-text">
-            <h2 class="icm-title">Connect {integration.name}</h2>
+            <h2 class="icm-title">Add {integration.name} Configuration</h2>
             <p class="icm-subtitle">{integration.desc}</p>
           </div>
         </div>
@@ -148,16 +176,45 @@
       </header>
 
       <div class="icm-body">
-        {#if fields.length === 0}
-          <p class="icm-no-config">This integration has no configuration fields. Click Connect to enable it.</p>
-        {:else}
-          <form class="icm-form" onsubmit={(e) => { e.preventDefault(); handleConnect(); }}>
+        <form class="icm-form" onsubmit={(e) => { e.preventDefault(); handleConnect(); }}>
+          <div class="icm-field icm-field--name" class:icm-field--error={validationErrors['_name'] !== undefined}>
+            <label class="icm-label" for="icm-config-name">
+              Configuration Name
+              <span class="icm-required" aria-label="required">*</span>
+            </label>
+            <input
+              id="icm-config-name"
+              class="icm-input icm-input--name"
+              type="text"
+              placeholder="e.g. Acme Corp {integration.name}"
+              value={configName}
+              oninput={(e) => {
+                configName = (e.target as HTMLInputElement).value;
+                if (validationErrors['_name'] !== undefined) {
+                  const { '_name': _, ...rest } = validationErrors;
+                  validationErrors = rest;
+                }
+              }}
+              autocomplete="off"
+            />
+            {#if validationErrors['_name'] !== undefined}
+              <span class="icm-error-msg">{validationErrors['_name']}</span>
+            {:else}
+              <span class="icm-help">A unique label for this configuration (e.g. client name or environment).</span>
+            {/if}
+          </div>
+
+          {#if fields.length > 0}
+            <div class="icm-divider"></div>
             {#each fields as field (field.key)}
               <div class="icm-field" class:icm-field--error={validationErrors[field.key] !== undefined}>
                 <label class="icm-label" for="icm-{field.key}">
                   {field.label}
                   {#if field.required}
                     <span class="icm-required" aria-label="required">*</span>
+                  {/if}
+                  {#if field.is_secret === true}
+                    <span class="icm-secret-badge" title="Stored securely in vault">🔒</span>
                   {/if}
                 </label>
                 <input
@@ -182,8 +239,10 @@
                 {/if}
               </div>
             {/each}
-          </form>
-        {/if}
+          {:else}
+            <p class="icm-no-config">This integration has no additional configuration fields.</p>
+          {/if}
+        </form>
       </div>
 
       <footer class="icm-footer">
@@ -193,9 +252,9 @@
         <button class="icm-btn icm-btn--connect" onclick={handleConnect} disabled={connecting}>
           {#if connecting}
             <span class="icm-spinner"></span>
-            Connecting…
+            Saving…
           {:else}
-            Connect {integration.name}
+            Save Configuration
           {/if}
         </button>
       </footer>
@@ -224,8 +283,8 @@
 
   .icm-modal {
     width: 100%;
-    max-width: 480px;
-    max-height: 80vh;
+    max-width: 520px;
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
@@ -331,10 +390,20 @@
     gap: 16px;
   }
 
+  .icm-divider {
+    height: 1px;
+    background: var(--border-default);
+    margin: 4px 0;
+  }
+
   .icm-field {
     display: flex;
     flex-direction: column;
     gap: 5px;
+  }
+
+  .icm-field--name {
+    padding-bottom: 4px;
   }
 
   .icm-label {
@@ -351,6 +420,11 @@
     font-size: 14px;
   }
 
+  .icm-secret-badge {
+    font-size: 11px;
+    margin-left: 2px;
+  }
+
   .icm-input {
     width: 100%;
     padding: 8px 12px;
@@ -364,6 +438,11 @@
     transition: border-color 150ms ease;
   }
 
+  .icm-input--name {
+    font-family: var(--font-sans, inherit);
+    font-weight: 500;
+  }
+
   .icm-input:focus {
     border-color: var(--accent-primary, #3b82f6);
   }
@@ -371,6 +450,11 @@
   .icm-input::placeholder {
     color: var(--text-muted);
     font-family: var(--font-mono, monospace);
+  }
+
+  .icm-input--name::placeholder {
+    font-family: var(--font-sans, inherit);
+    font-weight: 400;
   }
 
   .icm-field--error .icm-input {

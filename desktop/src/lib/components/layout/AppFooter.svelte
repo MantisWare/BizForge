@@ -7,6 +7,13 @@
   import { dashboardStore } from '$lib/stores/dashboard.svelte';
   import { checkOsaHealth, setupOsa, stopOsa, restartOsa, type OsaHealth } from '$lib/services/osa';
 
+  interface Props {
+    logPanelOpen?: boolean;
+    onToggleLogs?: () => void;
+  }
+
+  let { logPanelOpen = false, onToggleLogs }: Props = $props();
+
   const STATUS_CONFIG = {
     connected:    { label: 'Connected',      cls: 'dot-connected' },
     mock:         { label: 'Offline Mode',   cls: 'dot-mock' },
@@ -187,8 +194,25 @@
     }
   }
 
+  const isOffline = $derived(status === 'mock' || status === 'disconnected');
+  const isChecking = $derived(connectionStore.isChecking);
+  let reconnecting = $state(false);
+
+  async function reconnectBackend(): Promise<void> {
+    if (reconnecting) return;
+    reconnecting = true;
+    try {
+      await connectionStore.check();
+      if (connectionStore.status === 'connected') {
+        await dashboardStore.fetch();
+      }
+    } finally {
+      reconnecting = false;
+    }
+  }
+
   function retryNow() {
-    void connectionStore.check();
+    void reconnectBackend();
   }
 </script>
 
@@ -216,24 +240,63 @@
     {#if versionLabel}
       <span class="af-version">{versionLabel}</span>
     {/if}
-    {#if status === 'disconnected'}
-      <button class="af-retry" onclick={retryNow} aria-label="Retry connection">
-        Retry
+    {#if isOffline}
+      <button
+        class="af-reconnect"
+        class:af-reconnect--busy={reconnecting || isChecking}
+        onclick={retryNow}
+        disabled={reconnecting || isChecking}
+        aria-label="Reconnect to backend"
+      >
+        <svg
+          class="af-reconnect-icon"
+          class:af-reconnect-icon--spin={reconnecting || isChecking}
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          aria-hidden="true"
+        >
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
+          <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
+        </svg>
+        {reconnecting || isChecking ? 'Checking\u2026' : 'Reconnect'}
       </button>
     {/if}
+
+    <span class="af-sep" aria-hidden="true"></span>
+
+    <button
+      class="af-log-btn"
+      class:af-log-btn--active={logPanelOpen}
+      onclick={onToggleLogs}
+      aria-label={logPanelOpen ? 'Hide system logs' : 'Show system logs'}
+      title="System Logs"
+    >
+      <svg class="af-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+      </svg>
+      <span class="af-label">Logs</span>
+    </button>
   </div>
 
   <!-- RIGHT: system health -->
   <div class="af-section">
-    {#if health}
-      <StatusDot status={backendDot} size="sm" />
-      <span class="af-label">
-        Backend<span class="af-hide-sm">:</span>
+    <StatusDot status={backendDot} size="sm" />
+      <span class="af-label" class:af-label--degraded={health === null}>
+        Backend{#if health !== null}<span class="af-hide-sm">:</span>{:else}<span class="af-hide-sm">: --</span>{/if}
       </span>
 
       <span class="af-sep" aria-hidden="true"></span>
 
-      <!-- OSA indicator -->
+      <!-- OSA indicator (polls independently, always available) -->
       <span class="af-osa-wrap" bind:this={osaDropdownEl}>
         <button
           class="af-osa-btn"
@@ -282,7 +345,9 @@
       <span class="af-sep" aria-hidden="true"></span>
 
       <StatusDot status={gatewayDot} size="sm" />
-      <span class="af-label af-hide-sm">{gatewayName}</span>
+      <span class="af-label af-hide-sm" class:af-label--degraded={health === null}>
+        {health !== null ? gatewayName : '--'}
+      </span>
 
       <span class="af-sep" aria-hidden="true"></span>
 
@@ -292,8 +357,8 @@
           <rect x="2" y="6" width="20" height="12" rx="2" />
           <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01" />
         </svg>
-        <span class="af-label" class:af-label--warn={memoryWarning}>
-          {healthMemMb} MB
+        <span class="af-label" class:af-label--warn={memoryWarning} class:af-label--degraded={health === null}>
+          {health !== null ? `${healthMemMb} MB` : '-- MB'}
         </span>
       </button>
 
@@ -304,12 +369,9 @@
         <rect x="9" y="9" width="6" height="6" />
         <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
       </svg>
-      <span class="af-label" class:af-label--warn={cpuWarning}>
-        {healthCpuPct}%
+      <span class="af-label" class:af-label--warn={cpuWarning} class:af-label--degraded={health === null}>
+        {health !== null ? `${healthCpuPct}%` : '--%'}
       </span>
-    {:else}
-      <span class="af-detail">Cache savings: %</span>
-    {/if}
 
     <span class="af-sep" aria-hidden="true"></span>
 
@@ -456,21 +518,91 @@
     color: var(--text-tertiary, rgba(255,255,255,0.45));
   }
 
-  .af-retry {
-    padding: 1px 6px;
-    border: 1px solid rgba(255,255,255,0.12);
+  .af-reconnect {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px 1px 5px;
+    border: 1px solid rgba(59, 130, 246, 0.25);
     border-radius: 4px;
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.5);
+    background: rgba(59, 130, 246, 0.08);
+    color: rgba(59, 130, 246, 0.85);
     font-size: 10px;
+    font-weight: 500;
+    font-family: inherit;
     cursor: pointer;
+    transition: all 150ms ease;
+    animation: af-reconnect-attention 3s ease-in-out 2s 2;
+  }
+
+  .af-reconnect:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93bbfc;
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .af-reconnect:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .af-reconnect--busy {
+    border-color: rgba(59, 130, 246, 0.15);
+    animation: none;
+  }
+
+  .af-reconnect-icon {
+    flex-shrink: 0;
+  }
+
+  .af-reconnect-icon--spin {
+    animation: af-spin 800ms linear infinite;
+  }
+
+  @keyframes af-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @keyframes af-reconnect-attention {
+    0%, 100% { border-color: rgba(59, 130, 246, 0.25); }
+    50%      { border-color: rgba(59, 130, 246, 0.55); box-shadow: 0 0 6px rgba(59, 130, 246, 0.15); }
+  }
+
+  .af-label--degraded {
+    color: var(--text-muted, rgba(255,255,255,0.2));
+    font-style: italic;
+  }
+
+  /* Log button */
+  .af-log-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    line-height: inherit;
+    color: inherit;
+    border-radius: 3px;
     transition: all 120ms ease;
   }
 
-  .af-retry:hover {
-    background: rgba(255,255,255,0.1);
+  .af-log-btn:hover {
+    background: rgba(255,255,255,0.06);
     color: rgba(255,255,255,0.8);
-    border-color: rgba(255,255,255,0.2);
+  }
+
+  .af-log-btn--active {
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+  }
+
+  .af-log-btn--active:hover {
+    background: rgba(59, 130, 246, 0.18);
   }
 
   .dot-connected    { background: #22c55e; }

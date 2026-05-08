@@ -4,6 +4,7 @@
 
 import type { Document, DocumentRevision, DocumentTreeNode } from "$api/types";
 import { documents as documentsApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
 import { workspaceStore } from "./workspace.svelte";
 
 class DocumentsStore {
@@ -62,6 +63,8 @@ class DocumentsStore {
     content: string;
     format?: Document["format"];
     project_id?: string | null;
+    output_path?: string | null;
+    disk_subdir?: string;
   }): Promise<Document> {
     const created = await documentsApi.create(doc);
     this.documents = [...this.documents, created];
@@ -69,6 +72,19 @@ class DocumentsStore {
       this.projectDocuments = [...this.projectDocuments, created];
     }
     this._rebuildTree();
+
+    if (doc.output_path !== undefined && doc.output_path !== null && isTauri()) {
+      const subdir = doc.disk_subdir ?? "docs";
+      const filename = doc.path.split("/").pop() ?? `${doc.title}.md`;
+      const diskPath = `${doc.output_path.replace(/\/+$/, "")}/${subdir}/${filename}`;
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("write_project_file", { path: diskPath, content: doc.content });
+      } catch {
+        // Non-critical: document saved to API, disk mirror failed silently
+      }
+    }
+
     return created;
   }
 

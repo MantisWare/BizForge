@@ -675,6 +675,13 @@ export function mockDisconnectIntegration(slug: string): boolean {
   const existing = state.find((i) => i.provider === slug);
   if (existing === undefined) return false;
   existing.status = 'disconnected';
-  existing.config = {};
+  return true;
+}
+
+export function mockRemoveIntegration(slug: string): boolean {
+  const state = getIntegrationState();
+  const idx = state.findIndex((i) => i.provider === slug);
+  if (idx === -1) return false;
+  state.splice(idx, 1);
   return true;
 }

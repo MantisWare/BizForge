@@ -272,8 +272,9 @@ defmodule BizforgeWeb.SessionController do
   end
 
   def message(conn, %{"session_id" => session_id} = params) do
-    body = params["body"] || params["message"] || ""
+    body = params["body"] || params["message"] || params["content"] || ""
     model = params["model"]
+    attached_files = params["attached_files"] || []
 
     case Repo.get(Session, session_id) |> Repo.preload(:agent) do
       nil ->
@@ -282,10 +283,22 @@ defmodule BizforgeWeb.SessionController do
       session ->
         now = DateTime.utc_now() |> DateTime.truncate(:second)
 
+        persisted_attachments = persist_attachments(session, attached_files)
+
+        event_data =
+          %{"body" => body}
+          |> then(fn d ->
+            if persisted_attachments == [] do
+              d
+            else
+              Map.put(d, "attachments", persisted_attachments)
+            end
+          end)
+
         %SessionEvent{
           session_id: session_id,
           event_type: "user_message",
-          data: %{"body" => body},
+          data: event_data,
           tokens: 0,
           inserted_at: now
         }
@@ -293,14 +306,14 @@ defmodule BizforgeWeb.SessionController do
 
         Bizforge.EventBus.broadcast(
           Bizforge.EventBus.session_topic(session_id),
-          %{event: "user_message", body: body, session_id: session_id}
+          %{event: "user_message", body: body, session_id: session_id, attachments: persisted_attachments}
         )
 
         agent = session.agent
 
         if agent do
           Task.Supervisor.start_child(Bizforge.HeartbeatRunner, fn ->
-            execute_chat_message(session, agent, body, model)
+            execute_chat_message(session, agent, body, model, persisted_attachments)
           end)
         end
 
@@ -339,7 +352,7 @@ defmodule BizforgeWeb.SessionController do
     end
   end
 
-  defp execute_chat_message(session, agent, message, model_override) do
+  defp execute_chat_message(session, agent, message, model_override, attachments \\ []) do
     adapter_type = agent.adapter || "osa"
 
     case Bizforge.Adapter.resolve(adapter_type) do
@@ -349,13 +362,15 @@ defmodule BizforgeWeb.SessionController do
 
         config = %{
           "url" => base_url,
-          "model" => model
+          "model" => model,
+          "attachments" => attachments
         }
 
         case adapter_mod.start(config) do
           {:ok, osa_session} ->
             try do
-              adapter_mod.send_message(osa_session, message)
+              full_message = build_message_with_attachments(message, attachments)
+              adapter_mod.send_message(osa_session, full_message)
               |> Stream.each(fn raw_event ->
                 normalized = normalize_event(raw_event)
                 event_type = normalized["event_type"] || "run.output"
@@ -470,6 +485,65 @@ defmodule BizforgeWeb.SessionController do
   end
 
   defp extract_text_delta(_), do: ""
+
+  defp persist_attachments(_session, []), do: []
+
+  defp persist_attachments(session, files) when is_list(files) do
+    session = Repo.preload(session, :workspace)
+    workspace_path = session.workspace_path || (session.workspace && session.workspace.path) || System.tmp_dir!()
+    base_dir = Path.join(workspace_path, ".bizforge/attachments")
+    File.mkdir_p!(base_dir)
+
+    Enum.map(files, fn file ->
+      name = file["name"] || "attachment"
+      mime = file["mime_type"] || "application/octet-stream"
+      data = file["data"]
+
+      if is_binary(data) do
+        decoded = Base.decode64!(data)
+        ext = Path.extname(name)
+        filename = "#{Ecto.UUID.generate()}#{ext}"
+        dest = Path.join(base_dir, filename)
+        File.write!(dest, decoded)
+
+        %{
+          "name" => name,
+          "mime_type" => mime,
+          "path" => dest,
+          "size_bytes" => byte_size(decoded)
+        }
+      else
+        path = file["path"]
+
+        if is_binary(path) && File.exists?(path) do
+          %{
+            "name" => name,
+            "mime_type" => mime,
+            "path" => path,
+            "size_bytes" => File.stat!(path).size
+          }
+        else
+          nil
+        end
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp persist_attachments(_session, _), do: []
+
+  defp build_message_with_attachments(message, []), do: message
+
+  defp build_message_with_attachments(message, attachments) when is_list(attachments) do
+    attachment_refs =
+      attachments
+      |> Enum.map(fn a -> "[attached: #{a["name"]} (#{a["mime_type"]}) at #{a["path"]}]" end)
+      |> Enum.join("\n")
+
+    "#{message}\n\n#{attachment_refs}"
+  end
+
+  defp build_message_with_attachments(message, _), do: message
 
   defp sanitize_content(nil), do: ""
 

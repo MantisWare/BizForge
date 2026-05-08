@@ -13,6 +13,7 @@
   interface Props {
     projectId: string;
     projectName: string;
+    outputPath: string | null;
     documents: Document[];
     onClose: () => void;
     onCreated: () => void;
@@ -21,6 +22,7 @@
   let {
     projectId,
     projectName,
+    outputPath,
     documents,
     onClose,
     onCreated,
@@ -110,6 +112,22 @@
     const parts: string[] = [];
     parts.push(`Analyze the following project documentation for "${projectName}" and generate a list of actionable development tasks/issues.`);
     parts.push('');
+
+    const erdDocs = selectedDocs.filter((d) => d.format === 'erd-graph' || d.path?.includes('erd'));
+    if (erdDocs.length > 0) {
+      parts.push('This project has an Entity-Relationship Diagram. Generate issues covering:');
+      parts.push('- CRUD operations per entity');
+      parts.push('- Validation rules and constraints');
+      parts.push('- API endpoints for each entity');
+      parts.push('- Database schema/migration per entity');
+      parts.push('- AppDB collections (if Domo project)');
+      parts.push('- Dataset schemas and ETL loads');
+      parts.push('- UI components/cards per entity');
+      parts.push('- QA test matrix per entity');
+      parts.push('- Relationship/join logic');
+      parts.push('');
+    }
+
     parts.push('For each task, provide:');
     parts.push('- title: concise task title');
     parts.push('- description: detailed description with acceptance criteria');
@@ -322,7 +340,7 @@
         status: 'backlog' as const,
       }));
 
-      await issuesStore.batchCreateIssues(issueData);
+      await issuesStore.batchCreateIssues(issueData, outputPath);
       onCreated();
     } catch (err) {
       error = (err as Error).message;

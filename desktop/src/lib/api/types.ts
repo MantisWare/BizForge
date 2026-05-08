@@ -135,12 +135,22 @@ export interface Message {
   token_usage?: TokenUsage;
 }
 
+export interface AttachedFile {
+  name: string;
+  mime_type: string;
+  /** Base64-encoded content for inline transfer, or a local file path for Tauri IPC upload */
+  data?: string;
+  path?: string;
+  size_bytes?: number;
+}
+
 export interface SendMessageRequest {
   session_id: string;
   content: string;
   agent_id?: string;
   model?: string;
   stream?: boolean;
+  attached_files?: AttachedFile[];
 }
 
 export interface SendMessageResponse {
@@ -516,7 +526,7 @@ export interface Project {
   description: string | null;
   status: ProjectStatus;
   workspace_id?: string;
-  workspace_path: string | null;
+  output_path: string | null;
   goal_count: number;
   issue_count: number;
   agent_count: number;
@@ -526,12 +536,22 @@ export interface Project {
 
 // ── Documents ─────────────────────────────────────────────────────────────────
 
+export type DocumentFormat =
+  | "markdown"
+  | "yaml"
+  | "json"
+  | "text"
+  | "erd-graph"
+  | "erd-source"
+  | "dbml"
+  | "sql";
+
 export interface Document {
   id: string;
   title: string;
   path: string;
   content: string;
-  format: "markdown" | "yaml" | "json" | "text";
+  format: DocumentFormat;
   project_id: string | null;
   last_edited_by: string;
   created_at: string;
@@ -786,6 +806,7 @@ export const INTEGRATION_CATEGORY_LABELS: Record<IntegrationCategory, string> = 
 
 export interface Integration {
   id: string;
+  slug?: string;
   name: string;
   category: IntegrationCategory;
   provider: string;
@@ -797,6 +818,60 @@ export interface Integration {
   docs_url: string | null;
   last_sync_at: string | null;
   created_at: string;
+}
+
+export interface IntegrationCreateRequest {
+  name: string;
+  provider: string;
+  category: IntegrationCategory;
+  config?: Record<string, unknown>;
+  secrets?: Record<string, string>;
+}
+
+// ── Integration Bindings ─────────────────────────────────────────────────────
+
+export type IntegrationBindingOwner = "project" | "team" | "agent" | "skill";
+
+export interface IntegrationBinding {
+  id: string;
+  owner_type: IntegrationBindingOwner;
+  owner_id: string;
+  provider: string;
+  integration_id: string;
+  integration_name: string;
+  integration_status: "connected" | "disconnected" | "error";
+  config_overrides: Record<string, unknown>;
+  enabled: boolean;
+  inherited_from: {
+    owner_type: IntegrationBindingOwner;
+    owner_id: string;
+    owner_name: string;
+  } | null;
+  created_at: string;
+}
+
+export interface IntegrationBindingCreateRequest {
+  owner_type: IntegrationBindingOwner;
+  owner_id: string;
+  provider: string;
+  integration_id: string;
+  config_overrides?: Record<string, unknown>;
+}
+
+// ── Skill Integration Requirements ──────────────────────────────────────────
+
+export interface SkillIntegrationRequirement {
+  provider: string;
+  config_keys: SkillConfigKey[];
+  optional?: boolean;
+}
+
+export interface SkillConfigKey {
+  key: string;
+  label: string;
+  is_secret: boolean;
+  required: boolean;
+  default?: string;
 }
 
 // ── Adapters ──────────────────────────────────────────────────────────────────
@@ -1735,4 +1810,6 @@ export interface LlmLogEntry {
   durationMs?: number;
   status: LlmLogStatus;
   error?: string;
+  agentId?: string;
+  agentName?: string;
 }

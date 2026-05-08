@@ -21,6 +21,8 @@ defmodule Bizforge.Schemas.Team do
     belongs_to :manager_agent, Bizforge.Schemas.Agent, foreign_key: :manager_agent_id
     has_many :team_memberships, Bizforge.Schemas.TeamMembership
     has_many :agents, through: [:team_memberships, :agent]
+    has_many :integration_bindings, Bizforge.Schemas.IntegrationBinding,
+      where: [owner_type: "team"], foreign_key: :owner_id
 
     timestamps()
   end

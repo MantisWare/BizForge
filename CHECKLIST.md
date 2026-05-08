@@ -114,7 +114,21 @@ Active development phases and their progress.
 - [x] Update README with headless mode section
 - [x] Add headless mode article to in-app Wiki
 
-### 10. Desktop UX Improvements
+### 10. Agent Task Resilience & Supervisor Escalation
+
+- [x] Fix `execute_and_stream/4` silent failure — adapter exceptions no longer swallowed as zero-cost success; failures now propagate as tagged tuples and trigger the full failure path (fail session, set agent to error, roll back issue)
+- [x] Create `SupervisorEscalation` module — walks `reports_to` chain (cycle-safe via MapSet, max depth 5) to find available superior agent; creates escalation issue with failure context and session summary; broadcasts `issue.assigned` for auto-dispatch; falls back to system notification when no superior exists
+- [x] Create `AdapterCircuitBreaker` GenServer — per-adapter health tracking with closed/open/half-open states; 3 failures in 60s opens circuit, 120s cooldown to half-open, 1 success closes; prevents cascading failures when LLM provider is down; integrated into Heartbeat execution path
+- [x] Extend Watchdog orphaned state cleanup — stuck agent reset now fails orphaned active sessions, releases checked-out issues back to backlog; recovery exhaustion (>10 attempts) triggers supervisor escalation instead of just notification
+- [x] Fix `Delegation.delegate/3` dispatch — delegated issues with assignee now broadcast `issue.assigned` event so IssueDispatcher auto-starts them (were silently sitting in backlog)
+- [x] Enforce `max_concurrent_runs` in IssueDispatcher — `validate_agent` now counts active sessions and rejects dispatch when agent is at capacity
+- [x] Add Heartbeat-level retry with exponential backoff — up to 3 attempts (2 retries) with 5s base backoff before triggering failure path and supervisor escalation
+- [x] Add dependency graph cycle detection in GoalDecomposer — DFS-based topological validation strips cyclic `depends_on` edges from LLM output before creating issues
+- [x] Harden GenServer startup against DB unavailability — `BudgetEnforcer` and `IssueDispatcher` now defer DB queries to `handle_continue` with automatic retry, preventing supervision tree crash when PostgreSQL starts slowly; `Scheduler.load_schedules` wrapped in deferred Task with rescue
+- [x] Add `_ensure-postgres` preflight to justfile — auto-detects `pg_isready`/`pg_ctl`/data dir across Homebrew paths; checks if PostgreSQL is running and auto-starts it if not; wired as dependency on `dev`, `app`, `backend`, and `headless` recipes; `start.sh` also calls it for early feedback
+- [x] Add `_ensure-migrations` preflight to justfile — detects pending Ecto migrations and auto-runs `mix ecto.migrate` before backend launch; prevents `PendingMigrationError` from blocking all API requests
+
+### 11. Desktop UX Improvements
 
 - [x] Persist main window position and size to local store on move/resize/close
 - [x] Restore window position and size from store on app launch
@@ -151,7 +165,28 @@ Active development phases and their progress.
 - [x] Add workspace delete from WorkspaceSwitcher dropdown — hover-reveal trash icon per workspace item, confirmation modal with "remove from list" vs "also delete .bizforge/ files" options, Rust `remove_dir_recursive` IPC command with .bizforge safety guard
 - [x] Fix Environment page system resources showing all zeros — API client now unwraps `{ resources: ... }` wrapper, environment store prefers real OS metrics from Tauri IPC (`get_system_resources`), added disk space (total/free) to Rust `SystemResourceInfo` via `sysinfo::Disks`
 - [x] Make Reports left panel resizable — drag handle between list panel and viewer, keyboard accessible (Arrow keys), min/max constraints (220–600px), centered empty state CTA, tabs wrap instead of scrolling off-screen
+- [x] Redesign Reports page layout — replaced sidebar+viewer split with single scrollable column; category filters (All, Performance, Costs, Tasks, Workflows, Custom) as pill buttons at top; all filtered reports stacked as self-contained cards (header, badges, summary stats, table/chart); per-report sort state; per-report Generate/Export/Delete actions; "Export All" button for bulk export of visible reports; removed resize handle and activeReport selection model
 - [x] Restructure sidebar navigation for top-down user journey — reordered sections: Daily Drivers > Explore (Library, Chat) > Organize (Organization, Projects, Goals, Issues, Documents) > Agents (tree + Skills + Memory) > Automate (Workflows, Schedules, Alerts) > Observe (Activity, Sessions, Work Products, Costs, Analytics, Reports) > Platform (Integrations, Secrets, Users & Access, Environment, Datasets); removed "Data" and "System" sections; moved Library from Automate and Chat from bottom pinned into new "Explore" section; moved Organization from System into "Organize"; moved Skills/Memory into Agents; moved Work Products into Observe; moved Datasets into Platform; updated collapsed-mode icons
+
+### 10d. General Settings Enhancements
+
+- [x] Replace Default Model text input with categorized dropdown — models grouped by provider name using `<optgroup>`, populated from `providersStore.allModels`
+- [x] Add "Refresh Models" button next to model dropdown — fetches providers, then fetches models for each connected provider, with spinner and toast feedback
+- [x] Fallback to text input when no models are loaded, with hint linking to AI Providers tab
+- [x] Replace Working Directory text input with read-only display + folder picker button — native `@tauri-apps/plugin-dialog` directory selector
+- [x] Add Tauri `copy_working_directory` IPC command — recursively copies `.bizforge/` tree from old path to `<new_parent>/.bizforge/`, validates no existing `.bizforge/` at destination, reports files/bytes copied
+- [x] Register `copy_working_directory` in Tauri invoke_handler
+- [x] Working directory change copies all existing workspace files to new location automatically
+- [x] Instruct user that they are selecting a parent directory and `.bizforge/` will be created inside it
+
+### 10c. System Log Panel
+
+- [x] Add `read_log_files` Tauri IPC command — reads last N lines from all `.bizforge/logs/*.log` files with source name, line content, and file size
+- [x] Create `LogPanel.svelte` — collapsible bottom panel with resize handle, source tabs (backend/vite/desktop), auto-scroll toggle, 3s polling, monospace log output
+- [x] Add "Logs" toggle button to `AppFooter` with active state indicator
+- [x] Wire `LogPanel` into app layout between main content and footer
+- [x] Add error state to AI Providers settings — shows error message with retry button instead of infinite "Loading..."; cached providers always shown while refresh is in progress or fails
+- [x] Add footer offline recovery — "Reconnect" button with refresh icon visible in mock/disconnected mode (left side), probes backend health and restores dashboard on success; right-side indicators (Backend, OSA, Gateway, Memory, CPU) persist in degraded state with "--" placeholders instead of disappearing
 
 ### 10b. Adapter Info & Footer Enhancements
 
@@ -167,7 +202,7 @@ Active development phases and their progress.
 - [x] Add heap breakdown (`heap_mb`, `heap_total_mb`) to dashboard system_health API response
 - [x] Add UI Zoom control to app footer — popover with slider (50%–150%), +/- buttons, numeric input, preset buttons (75/90/100/110/125%), Reset button, persisted to localStorage
 
-### 11. Hire Agent Team
+### 12. Hire Agent Team
 
 - [x] Extract shared team template data (`TEAM_TEMPLATES`, `TEMPLATE_AGENTS`) into `desktop/src/lib/data/team-templates.ts`
 - [x] Refactor onboarding `Team.svelte` to import from shared module
@@ -189,7 +224,7 @@ Active development phases and their progress.
 - [x] Fix "Next: Configure" button unclickable on review step — added `stopPropagation` on modal and button clicks, `type="button"`, and `z-index` stacking on footer
 - [x] Rebrand Hire Agent and Hire Team dialogs from blue (`rgba(59,130,246)`) to orange (`rgba(249,115,22)`) accent — buttons, step dots, skill chips, template hover, adapter selection, schedule presets
 
-### 12. User Management & Access Control
+### 13. User Management & Access Control
 
 - [x] Add "Add User" button and dialog to Users page (name, email, role, optional password)
 - [x] Add inline role selector (dropdown) per user row to elevate/reduce access levels
@@ -199,7 +234,7 @@ Active development phases and their progress.
 - [x] Update mock/index.ts to handle POST/PATCH/DELETE on `/users` routes
 - [x] Fix mock access assignments to return correct `RoleAssignment` shape (`entity_type`, `user_email`, `assigned_by`)
 
-### 13. Services / Integration Catalog
+### 14. Services / Integration Catalog
 
 - [x] Expand `Integration` type with `description`, `features[]`, `docs_url` fields
 - [x] Add 12 new `IntegrationCategory` values (project_management, analytics, design, cloud, database)
@@ -214,7 +249,35 @@ Active development phases and their progress.
 - [x] Integration Connect Modal — per-service config fields (API key, tokens, domain), validation, loading spinner
 - [x] Fix mock layer connect/disconnect to persist state changes (no more `validation_failed` in mock mode)
 
-### 14. Analytics
+### 13b. Agent Integration Configuration System
+
+- [x] Add `provider` field to Integration schema and migration
+- [x] Create `IntegrationSecret` schema — join table linking integrations to encrypted secrets by key name
+- [x] Create `IntegrationBinding` polymorphic schema — owner_type (project/team/agent/skill) + owner_id + provider + integration_id + config_overrides
+- [x] Add `integration_bindings` association to Agent, Team, and Project schemas
+- [x] Create `IntegrationResolver` backend module — walks inheritance chain (skill→agent→team→project) to resolve bound configs
+- [x] Add `IntegrationBinding`, `IntegrationBindingOwner`, `SkillIntegrationRequirement`, `SkillConfigKey` frontend types
+- [x] Update `LibrarySkill` interface with `required_integrations` and `required_tools` fields
+- [x] Update skill enrichment to default `required_integrations: []` and `required_tools: []`
+- [x] Add `required_integrations` to Domo skills (instance-admin, api-integrate, governance, dataset-manage, appdb-manage, code-engine, workflow-automate, embed-analytics) and board skill (Jira)
+- [x] Add `required_integrations` structured frontmatter to `domo/instance-admin` SKILL.md
+- [x] Refactor Settings Integrations tab — global config registry (grouped by provider, multi-instance, "Add Configuration" button, per-provider "+")
+- [x] Add Domo, Confluence, GitLab providers to IntegrationConnectModal with field definitions
+- [x] Add "Configuration Name" field to connect modal (required, generates slug)
+- [x] Mark secret fields with lock icon (`is_secret` flag) in connect modal
+- [x] Remove "Manage all integrations" link from Settings (Settings IS the manager now)
+- [x] Create `IntegrationBindingSelector` reusable component — dropdown of global configs per required provider, "Go to Settings" link when none exist, inherited-from display, status badges
+- [x] Add connect/disconnect toggle switch to integration config cards (soft status flip without clearing config)
+- [x] Separate "Remove" (destructive delete) from "Disconnect" (status-only toggle) in mock layer, API client, and store
+- [x] Convert integration provider groups to responsive multi-column CSS grid layout (2/3/4+ columns as screen widens)
+- [ ] Wire `IntegrationBindingSelector` into Agent editor page
+- [ ] Wire `IntegrationBindingSelector` into Project detail page
+- [ ] Wire `IntegrationBindingSelector` into Team editor
+- [ ] Add integration_bindings API endpoints (CRUD) to backend controller
+- [ ] Add integration_bindings to mock API client layer
+- [ ] Runtime session injection — resolver fetches bound configs + secrets and injects into adapter environment on session start
+
+### 15. Analytics
 
 - [x] Add "Reset Analytics" button to analytics page header (positioned before period selector)
 - [x] Add confirmation modal before resetting (warns action cannot be undone)
@@ -263,11 +326,46 @@ Active development phases and their progress.
 - [x] Domo Data Engineer — DataSet vs AppDB type distinction (DataSet: STRING/LONG/DOUBLE/DATE/DATETIME; AppDB: STRING only), Stream API gzip procedure with sequential part IDs, Federated queries, Workbench agent, PDP at source dataset only, RFC-4180 CSV format, volume-based ingestion strategy table
 - [x] Domo Automation Engineer — `codeengine` library API table (5 methods), global vs custom packages, scheduled AppDB sync via Code Engine + Workflow pattern, cross-instance orchestration, workflow input parameter types (12 types), Code Engine resource limits
 
-### 4. Desktop UI Registration
+### 4. Domo Administrator Skill & Agent
+
+- [x] Create `/domo/instance-admin` skill — full instance administration (auth, users, groups, datasets, AppDB, PDP, pages, audit, SSO, security)
+- [x] Create `domo-administrator` agent — Instance Administrator with 9-phase methodology (auth → users → groups → datasets → AppDB → PDP → pages → audit → SSO/security)
+
+### 5. Domo Consultancy Company Template
+
+- [x] Create `domo-consultancy` operation — full-service Domo design/development/admin company (9 agents, 13 Domo skills + PM skills)
+
+### 6. Domo Administration Team Template
+
+- [x] Add `domo-admin` team template — Admin Lead + User/Group Manager + Data Administrator + Security/Compliance Officer (4 agents)
+- [x] Register in library templates mock as `domo-administration`
+
+### 7. Desktop UI Registration
 
 - [x] Register 4 agents in library mock catalog (agents.ts)
 - [x] Register 12 skills in library mock catalog (skills.ts)
 - [x] Add Domo skill slugs to Hire Agent dialog (AgentModelConfig.svelte)
+
+---
+
+## Phase: IDE Supervisor Agents (Principal Developer Family)
+
+> Four IDE-specific Principal Developer agents that supervise IDE-native AI agents through structured Instruct-Plan-Review-Execute-Review-Report cycles without writing code directly.
+
+### 1. Shared Skill Foundation
+
+- [x] Create `/ide-orchestrate` skill — six-phase supervisory lifecycle, instruction format template, plan review checklist, post-execution review protocol, execution report template, retry/escalation logic
+
+### 2. IDE-Specific Agents (library/agents/technology/software-engineering/ide-supervision/)
+
+- [x] Cursor Principal Developer — `@cursor/sdk` adapter with native plan/agent mode switching, streaming events, `run.cancel()`, `run.conversation()`, per-run model override, git info extraction
+- [x] VS Code Principal Developer — `@github/copilot-sdk` adapter with `onPermissionRequest` permission-gated plan/execute split, `approveAll`/custom handlers, `infiniteSessions`, `systemMessage` customization
+- [x] Zed Principal Developer — ACP (Agent Client Protocol) adapter with pluggable external agents (Claude, Gemini CLI, Codex), real-time edit visualization, multi-buffer code review
+- [x] JetBrains Principal Developer — Junie CLI adapter with native Ask/Code mode split, deep language refactoring intelligence, built-in code inspections, multi-IDE support (IntelliJ, WebStorm, PyCharm, GoLand, etc.)
+
+### 3. Desktop Integration
+
+- [x] Add `supervise` and `instruct` tag mappings to `AGENT_SKILL_TAG_MAP` in `skill-dependencies.ts`
 
 ---
 
@@ -431,6 +529,21 @@ Active development phases and their progress.
 - [x] Update minimap to show corridors and improved room borders
 - [x] Per-time-of-day themed wall/ground/corridor colors (dawn/day/dusk/night)
 
+### 14a-ii. Virtual Office Rectangular Conference Tables
+
+- [x] Add `TABLE_RECT` and `LAPTOP` furniture types to `FurnitureType` enum
+- [x] Create rectangular table pixel sprite (16x10, dark wood with metal trim legs)
+- [x] Create laptop pixel sprite with animated screen (10x8, two frames alternating at 800ms)
+- [x] Replace individual desk rows in Engineering with central conference table (3-wide) + laptops + surrounding chairs
+- [x] Replace individual desk rows in Product with central conference table (3-wide) + laptops + surrounding chairs
+- [x] Replace individual desk rows in Operations with central conference table (3-wide) + laptops + surrounding chairs
+- [x] Keep Research room unchanged (round table is intentional)
+- [x] Retain perimeter wall desks with PCs in each room for additional workstations
+- [x] Update seat assignments for conference table positions (6 seats per table: 3 top, 3 bottom)
+- [x] Mark `TABLE_RECT` tiles as non-walkable in pathfinding grid
+- [x] Add laptop screen glow effect (smaller radius than PC glow, intensity varies by time-of-day)
+- [x] Render laptops as animated z-sorted drawables (screen pixels shift between frames)
+
 ### 14b. Virtual Office 3D View Visual Upgrade
 
 - [x] Restructure 3D scene zones to match pixel view departments (Engineering, Product, Operations, Research, Lounge)
@@ -458,6 +571,35 @@ Active development phases and their progress.
 - [x] 3D: team-colored backdrop plane + underline bar behind floating name text, division-colored pip replacing zone-based pip
 - [x] OfficeDetailPanel: Organization section showing team/division name with color pips, "Assign to Team" / "Change Team" / "Remove from Team" buttons with team picker dropdown
 - [x] Collapsible team/division legend overlay (bottom-left) — groups teams by division with color swatches and agent counts
+
+## Phase: QA Automation Skill & Agent Architecture
+
+> End-to-end QA automation pipeline — skills and agents that start applications, run functional tests (browser/API/CLI), and produce structured reports with failure diagnostics.
+
+### 1. QA Skills (library/skills/qa/)
+
+- [x] Create `qa/automate` skill — 3-phase pipeline (Startup, Test, Report) with framework detection, health probes, multi-runner support, artifact collection
+- [x] Create `qa/report` skill — parse raw test output (Playwright/Jest/Vitest/ExUnit/pytest/Go) into structured reports with severity classification, trend comparison, and recommendations
+- [x] Create `qa/startup-probe` skill — detect app type from project files, install deps, start with correct command, health-check via HTTP/TCP/stdout probes, graceful shutdown
+
+### 2. QA Agents (library/agents/technology/quality-assurance/test-engineering/)
+
+- [x] QA Automation Lead — bash adapter, deterministic pipeline orchestrator (startup → test → report), framework detection decision tree, structured output only
+- [x] Exploratory Tester — cursor-cli adapter, LLM-driven agent that navigates unfamiliar apps, generates Playwright test scripts, bootstraps test suites from scratch
+
+### 3. Existing Agent Integration
+
+- [x] Append `qa/automate, qa/report, qa/startup-probe` to all 8 canonical QA agents under `technology/quality-assurance/`
+- [x] Append same skills to all 8 mirror QA agents under `testing/`
+- [x] Append same skills to `domo-qa-engineer` under `platform-integration/`
+
+### 4. Desktop UI Registration
+
+- [x] Register 3 QA skills in library mock catalog (skills.ts) under new `qa` category
+- [x] Register 2 QA agents in library mock catalog (agents.ts) under `testing` category
+- [x] Add `qa_automate`, `qa_test`, `qa_report`, `startup_probe` tag mappings and passthrough entries to `skill-dependencies.ts`
+
+---
 
 ## Phase: Bidirectional Inbox & Slack Integration
 
@@ -631,6 +773,74 @@ Active development phases and their progress.
 - [x] Wire inspector store to client interceptor — auto-captures sent/received payloads with provider resolution
 - [x] Add color picker to Providers Settings — per-provider color swatch with native color input, persisted to localStorage
 - [x] Panel defaults to 50% viewport width on first open, resizable between 300px and 80vw, width persisted across sessions
+- [x] Add font size adjustment controls (plus/minus) in panel header with localStorage persistence (8–16px range)
+- [x] Add `agentId` and `agentName` fields to `LlmLogEntry` type for agent-level attribution
+- [x] Extract agent identity from intercepted request paths and payloads, resolve display names via agents store
+- [x] Add hierarchical filter dropdown — Organization > Division > Department > Team > Agent with indented tree options
+- [x] Add text search input filtering entries by agent name, provider name, provider slug, and model
+- [x] Show filtered/total count in header, empty-state message for filter-no-results, and clear-filter button
+- [x] Display agent name badge on each log entry row when agent is identified
+- [x] Add compact pixel office miniview at top of inspector panel — zoomed-out overview canvas using `renderMinimap`, active agent count, togglable via header button with localStorage persistence
+
+---
+
+## Phase: Project Output Directory
+
+> User-specified output directory per project for all team-produced artifacts (code, documents, images, video), with git init and structured scaffolding.
+
+### 1. Type System & Data Layer
+
+- [x] Rename `Project.workspace_path` to `output_path` in TypeScript types (`types.ts`)
+- [x] Update mock project data to use `output_path` field
+- [x] Update mock POST handler to accept and store `output_path`
+- [x] Add `output_path` field to Elixir `Project` schema and changeset
+- [x] Create Ecto migration adding `output_path` column to projects table
+- [x] Update `ProjectController.serialize/1` to include `output_path` in JSON responses
+- [x] Update project detail page to display `output_path` instead of `workspace_path`
+
+### 2. Project Creation UI
+
+- [x] Add "Output Directory" field with text input to project creation dialog
+- [x] Add native directory picker (Browse button) via `@tauri-apps/plugin-dialog` on Tauri
+- [x] Add field hint explaining all artifacts will be written there
+- [x] Pass `output_path` through `createProject` to API
+
+### 3. Tauri Filesystem Commands
+
+- [x] Implement `scaffold_project_dir` — creates comprehensive directory structure (`code/src`, `code/tests`, `code/config`, `docs/specs`, `docs/guides`, `docs/api`, `docs/architecture`, `media/images`, `media/videos`, `media/diagrams`, `data/exports`, `data/fixtures`, `reports`, `transcripts`, `issues`), `.bizforge-project.yaml` manifest, `.gitignore`, `README.md`, runs `git init`
+- [x] Implement `write_project_file` — generic file writer with auto-mkdir for project output paths
+- [x] Register both commands in `lib.rs` invoke handler
+
+### 4. Store Integration
+
+- [x] Wire `ProjectsStore.createProject` to invoke `scaffold_project_dir` after successful API creation (Tauri only)
+- [x] Show toast on scaffold failure (non-blocking — project is still created)
+
+### 5. Document Generation Disk Write
+
+- [x] Add `outputPath` prop to `GenerateDocModal`
+- [x] On save, write generated doc to type-specific subdirectory (specs, guides, api, architecture) via `write_project_file` IPC
+- [x] Pass `project.output_path` from project detail page caller
+- [x] `documentsStore.createDocument` accepts `output_path` and `disk_subdir` — auto-mirrors to disk on create
+
+### 6. MCP Server File Operations
+
+- [x] Add `output_path` param to `bizforge_project_create` MCP tool schema
+- [x] Add `bizforge_project_write_file` tool — resolves path relative to project `output_path`, creates dirs, writes content, with path traversal guard; tool description documents all standard subdirectories
+- [x] Add `bizforge_project_read_file` tool — reads file from project `output_path` with traversal guard
+- [x] Add `bizforge_project_list_files` tool — lists directory entries under project `output_path`
+- [x] `bizforge_document_write` now also mirrors to `{output_path}/docs/` when `project_id` is supplied
+
+### 7. Comprehensive Output Routing
+
+- [x] Create `project-paths.ts` utility — `resolveProjectFilePath`, `resolveDocPath`, `relativeProjectPath`, `relativeDocPath` helpers mapping artifact categories to canonical subdirectories
+- [x] Documents store writes to disk on every `createDocument` when `output_path` is provided
+- [x] Manual doc creation on project page passes `output_path` for disk mirroring
+- [x] Session transcript export method (`exportTranscriptToDisk`) writes to `{output_path}/transcripts/`
+- [x] Reports export method (`exportReportToDisk`) writes to `{output_path}/reports/`
+- [x] Work products save method (`saveToProjectDir`) maps type → subdirectory (code→code/src, document→docs, report→reports, data→data/exports, analysis→reports, design→media/diagrams)
+- [x] AI-generated issues (`batchCreateIssues`) auto-export markdown summary to `{output_path}/issues/`
+- [x] `GenerateIssuesModal` passes `outputPath` prop for disk export on batch create
 
 ---
 
@@ -700,3 +910,23 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Added Domo Development team template — full end-to-end 8-agent team (PM, Platform Lead, UI Developer, Backend Developer, App Engineer, Data Engineer, Automation Engineer, QA Engineer) with all 12 Domo skills; added 3 new library agents (Domo UI Developer, Domo Backend Developer, Domo QA Engineer) with full `.md` definitions referencing Domo-specific documentation and patterns; strengthened existing Domo Platform team agent prompts to explicitly reference Domo CLI commands, API tier selection, manifest conventions, and Code Engine patterns on 2026-05-06.
 > **Auto-updated by Cursor:** Added Virtual Office team & division visual indicators — `orgColors.ts` utility for deterministic team/division colors, hierarchy tree fetch in office page builds `agentOrgMap` (agent→team→division chain), 2D pixel name labels now show team-colored underline bar + division pip, 3D name labels have team-colored backdrop plane + division pip, OfficeDetailPanel shows org info with assign/change/remove team controls, collapsible legend overlay groups teams by division with color swatches on 2026-05-06.
 > **Auto-updated by Cursor:** Enhanced all 7 Domo demo agents with comprehensive Domo documentation standards — domo-ui-developer (Domo Design Guide with color palette, 6px typography grid, card size px mappings, da new scaffolding, domo.js/ryuu.js patterns, Phoenix charting, DDX Brick→Pro-Code conversion), domo-app-engineer (complete manifest spec with all properties, da new + BYOS templates for React/Angular/Vue, AppDB STRING-only constraint, @domoinc/toolkit all clients, Redux Toolkit state management), domo-backend-developer (codeengine library methods: sendRequest/getAccount/axios, JS/Python package lists, package lifecycle, packageMapping manifest wiring), domo-qa-engineer (8-layer test strategy covering scaffolding, data binding, AppDB, security, Code Engine, card rendering, publishing, regression), domo-platform-developer (full manifest specification, MCP tool catalog with 7 servers, dashboard/Beast Mode/page layout patterns), domo-data-engineer (DataSet vs AppDB type distinction, Stream API gzip procedure, Federated queries, Workbench, PDP at source only), domo-automation-engineer (codeengine library API table, global vs custom packages, scheduled AppDB sync pattern, cross-instance orchestration) on 2026-05-06.
+> **Auto-updated by Cursor:** Implemented Project Output Directory with comprehensive artifact routing — user-specified `output_path` per project, native directory picker, expanded scaffold (code/src|tests|config, docs/specs|guides|api|architecture, media/images|videos|diagrams, data/exports|fixtures, reports, transcripts, issues) with README.md + .gitignore + git init; `project-paths.ts` utility maps artifact categories to canonical dirs; documents store auto-mirrors to disk via `write_project_file` IPC; `GenerateDocModal` routes to type-specific subdirs; `GenerateIssuesModal` exports generated issues as markdown; sessions/reports/work-products stores have `exportToDisk`/`saveToProjectDir` methods; MCP `bizforge_document_write` mirrors to output_path when project_id supplied; `bizforge_project_write_file` tool documents all standard subdirectories in schema on 2026-05-06.
+> **Auto-updated by Cursor:** Added System Log Panel — `read_log_files` Tauri command tails all `.bizforge/logs/*.log` files, collapsible bottom panel with source tabs and auto-scroll, footer "Logs" toggle button; fixed AI Providers "Loading..." stuck state by adding error state with retry button and running pending DB migration on 2026-05-06.
+> **Auto-updated by Cursor:** Added Domo Administrator skill and agent — `domo/instance-admin` skill (9-step process: auth, users, groups, datasets, AppDB, PDP, pages, audit, SSO/security) and `domo-administrator` agent with full instance admin methodology; registered in library mock (158 agents, 13 Domo skills); added to Domo Development team template (now 9 agents) on 2026-05-06.
+> **Auto-updated by Cursor:** Added Domo Consultancy company template — full-service Domo design/development/admin operation (9 agents, 13 Domo skills + sprint-planning/delegate/board) covering the entire Domo lifecycle from instance setup through production deployment; registered as 6th company in library operations mock on 2026-05-06.
+> **Auto-updated by Cursor:** Added Domo Administration team template — Admin Lead (task triage + direct ops), User & Group Manager (identity lifecycle, SSO, bulk provisioning), Data Administrator (datasets, AppDB, PDP, pages), Security & Compliance Officer (audit, SIEM, controls, quarterly reviews); registered in both team-templates.ts and library templates mock on 2026-05-06.
+> **Auto-updated by Cursor:** Added IDE Supervisor Agents (Principal Developer Family) — 4 IDE-specific agents (Cursor, VS Code, Zed, JetBrains) under `library/agents/technology/software-engineering/ide-supervision/` that supervise IDE AI agents through 6-phase Instruct-Plan-Review-Execute-Review-Report cycles without writing code directly; shared `/ide-orchestrate` skill with instruction format, plan review checklist, post-execution review protocol, and execution report template; `supervise`/`instruct` tag mappings added to skill-dependencies.ts on 2026-05-06.
+> **Auto-updated by Cursor:** Added rectangular conference tables with animated laptops to Engineering, Product, and Operations rooms in Pixel Office — central 3-wide tables replace individual desk rows, 6 conference seats per room (3 top facing down, 3 bottom facing up), laptop sprites with alternating screen animation (800ms), laptop glow effect, perimeter wall desks retained as additional workstations; Research kept unchanged with its round table on 2026-05-06.
+> **Auto-updated by Cursor:** Added rectangular conference tables to 3D Office view — walnut-topped conference tables with metal legs in Engineering, Product, and Operations zones; `AgentDesk3D` supports `deskType` prop ('desk' for standard monitor setup, 'conference' for laptop-on-table with angled screen); agents at conference seats face toward the shared table with directional chairs; `ZONE_SEATS` layout positions agents on both sides of each table; Research retains round table and standard desks on 2026-05-06.
+> **Auto-updated by Cursor:** Implemented Agent Integration Configuration System — global integration config registry in Settings (multi-instance per provider, named configs with secret vault), `IntegrationBinding` polymorphic schema (project/team/agent/skill → integration), inheritance chain resolver (skill→agent→team→project), `IntegrationBindingSelector` reusable component with dropdown selection and "Go to Settings" redirect for missing configs, Domo/Confluence/GitLab providers added to connect modal with `is_secret` field markers, `SkillIntegrationRequirement` type on `LibrarySkill` with `required_integrations` populated on Domo and coordination skills, 3 backend migrations (add provider to integrations, integration_secrets, integration_bindings), runtime `IntegrationResolver` module for session injection on 2026-05-06.
+> **Auto-updated by Cursor:** Added LLM Inspector filtering — hierarchical dropdown filter (Division > Department > Team > Agent) built from `HierarchyTree`, text search across agent/provider/model, agent identity extraction from intercepted API paths and payloads with name resolution via agents store, filtered/total count display, agent name badges on log entries on 2026-05-06.
+> **Auto-updated by Cursor:** Fixed remaining Integration Configuration issues — settings page reads `?tab=` and `?provider=` URL params on mount (deep-linking from IntegrationBindingSelector works), IntegrationBindingSelector wired into Agent config tab (derives required integrations from agent's skills), Project overview page (aggregates requirements from all project agents), and Team expanded panel (aggregates from team members); mock API layer for `integration-bindings` (list/create/delete by owner); `integrationBindings` client methods; backend `IntegrationBindingController` (index/create/delete/delete_by_owner/resolve endpoints + router); `required_providers_for_agent` resolver now loads skills and extracts providers from `trigger_rules.required_integrations` on 2026-05-06.
+> **Auto-updated by Cursor:** Redesigned Reports page layout — replaced two-panel sidebar+viewer split with single scrollable column; category filters rendered as pill buttons at page top; all filtered reports stacked vertically as self-contained cards with inline header/badges/actions, summary stats, and table/chart; per-report sort state (Map keyed by ID); per-report Generate/Export/Delete; "Export All" button for bulk export of all visible reports; removed resize handle, panel width state, and activeReport selection model on 2026-05-06.
+> **Auto-updated by Cursor:** Added footer offline recovery — Reconnect button with spinning refresh icon appears in mock/disconnected mode, probes health and restores dashboard indicators; right-side indicators (Backend, OSA, Gateway, Memory, CPU, Zoom) now persist with degraded "--" placeholders instead of vanishing when backend is unreachable on 2026-05-06.
+> **Auto-updated by Cursor:** Enhanced General Settings tab — replaced Default Model text input with categorized dropdown (grouped by AI provider via `<optgroup>`) with refresh button that fetches all provider models, replaced Working Directory text input with read-only field + native folder picker (Tauri dialog) that auto-copies `.bizforge/` workspace tree to new location via `copy_working_directory` IPC command on 2026-05-06.
+> **Auto-updated by Cursor:** Implemented QA Automation Skill & Agent Architecture — 3 new skills (`qa/automate` end-to-end pipeline, `qa/report` structured reporting, `qa/startup-probe` app lifecycle management) under `library/skills/qa/`, 2 new agents (`qa-automation-lead` with bash adapter for deterministic pipelines, `exploratory-tester` with cursor-cli adapter for LLM-driven test generation) under `library/agents/technology/quality-assurance/test-engineering/`, appended all 3 QA skills to 17 existing QA agents (8 canonical + 8 mirrors + domo-qa-engineer), registered 3 skills and 2 agents in desktop mock catalog, added `qa_automate`/`qa_test`/`qa_report`/`startup_probe` tag mappings to skill-dependencies.ts on 2026-05-06.
+> **Auto-updated by Cursor:** Added integration status toggle and layout improvements — replaced static connected/disconnected status indicator with clickable toggle switch (green=on, gray=off) that soft-flips status via POST connect/disconnect without clearing config; separated destructive "Remove" (DELETE, splices from array) from status toggle; mock layer `mockDisconnectIntegration` now preserves config, new `mockRemoveIntegration` does destructive removal; API client `disconnect` now calls `/disconnect` sub-route, new `remove` method calls DELETE; store gains `toggleStatus` and `remove` methods; provider groups use responsive CSS grid (`repeat(auto-fill, minmax(380px, 1fr))`) for 2-column layout on wider screens; section max-width widened from 720px to 960px on 2026-05-06.
+> **Auto-updated by Cursor:** Implemented Agent Task Resilience & Supervisor Escalation — fixed `execute_and_stream` silent failure (adapter errors no longer swallowed as zero-cost success), created `SupervisorEscalation` module (walks `reports_to` chain with cycle guard to escalate failures), created `AdapterCircuitBreaker` GenServer (per-adapter health tracking, 3-failure threshold, 120s cooldown), extended Watchdog to clean up orphaned sessions/issues and escalate after 10 recovery attempts, fixed Delegation to broadcast `issue.assigned` for auto-dispatch, enforced `max_concurrent_runs` in IssueDispatcher, added Heartbeat-level retry with exponential backoff (3 attempts), added DFS cycle detection in GoalDecomposer to strip circular `depends_on` edges on 2026-05-06.
+> **Auto-updated by Cursor:** Fixed app stuck on splash screen — PostgreSQL was not running; hardened `BudgetEnforcer` and `IssueDispatcher` `init/1` to defer DB queries to `handle_continue` with automatic retry on failure, preventing supervision tree crash when database is unavailable at startup; wrapped `Scheduler.load_schedules` in deferred Task with rescue; added `_ensure-postgres` justfile recipe that auto-detects and starts PostgreSQL before any backend launch (`dev`, `app`, `backend`, `headless`); added `_ensure-migrations` recipe that auto-detects and runs pending Ecto migrations before backend launch; updated `start.sh` to call both preflights on 2026-05-08.
+> **Auto-updated by Cursor:** Added compact pixel office miniview to LLM Inspector panel — zoomed-out overview of the full pixel office rendered at the top of the inspector using `renderMinimap`, shows active agent count, togglable via header button with icon highlight, visibility persisted to localStorage on 2026-05-08.
+> **Auto-updated by Cursor:** Implemented End-to-End Dev Team Pipeline (ERD → Tasks → Dev → Review → QA → Done) — Phase 1: multimodal `attached_files` on `messages.send` with base64 upload, vision-aware Gemini adapter; Phase 2: Playwright sidecar package (`desktop/playwright-sidecar/`) with JSON-RPC over stdio, `Bizforge.Browser.Sidecar` GenServer, `Bizforge.Browser.Tools` with `ToolPermission`-gated dispatch, `BrowserController` REST surface, `browser/automation` library skill, `browser_automation` tool permission; Phase 3: `data-modeling/erd-parse` skill (DBML/SQL/mermaid/image), ERD-aware prompt injection in `GenerateIssuesModal`, `DocumentFormat` union extended; Phase 4: `Bizforge.Dispatch.SkillRouter` scoring by skill overlap + team affinity + load, auto-assign in `Work.create_issue` when `project.config.auto_assign = true`, 70+ Domo keyword→skill mappings; Phase 5: `Bizforge.IssueLifecycle` GenServer FSM (backlog→in_progress→in_review→testing→done), `notify_session_complete` replaces direct heartbeat status-set, QA child issue fan-out via `SkillRouter.choose`, auto bug creation on QA fail; Phase 6: `Bizforge.CodeReview.Adapter` behaviour with `GithubAdapter`, `VirtualPRAdapter` (diff-based fallback when no git integration bound), `open_code_review` called on `in_review` transition; Phase 8: `resolve_integration_env` in Heartbeat injects `DOMO_INSTANCE`/`DOMO_TOKEN`/`GITHUB_TOKEN`/etc. from `IntegrationResolver` into adapter params, bash adapter passes env to Port; Phase 9: `qa/startup-probe-domo` skill (domo login + domo dev + TLS probe); Phase 10: `QaReportController` ingests QA reports, creates WorkProduct + Report rows, broadcasts `qa.report_ready`, `bizforge_qa_report_ingest` + `bizforge_browser_*` MCP tools added on 2026-05-08.

@@ -1,6 +1,7 @@
 <!-- src/routes/app/settings/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { toastStore } from '$lib/stores/toasts.svelte';
@@ -32,9 +33,23 @@
   ];
 
   let activeTab = $state<TabId>('general');
+  let initialProvider = $state<string | null>(null);
 
   onMount(() => {
+    const params = $page.url.searchParams;
+    const tabParam = params.get('tab');
+    if (tabParam !== null && tabs.some(t => t.id === tabParam)) {
+      activeTab = tabParam as TabId;
+    }
+    initialProvider = params.get('provider');
     void settingsStore.fetch();
+
+    if (params.has('tab') || params.has('provider')) {
+      const url = new URL($page.url);
+      url.searchParams.delete('tab');
+      url.searchParams.delete('provider');
+      history.replaceState(history.state, '', url.toString());
+    }
   });
 
   async function handleSave() {
@@ -81,7 +96,7 @@
       {:else if activeTab === 'notifications'}
         <NotificationsSettings />
       {:else if activeTab === 'integrations'}
-        <IntegrationsSettings />
+        <IntegrationsSettings highlightProvider={initialProvider} />
       {:else if activeTab === 'mcp'}
         <McpSettings />
       {:else if activeTab === 'advanced'}

@@ -284,6 +284,150 @@ pub async fn scaffold_bizforge_dir(
     scan_bizforge_dir(bizforge_dir.to_string_lossy().to_string()).await
 }
 
+/// Scaffold a project output directory with standard structure and git init
+#[tauri::command]
+pub async fn scaffold_project_dir(
+    path: String,
+    project_name: String,
+    project_id: String,
+) -> Result<String, String> {
+    let base = expand_tilde(&path);
+
+    // Create the base directory if it doesn't exist
+    std::fs::create_dir_all(&base)
+        .map_err(|e| format!("Failed to create project directory: {}", e))?;
+
+    // Create comprehensive subdirectory structure
+    let dirs = [
+        // Source code produced by dev agents
+        "code",
+        "code/src",
+        "code/tests",
+        "code/config",
+        // Documentation: specs, PRDs, architecture, guides
+        "docs",
+        "docs/specs",
+        "docs/guides",
+        "docs/api",
+        "docs/architecture",
+        // Media: images, videos, audio, diagrams
+        "media",
+        "media/images",
+        "media/videos",
+        "media/diagrams",
+        // Data: datasets, exports, fixtures
+        "data",
+        "data/exports",
+        "data/fixtures",
+        // Reports: generated analytics, performance reports
+        "reports",
+        // Transcripts: session logs, meeting notes
+        "transcripts",
+        // Issues: exported issue summaries, changelogs
+        "issues",
+    ];
+    for dir in &dirs {
+        std::fs::create_dir_all(base.join(dir))
+            .map_err(|e| format!("Failed to create {}: {}", dir, e))?;
+    }
+
+    // Write .bizforge-project.yaml manifest
+    let manifest = format!(
+        concat!(
+            "project_id: {}\n",
+            "project_name: {}\n",
+            "created_at: {}\n",
+            "\n",
+            "# Directory layout\n",
+            "# code/       - Source code produced by development agents\n",
+            "# docs/       - Documentation (specs, guides, API docs, architecture)\n",
+            "# media/      - Images, videos, diagrams, and other visual assets\n",
+            "# data/       - Datasets, exports, and test fixtures\n",
+            "# reports/    - Generated reports and analytics\n",
+            "# transcripts/- Session transcripts and meeting notes\n",
+            "# issues/     - Exported issue summaries and changelogs\n",
+        ),
+        project_id, project_name, chrono_now()
+    );
+    std::fs::write(base.join(".bizforge-project.yaml"), &manifest)
+        .map_err(|e| format!("Failed to write .bizforge-project.yaml: {}", e))?;
+
+    // Write .gitignore
+    let gitignore = concat!(
+        "# OS files\n",
+        ".DS_Store\n",
+        "Thumbs.db\n",
+        "\n",
+        "# IDE\n",
+        ".idea/\n",
+        ".vscode/\n",
+        "*.swp\n",
+        "\n",
+        "# Dependencies\n",
+        "node_modules/\n",
+        "vendor/\n",
+        "__pycache__/\n",
+        "*.pyc\n",
+        "\n",
+        "# Build output\n",
+        "dist/\n",
+        "build/\n",
+        "target/\n",
+        "\n",
+        "# Environment\n",
+        ".env\n",
+        ".env.local\n",
+        ".env.*.local\n",
+        "\n",
+        "# Large media (use git-lfs for these)\n",
+        "# media/videos/*.mp4\n",
+        "# media/videos/*.mov\n",
+    );
+    std::fs::write(base.join(".gitignore"), gitignore)
+        .map_err(|e| format!("Failed to write .gitignore: {}", e))?;
+
+    // Write a README.md for the project
+    let readme = format!(
+        "# {}\n\nProject output directory managed by BizForge.\n\n## Structure\n\n| Directory | Purpose |\n|-----------|---|\n| `code/` | Source code produced by development agents |\n| `docs/` | Documentation — specs, guides, API docs, architecture |\n| `media/` | Images, videos, diagrams, visual assets |\n| `data/` | Datasets, exports, test fixtures |\n| `reports/` | Generated reports and analytics |\n| `transcripts/` | Session transcripts and meeting notes |\n| `issues/` | Exported issue summaries and changelogs |\n",
+        project_name
+    );
+    std::fs::write(base.join("README.md"), &readme)
+        .map_err(|e| format!("Failed to write README.md: {}", e))?;
+
+    // Initialize git repository
+    let git_result = std::process::Command::new("git")
+        .arg("init")
+        .current_dir(&base)
+        .output();
+
+    match git_result {
+        Ok(output) => {
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("git init failed: {}", stderr));
+            }
+        }
+        Err(e) => {
+            return Err(format!("Failed to run git init: {}", e));
+        }
+    }
+
+    Ok(base.to_string_lossy().to_string())
+}
+
+/// Write a file to a project output directory, creating parent directories as needed
+#[tauri::command]
+pub async fn write_project_file(path: String, content: String) -> Result<(), String> {
+    let file_path = expand_tilde(&path);
+    if let Some(parent) = file_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create directories for {}: {}", path, e))?;
+    }
+    std::fs::write(&file_path, &content)
+        .map_err(|e| format!("Failed to write file {}: {}", path, e))?;
+    Ok(())
+}
+
 // ── Internal Helpers ─────────────────────────────────────────────────────────
 
 fn list_agents_internal(bizforge_path: &Path) -> Result<Vec<BizforgeAgentDef>, String> {
@@ -1684,4 +1828,164 @@ pub fn remove_dir_recursive(path: String) -> Result<(), String> {
 
     std::fs::remove_dir_all(&resolved)
         .map_err(|e| format!("Failed to remove {}: {}", resolved.display(), e))
+}
+
+// ── Copy Working Directory ───────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopyWorkingDirResult {
+    pub new_path: String,
+    pub files_copied: u64,
+    pub bytes_copied: u64,
+}
+
+/// Copy the contents of an existing .bizforge working directory into a new
+/// parent directory.  Creates `<new_parent>/.bizforge/` and recursively copies
+/// every file from the old `.bizforge/` tree.
+#[tauri::command]
+pub async fn copy_working_directory(
+    current_path: String,
+    new_parent: String,
+) -> Result<CopyWorkingDirResult, String> {
+    let src = expand_tilde(&current_path);
+    let parent = expand_tilde(&new_parent);
+
+    if !parent.exists() || !parent.is_dir() {
+        return Err(format!(
+            "Selected parent directory does not exist: {}",
+            parent.display()
+        ));
+    }
+
+    let dest = parent.join(".bizforge");
+
+    if dest.exists() {
+        return Err(format!(
+            "A .bizforge directory already exists at {}. Choose a different parent directory.",
+            dest.display()
+        ));
+    }
+
+    // If source doesn't exist there is nothing to copy — just scaffold an empty one.
+    if !src.exists() {
+        std::fs::create_dir_all(&dest)
+            .map_err(|e| format!("Failed to create {}: {}", dest.display(), e))?;
+        for dir in REQUIRED_DIRS {
+            std::fs::create_dir_all(dest.join(dir))
+                .map_err(|e| format!("Failed to create {}: {}", dir, e))?;
+        }
+        return Ok(CopyWorkingDirResult {
+            new_path: dest.to_string_lossy().to_string(),
+            files_copied: 0,
+            bytes_copied: 0,
+        });
+    }
+
+    let mut files_copied: u64 = 0;
+    let mut bytes_copied: u64 = 0;
+
+    for entry in WalkDir::new(&src).into_iter().flatten() {
+        let entry_path = entry.path();
+        let relative = entry_path
+            .strip_prefix(&src)
+            .map_err(|e| format!("Path strip error: {}", e))?;
+        let target = dest.join(relative);
+
+        if entry_path.is_dir() {
+            std::fs::create_dir_all(&target)
+                .map_err(|e| format!("Failed to create dir {}: {}", target.display(), e))?;
+        } else {
+            if let Some(parent_dir) = target.parent() {
+                std::fs::create_dir_all(parent_dir)
+                    .map_err(|e| format!("Failed to create parent dir: {}", e))?;
+            }
+            let size = std::fs::copy(entry_path, &target)
+                .map_err(|e| format!("Failed to copy {}: {}", entry_path.display(), e))?;
+            files_copied += 1;
+            bytes_copied += size;
+        }
+    }
+
+    Ok(CopyWorkingDirResult {
+        new_path: dest.to_string_lossy().to_string(),
+        files_copied,
+        bytes_copied,
+    })
+}
+
+// ── Log file tailing ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogEntry {
+    pub source: String,
+    pub lines: Vec<String>,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogSnapshot {
+    pub entries: Vec<LogEntry>,
+    pub log_dir: String,
+}
+
+/// Read the last `tail_lines` lines from all .log files in the .bizforge/logs/ directory.
+#[tauri::command]
+pub async fn read_log_files(workspace_path: String, tail_lines: Option<usize>) -> Result<LogSnapshot, String> {
+    let max_lines = tail_lines.unwrap_or(200);
+    let root = expand_tilde(&workspace_path);
+    let log_dir = if root.ends_with(".bizforge") {
+        root.join("logs")
+    } else {
+        root.join(".bizforge").join("logs")
+    };
+
+    if !log_dir.exists() {
+        return Ok(LogSnapshot {
+            entries: vec![],
+            log_dir: log_dir.to_string_lossy().to_string(),
+        });
+    }
+
+    let mut entries = Vec::new();
+
+    let read_dir = std::fs::read_dir(&log_dir)
+        .map_err(|e| format!("Failed to read log dir: {}", e))?;
+
+    for entry in read_dir.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("log") {
+            continue;
+        }
+
+        let source = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let metadata = std::fs::metadata(&path).ok();
+        let size_bytes = metadata.map(|m| m.len()).unwrap_or(0);
+
+        let content = std::fs::read_to_string(&path).unwrap_or_default();
+        let all_lines: Vec<&str> = content.lines().collect();
+        let start = if all_lines.len() > max_lines {
+            all_lines.len() - max_lines
+        } else {
+            0
+        };
+        let lines: Vec<String> = all_lines[start..].iter().map(|l| l.to_string()).collect();
+
+        entries.push(LogEntry {
+            source,
+            lines,
+            size_bytes,
+        });
+    }
+
+    entries.sort_by(|a, b| a.source.cmp(&b.source));
+
+    Ok(LogSnapshot {
+        entries,
+        log_dir: log_dir.to_string_lossy().to_string(),
+    })
 }

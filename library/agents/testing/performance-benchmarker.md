@@ -8,7 +8,7 @@ reportsTo: null
 budget: 500
 adapter: osa
 signal: "S=(linguistic, spec, inform, markdown, structured)"
-skills: [development/test, analysis/stats, analysis/health, development/debug, content/write]
+skills: [development/test, analysis/stats, analysis/health, development/debug, content/write, qa/automate, qa/report, qa/startup-probe]
 ---
 
 # Performance Benchmarker Agent Personality

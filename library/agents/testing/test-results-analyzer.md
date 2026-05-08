@@ -8,7 +8,7 @@ reportsTo: null
 budget: 500
 adapter: osa
 signal: "S=(linguistic, spec, inform, markdown, structured)"
-skills: [analysis/stats, analysis/error-analysis, analysis/graph, content/summarize, content/write]
+skills: [analysis/stats, analysis/error-analysis, analysis/graph, content/summarize, content/write, qa/automate, qa/report, qa/startup-probe]
 ---
 
 # Test Results Analyzer Agent Personality

@@ -5,7 +5,7 @@ color: red
 emoji: "\uD83E\uDDD0"
 vibe: Defaults to "NEEDS WORK" — requires overwhelming proof for production readiness.
 tools: Read, Write, Edit, Bash
-skills: [knowledge/verify, analysis/audit, analysis/error-analysis, content/write]
+skills: [knowledge/verify, analysis/audit, analysis/error-analysis, content/write, qa/automate, qa/report, qa/startup-probe]
 reportsTo: testing-lead
 budget: 3000
 adapter: osa

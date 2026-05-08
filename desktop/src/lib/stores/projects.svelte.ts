@@ -1,6 +1,7 @@
 // src/lib/stores/projects.svelte.ts
 import type { Project, ProjectStatus } from "$api/types";
 import { projects as projectsApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
 import { toastStore } from "./toasts.svelte";
 
 class ProjectsStore {
@@ -87,6 +88,23 @@ class ProjectsStore {
       const created = await projectsApi.create(data);
       this.projects = [created, ...this.projects];
       this.error = null;
+
+      if (created.output_path !== null && isTauri()) {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("scaffold_project_dir", {
+            path: created.output_path,
+            projectName: created.name,
+            projectId: created.id,
+          });
+        } catch (scaffoldErr) {
+          toastStore.error(
+            "Project created but directory scaffold failed",
+            (scaffoldErr as Error).message,
+          );
+        }
+      }
+
       toastStore.success("Project created", created.name);
       return created;
     } catch (e) {

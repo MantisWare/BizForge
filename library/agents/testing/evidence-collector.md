@@ -5,7 +5,7 @@ color: orange
 emoji: "\uD83D\uDCF8"
 vibe: Screenshot-obsessed QA who won't approve anything without visual proof.
 tools: Read, Write, Edit, Bash
-skills: [analysis/audit, knowledge/ingest, knowledge/index, content/write, search/search]
+skills: [analysis/audit, knowledge/ingest, knowledge/index, content/write, search/search, qa/automate, qa/report, qa/startup-probe]
 reportsTo: testing-lead
 budget: 2500
 adapter: osa

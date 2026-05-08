@@ -443,14 +443,16 @@
   {/if}
 
   <!-- Provider List -->
-  {#if providersStore.loading && providersStore.totalCount === 0}
-    <div class="pst-empty">Loading providers...</div>
-  {:else if providersStore.totalCount === 0 && !showAddForm}
-    <div class="pst-empty">
-      <p>No providers configured yet.</p>
-      <button class="pst-btn pst-btn--primary" onclick={() => { showAddForm = true; }}>Add your first provider</button>
-    </div>
-  {:else}
+  {#if providersStore.totalCount > 0}
+    {#if providersStore.loading}
+      <div class="pst-loading-hint">Refreshing providers...</div>
+    {/if}
+    {#if providersStore.error !== null}
+      <div class="pst-loading-hint pst-loading-hint--error">
+        Could not refresh: {providersStore.error}
+        <button class="pst-btn pst-btn--secondary pst-btn--xs" onclick={() => void providersStore.fetch()}>Retry</button>
+      </div>
+    {/if}
     <div class="pst-list">
       {#each providersStore.providers as prov (prov.id)}
         <div class="pst-card pst-provider-card">
@@ -583,6 +585,18 @@
           </div>
         </div>
       {/each}
+    </div>
+  {:else if providersStore.loading}
+    <div class="pst-empty">Loading providers...</div>
+  {:else if providersStore.error !== null && !showAddForm}
+    <div class="pst-empty">
+      <p class="pst-error-msg">Could not load providers: {providersStore.error}</p>
+      <button class="pst-btn pst-btn--secondary" onclick={() => void providersStore.fetch()}>Retry</button>
+    </div>
+  {:else if !showAddForm}
+    <div class="pst-empty">
+      <p>No providers configured yet.</p>
+      <button class="pst-btn pst-btn--primary" onclick={() => { showAddForm = true; }}>Add your first provider</button>
     </div>
   {/if}
 
@@ -1061,6 +1075,32 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
+  }
+
+  .pst-error-msg {
+    color: rgba(239, 68, 68, 0.8);
+    font-size: 12px;
+  }
+
+  .pst-loading-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .pst-loading-hint--error {
+    color: rgba(239, 68, 68, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .pst-btn--xs {
+    padding: 3px 10px;
+    font-size: 11px;
   }
 
   .pst-btn--test {

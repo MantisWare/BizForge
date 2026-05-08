@@ -1,5 +1,7 @@
 // src/lib/stores/work-products.svelte.ts
 import { workProducts as workProductsApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
+import { toastStore } from "./toasts.svelte";
 
 export type WorkProductType =
   | "report"
@@ -129,6 +131,43 @@ class WorkProductsStore {
 
   selectProduct(product: WorkProduct | null): void {
     this.selectedProduct = product;
+  }
+
+  /**
+   * Save a work product's content to the project output directory.
+   * Maps work product type to the appropriate subdirectory:
+   *   code → code/src/, document → docs/, report → reports/,
+   *   data → data/, analysis → reports/, design → media/diagrams/
+   */
+  async saveToProjectDir(
+    product: WorkProduct,
+    content: string,
+    outputPath: string,
+  ): Promise<void> {
+    if (!isTauri()) return;
+
+    const TYPE_DIRS: Record<WorkProductType, string> = {
+      code: "code/src",
+      document: "docs",
+      report: "reports",
+      data: "data/exports",
+      analysis: "reports",
+      design: "media/diagrams",
+    };
+
+    const dir = TYPE_DIRS[product.type] ?? "docs";
+    const slug = product.title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const ext = product.type === "code" ? ".ts" : product.type === "data" ? ".json" : ".md";
+    const filename = `${slug}${ext}`;
+    const diskPath = `${outputPath.replace(/\/+$/, "")}/${dir}/${filename}`;
+
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("write_project_file", { path: diskPath, content });
+      toastStore.success("Work product saved", `Written to ${dir}/${filename}`);
+    } catch (e) {
+      toastStore.error("Save failed", (e as Error).message);
+    }
   }
 }
 

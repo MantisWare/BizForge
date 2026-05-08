@@ -2945,8 +2945,47 @@ export const ENTRANCE_MAT_SPRITE: string[][] = [
   ["", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", "#5a4a38", ""],
 ];
 
+/** Rectangular conference/work table sprite (16x10 pixels) — dark wood with metal trim */
+export const TABLE_RECT_SPRITE: string[][] = [
+  ["#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#9a8a78", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#7a6a58", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#8a7a68", "#7a6a58", "#5a4a3a"],
+  ["#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a", "#5a4a3a"],
+  ["", "#484038", "", "", "", "", "", "", "", "", "", "", "", "", "#484038", ""],
+  ["", "#484038", "", "", "", "", "", "", "", "", "", "", "", "", "#484038", ""],
+  ["", "#3a3430", "", "", "", "", "", "", "", "", "", "", "", "", "#3a3430", ""],
+];
+
+/** Laptop sprite (10x8 pixels) — open laptop with glowing screen */
+export const LAPTOP_SPRITE: string[][] = [
+  ["", "", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "", ""],
+  ["", "#3a3555", "#141828", "#1a2840", "#1a2840", "#1a2840", "#1a2840", "#141828", "#3a3555", ""],
+  ["", "#3a3555", "#1a2840", "#6ee7b7", "#254868", "#254868", "#6ee7b7", "#1a2840", "#3a3555", ""],
+  ["", "#3a3555", "#1a2840", "#254868", "#6ee7b7", "#254868", "#254868", "#1a2840", "#3a3555", ""],
+  ["", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", ""],
+  ["#3a3555", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#3a3555"],
+  ["", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", ""],
+  ["", "", "", "", "", "", "", "", "", ""],
+];
+
+/** Laptop sprite variant — second frame for subtle animation */
+export const LAPTOP_SPRITE_2: string[][] = [
+  ["", "", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "", ""],
+  ["", "#3a3555", "#141828", "#1a2840", "#1a2840", "#1a2840", "#1a2840", "#141828", "#3a3555", ""],
+  ["", "#3a3555", "#1a2840", "#254868", "#6ee7b7", "#254868", "#254868", "#1a2840", "#3a3555", ""],
+  ["", "#3a3555", "#1a2840", "#254868", "#254868", "#6ee7b7", "#6ee7b7", "#1a2840", "#3a3555", ""],
+  ["", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", ""],
+  ["#3a3555", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#4a4568", "#3a3555"],
+  ["", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", "#3a3555", ""],
+  ["", "", "", "", "", "", "", "", "", ""],
+];
+
 /** Render any sprite to a cached canvas */
 const spriteCanvasCache = new Map<string, HTMLCanvasElement>();
+const MAX_CACHE_SIZE = 4000;
 
 export function renderSpriteToCanvas(
   sprite: string[][],
@@ -2973,11 +3012,17 @@ export function renderSpriteToCanvas(
     }
   }
 
-  if (key) spriteCanvasCache.set(key, canvas);
+  if (key) {
+    if (spriteCanvasCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = spriteCanvasCache.keys().next().value;
+      if (firstKey !== undefined) spriteCanvasCache.delete(firstKey);
+    }
+    spriteCanvasCache.set(key, canvas);
+  }
   return canvas;
 }
 
-/** Clear sprite cache (on zoom change) */
+/** Clear sprite cache (on time-of-day or major visual change) */
 export function clearSpriteCache(): void {
   spriteCanvasCache.clear();
 }

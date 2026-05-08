@@ -3,19 +3,21 @@ defmodule Bizforge.Headless.Watchdog do
   GenServer that monitors running heartbeat tasks and handles failures.
 
   Periodically checks for agents stuck in "working" status beyond a
-  threshold, restarts crashed agents with exponential backoff, and
-  pauses agents whose adapters become unavailable.
+  threshold, restarts crashed agents with exponential backoff, cleans
+  up orphaned sessions/issues, and escalates to supervisors when
+  recovery is exhausted.
   """
   use GenServer
   require Logger
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.Agent
+  alias Bizforge.Schemas.{Agent, Session, Issue}
   import Ecto.Query
   import Ecto.Changeset, only: [change: 2]
 
   @check_interval :timer.seconds(60)
   @stuck_threshold_seconds 600
+  @max_recovery_attempts 10
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -24,7 +26,7 @@ defmodule Bizforge.Headless.Watchdog do
   @impl true
   def init(_opts) do
     Process.send_after(self(), :check, @check_interval)
-    {:ok, %{failure_counts: %{}}}
+    {:ok, %{failure_counts: %{}, escalated: MapSet.new()}}
   end
 
   @impl true
@@ -56,6 +58,7 @@ defmodule Bizforge.Headless.Watchdog do
         "[Headless.Watchdog] Agent '#{agent.name}' (#{agent.id}) stuck in 'working' for >#{@stuck_threshold_seconds}s — resetting to idle"
       )
 
+      cleanup_orphaned_state(agent)
       agent |> change(status: "idle") |> Repo.update()
 
       Bizforge.Headless.Notifier.notify("agent.stuck_recovered", %{
@@ -76,54 +79,99 @@ defmodule Bizforge.Headless.Watchdog do
           where: a.status == "error"
       )
 
-    failure_counts =
-      Enum.reduce(errored_agents, state.failure_counts, fn agent, counts ->
-        count = Map.get(counts, agent.id, 0) + 1
-        backoff = min(count * count * 30, 3600)
+    Enum.reduce(errored_agents, state, fn agent, acc ->
+      count = Map.get(acc.failure_counts, agent.id, 0) + 1
+      backoff = min(count * count * 30, 3600)
 
-        if should_retry?(agent, count, backoff) do
-          Logger.info(
-            "[Headless.Watchdog] Attempting recovery for agent '#{agent.name}' (attempt #{count}, backoff #{backoff}s)"
+      if should_retry?(agent, count, backoff) do
+        Logger.info(
+          "[Headless.Watchdog] Attempting recovery for agent '#{agent.name}' (attempt #{count}, backoff #{backoff}s)"
+        )
+
+        cleanup_orphaned_state(agent)
+        agent |> change(status: "idle") |> Repo.update()
+
+        Bizforge.Headless.Notifier.notify("agent.recovery_attempt", %{
+          agent_id: agent.id,
+          agent_name: agent.name,
+          attempt: count,
+          backoff_seconds: backoff
+        })
+
+        put_in(acc, [:failure_counts, agent.id], count)
+      else
+        if count > @max_recovery_attempts and not MapSet.member?(acc.escalated, agent.id) do
+          Logger.warning(
+            "[Headless.Watchdog] Recovery exhausted for agent '#{agent.name}' — escalating to supervisor"
           )
 
-          agent |> change(status: "idle") |> Repo.update()
-
-          Bizforge.Headless.Notifier.notify("agent.recovery_attempt", %{
+          Bizforge.Headless.Notifier.notify("agent.recovery_exhausted", %{
             agent_id: agent.id,
             agent_name: agent.name,
-            attempt: count,
-            backoff_seconds: backoff
+            attempts: count
           })
 
-          Map.put(counts, agent.id, count)
-        else
-          if count > 10 do
-            Bizforge.Headless.Notifier.notify("agent.recovery_exhausted", %{
-              agent_id: agent.id,
-              agent_name: agent.name,
-              attempts: count
-            })
-          end
+          Bizforge.SupervisorEscalation.escalate(
+            agent,
+            "Agent has failed #{count} times and recovery is exhausted",
+            %{}
+          )
 
+          acc
+          |> put_in([:failure_counts, agent.id], count)
+          |> Map.update!(:escalated, &MapSet.put(&1, agent.id))
+        else
           Logger.debug(
             "[Headless.Watchdog] Agent '#{agent.name}' in backoff (attempt #{count}, #{backoff}s)"
           )
 
-          Map.put(counts, agent.id, count)
+          put_in(acc, [:failure_counts, agent.id], count)
         end
-      end)
-
-    %{state | failure_counts: failure_counts}
+      end
+    end)
   end
 
   defp should_retry?(agent, count, backoff_seconds) do
-    case agent.updated_at do
-      nil ->
-        true
+    if count > @max_recovery_attempts do
+      false
+    else
+      case agent.updated_at do
+        nil ->
+          true
 
-      updated_at ->
-        elapsed = DateTime.diff(DateTime.utc_now(), updated_at, :second)
-        elapsed >= backoff_seconds && count <= 10
+        updated_at ->
+          elapsed = DateTime.diff(DateTime.utc_now(), updated_at, :second)
+          elapsed >= backoff_seconds
+      end
+    end
+  end
+
+  # Fail any active sessions and release checked-out issues for this agent.
+  defp cleanup_orphaned_state(agent) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    {session_count, _} =
+      Repo.update_all(
+        from(s in Session,
+          where: s.agent_id == ^agent.id and s.status == "active"
+        ),
+        set: [status: "failed", completed_at: now]
+      )
+
+    if session_count > 0 do
+      Logger.info("[Headless.Watchdog] Failed #{session_count} orphaned session(s) for agent #{agent.name}")
+    end
+
+    {issue_count, _} =
+      Repo.update_all(
+        from(i in Issue,
+          where: i.checked_out_by == ^agent.id and i.status == "in_progress"
+        ),
+        set: [checked_out_by: nil, status: "backlog", updated_at: now]
+      )
+
+    if issue_count > 0 do
+      Logger.info("[Headless.Watchdog] Released #{issue_count} checked-out issue(s) for agent #{agent.name}")
     end
   end
 end

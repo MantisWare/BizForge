@@ -77,6 +77,7 @@ defmodule Bizforge.Adapters.Gemini do
   @impl true
   def execute_heartbeat(params) do
     prompt = params["context"] || "Perform your scheduled task."
+    attachments = params["attachments"] || []
 
     case resolve_api_key(params) do
       nil ->
@@ -85,13 +86,13 @@ defmodule Bizforge.Adapters.Gemini do
       api_key ->
         model = params["model"] || @default_model
         max_tokens = params["max_output_tokens"] || @default_max_tokens
-        call_gemini_stream(api_key, model, prompt, max_tokens)
+        call_gemini_stream(api_key, model, prompt, max_tokens, attachments)
     end
   end
 
   @impl true
   def send_message(%{api_key: api_key, model: model, max_output_tokens: max_tokens}, message) do
-    call_gemini_stream(api_key, model, message, max_tokens)
+    call_gemini_stream(api_key, model, message, max_tokens, [])
   end
 
   # -- Private --
@@ -102,13 +103,15 @@ defmodule Bizforge.Adapters.Gemini do
       System.get_env("GEMINI_API_KEY")
   end
 
-  defp call_gemini_stream(api_key, model, prompt, max_tokens) do
+  defp call_gemini_stream(api_key, model, prompt, max_tokens, attachments \\ []) do
     url = "#{@api_base}/#{model}:generateContent?key=#{api_key}"
+
+    parts = [%{text: prompt}] ++ build_image_parts(attachments)
 
     body = %{
       contents: [
         %{
-          parts: [%{text: prompt}]
+          parts: parts
         }
       ],
       generationConfig: %{
@@ -187,6 +190,42 @@ defmodule Bizforge.Adapters.Gemini do
       fn _ -> :ok end
     )
   end
+
+  defp build_image_parts([]), do: []
+
+  defp build_image_parts(attachments) when is_list(attachments) do
+    attachments
+    |> Enum.filter(fn a -> String.starts_with?(a["mime_type"] || "", "image/") end)
+    |> Enum.map(fn a ->
+      case read_attachment_base64(a) do
+        {:ok, b64} ->
+          %{
+            inline_data: %{
+              mime_type: a["mime_type"],
+              data: b64
+            }
+          }
+
+        :error ->
+          nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp build_image_parts(_), do: []
+
+  defp read_attachment_base64(%{"data" => data}) when is_binary(data), do: {:ok, data}
+
+  defp read_attachment_base64(%{"path" => path}) when is_binary(path) do
+    if File.exists?(path) do
+      {:ok, path |> File.read!() |> Base.encode64()}
+    else
+      :error
+    end
+  end
+
+  defp read_attachment_base64(_), do: :error
 
   defp extract_gemini_response(%{"candidates" => [candidate | _]} = resp) do
     text =

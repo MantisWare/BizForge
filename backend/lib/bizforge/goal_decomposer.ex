@@ -80,8 +80,14 @@ defmodule Bizforge.GoalDecomposer do
     """
 
     case run_claude_prompt(prompt, workspace.path) do
-      {:ok, response} -> parse_issues_json(response)
-      {:error, reason} -> {:error, reason}
+      {:ok, response} ->
+        case parse_issues_json(response) do
+          {:ok, issues_data} -> {:ok, sanitize_dependencies(issues_data)}
+          error -> error
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -122,6 +128,87 @@ defmodule Bizforge.GoalDecomposer do
       nil ->
         {:error, :no_json_found}
     end
+  end
+
+  # Validate the dependency graph from LLM output and strip any cyclic edges.
+  # Each issue's "depends_on" is a 0-based index into the list.
+  defp sanitize_dependencies(issues_data) do
+    size = length(issues_data)
+
+    # Build adjacency: node -> list of nodes it depends on
+    edges =
+      issues_data
+      |> Enum.with_index()
+      |> Enum.reduce(%{}, fn {item, idx}, acc ->
+        dep = item["depends_on"]
+
+        if is_integer(dep) and dep >= 0 and dep < size and dep != idx do
+          Map.update(acc, idx, [dep], &[dep | &1])
+        else
+          acc
+        end
+      end)
+
+    cyclic_edges = detect_cycles(edges, size)
+
+    if cyclic_edges == MapSet.new() do
+      issues_data
+    else
+      Logger.warning(
+        "[GoalDecomposer] Stripped #{MapSet.size(cyclic_edges)} cyclic dependency edge(s) from LLM output"
+      )
+
+      issues_data
+      |> Enum.with_index()
+      |> Enum.map(fn {item, idx} ->
+        if MapSet.member?(cyclic_edges, idx) do
+          Map.put(item, "depends_on", nil)
+        else
+          item
+        end
+      end)
+    end
+  end
+
+  # Returns a MapSet of node indices whose depends_on edges participate in a cycle.
+  # Uses DFS with :unvisited / :visiting / :visited coloring.
+  defp detect_cycles(edges, size) do
+    initial_colors = Map.new(0..(size - 1), fn i -> {i, :unvisited} end)
+
+    {_colors, cyclic} =
+      Enum.reduce(0..(size - 1), {initial_colors, MapSet.new()}, fn node, {colors, cyclic} ->
+        if Map.get(colors, node) == :unvisited do
+          dfs_visit(node, edges, colors, cyclic)
+        else
+          {colors, cyclic}
+        end
+      end)
+
+    cyclic
+  end
+
+  defp dfs_visit(node, edges, colors, cyclic) do
+    colors = Map.put(colors, node, :visiting)
+
+    deps = Map.get(edges, node, [])
+
+    {colors, cyclic} =
+      Enum.reduce(deps, {colors, cyclic}, fn dep, {c, cy} ->
+        case Map.get(c, dep) do
+          :visiting ->
+            # Back edge detected — cycle. Mark the source node as cyclic.
+            {c, MapSet.put(cy, node)}
+
+          :unvisited ->
+            dfs_visit(dep, edges, c, cy)
+
+          :visited ->
+            {c, cy}
+        end
+      end)
+
+    colors = Map.put(colors, node, :visited)
+    {colors, cyclic}
   end
 
   defp create_issues(issues_data, goal, workspace_id, agents, auto_assign) do

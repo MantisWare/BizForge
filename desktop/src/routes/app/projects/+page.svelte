@@ -4,6 +4,7 @@
   import PageShell from '$lib/components/layout/PageShell.svelte';
   import { projectsStore } from '$lib/stores/projects.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { isTauri } from '$lib/utils/platform';
   import type { ProjectStatus } from '$api/types';
 
   // Re-fetch whenever the active workspace changes (covers onMount + workspace switches)
@@ -24,8 +25,22 @@
   let showForm = $state(false);
   let formName = $state('');
   let formDescription = $state('');
+  let formOutputPath = $state('');
   let formStatus = $state<ProjectStatus>('active');
   let creating = $state(false);
+
+  async function pickOutputDirectory() {
+    if (!isTauri()) return;
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const selected = await open({ directory: true, multiple: false, title: 'Choose Project Output Directory' });
+      if (selected !== null && typeof selected === 'string') {
+        formOutputPath = selected;
+      }
+    } catch {
+      /* dialog cancelled or unavailable */
+    }
+  }
 
   async function handleCreate() {
     if (!formName.trim()) return;
@@ -34,6 +49,7 @@
       name: formName.trim(),
       description: formDescription.trim() || null,
       status: formStatus,
+      output_path: formOutputPath.trim() || null,
       workspace_id: workspaceStore.activeWorkspaceId ?? undefined,
     });
     creating = false;
@@ -41,6 +57,7 @@
       showForm = false;
       formName = '';
       formDescription = '';
+      formOutputPath = '';
       formStatus = 'active';
     }
   }
@@ -49,6 +66,7 @@
     showForm = false;
     formName = '';
     formDescription = '';
+    formOutputPath = '';
     formStatus = 'active';
   }
 </script>
@@ -169,6 +187,29 @@
         ></textarea>
       </div>
       <div class="proj-field">
+        <label class="proj-label" for="proj-output-input">Output Directory</label>
+        <div class="proj-path-row">
+          <input
+            id="proj-output-input"
+            class="proj-input proj-input--path"
+            type="text"
+            placeholder="/path/to/project/output"
+            bind:value={formOutputPath}
+          />
+          {#if isTauri()}
+            <button
+              class="proj-btn-browse"
+              type="button"
+              onclick={pickOutputDirectory}
+              aria-label="Browse for output directory"
+            >
+              Browse
+            </button>
+          {/if}
+        </div>
+        <span class="proj-field-hint">All generated code, docs, and artifacts will be written here.</span>
+      </div>
+      <div class="proj-field">
         <label class="proj-label" for="proj-status-input">Status</label>
         <select id="proj-status-input" class="proj-select" bind:value={formStatus}>
           <option value="active">Active</option>
@@ -277,4 +318,13 @@
   .proj-btn-primary { background: #f97316; border: none; color: #fff; }
   .proj-btn-primary:hover:not(:disabled) { background: #ea580c; }
   .proj-btn-ghost:disabled, .proj-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .proj-path-row { display: flex; gap: 6px; align-items: center; }
+  .proj-input--path { flex: 1; min-width: 0; }
+  .proj-btn-browse {
+    height: 34px; padding: 0 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    background: var(--dbg3); border: 1px solid var(--dbd); color: var(--dt2);
+    cursor: pointer; white-space: nowrap; transition: all 120ms ease;
+  }
+  .proj-btn-browse:hover { background: var(--dbg4, var(--dbg3)); border-color: #f97316; color: var(--dt); }
+  .proj-field-hint { font-size: 11px; color: var(--dt4); }
 </style>

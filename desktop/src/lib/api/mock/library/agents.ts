@@ -1,4 +1,4 @@
-// Agent data — 157 agents across 17 categories
+// Agent data — 158 agents across 17 categories
 
 import type { LibraryAgent } from "./types";
 import type { RawAgent } from "./enrichment";
@@ -1866,6 +1866,30 @@ const RAW_AGENTS: RawAgent[] = [
       "Analyzes and improves workflow efficiency by identifying bottlenecks and waste.",
     required_skills: ["audit", "retrospective", "stats", "simplify"],
   },
+  {
+    id: "qa-automation-lead",
+    name: "QA Automation Lead",
+    emoji: "robot",
+    category: "testing",
+    role: "qa automation lead",
+    adapter: "bash",
+    budget: 600,
+    description:
+      "End-to-end QA automation pipeline orchestrator — starts applications, runs functional tests (browser, API, CLI), and produces structured reports with failure diagnostics and artifact collection.",
+    required_skills: ["qa-automate", "qa-report", "qa-startup-probe", "test", "tdd", "error-analysis"],
+  },
+  {
+    id: "exploratory-tester",
+    name: "Exploratory Tester",
+    emoji: "magnifying-glass",
+    category: "testing",
+    role: "exploratory tester",
+    adapter: "cursor-cli",
+    budget: 500,
+    description:
+      "LLM-driven exploratory testing agent that navigates unfamiliar applications, discovers testable surfaces, generates Playwright test scripts on-the-fly, and validates functionality without requiring existing test suites.",
+    required_skills: ["qa-automate", "qa-report", "qa-startup-probe", "test", "tdd", "debug", "error-analysis"],
+  },
 
   // domo (7)
   {
@@ -1991,6 +2015,24 @@ const RAW_AGENTS: RawAgent[] = [
       "domo-dataset-manage",
       "domo-api-integrate",
       "domo-governance",
+    ],
+  },
+  {
+    id: "domo-administrator",
+    name: "Domo Administrator",
+    emoji: "shield-exclamation",
+    category: "domo",
+    role: "platform administrator",
+    adapter: "osa",
+    budget: 500,
+    description:
+      "Full Domo instance administrator — authenticates into client instances, manages users/groups, creates datasets and AppDB collections, configures PDP policies, manages pages/dashboards, audits activity logs, and configures SSO and security controls.",
+    required_skills: [
+      "domo-instance-admin",
+      "domo-governance",
+      "domo-api-integrate",
+      "domo-appdb-manage",
+      "domo-dataset-manage",
     ],
   },
 ];

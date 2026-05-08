@@ -84,6 +84,12 @@ defmodule BizforgeWeb.Router do
       post "/compact", SessionController, :compact, as: :compact
     end
 
+    # Browser automation (Playwright sidecar)
+    post "/browser/:method", BrowserController, :call
+
+    # QA report ingestion
+    post "/qa-reports", QaReportController, :create
+
     # Workflows
     resources "/workflows", WorkflowController, except: [:new, :edit] do
       get "/steps", WorkflowController, :steps, as: :steps
@@ -232,6 +238,13 @@ defmodule BizforgeWeb.Router do
     post "/integrations/slack/configure", IntegrationController, :connect_slack
     delete "/integrations/slack/configure", IntegrationController, :disconnect_slack
     get "/integrations/slack/config-status", IntegrationController, :slack_status
+
+    # Integration Bindings
+    get "/integration-bindings", IntegrationBindingController, :index
+    post "/integration-bindings", IntegrationBindingController, :create
+    delete "/integration-bindings/by-owner/:owner_type/:owner_id/:provider", IntegrationBindingController, :delete_by_owner
+    get "/integration-bindings/resolve/:agent_id", IntegrationBindingController, :resolve
+    delete "/integration-bindings/:id", IntegrationBindingController, :delete
 
     # Admin
     resources "/users", UserController, except: [:new, :edit]

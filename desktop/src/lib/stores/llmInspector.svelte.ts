@@ -50,6 +50,14 @@ function persistColors(colors: Record<string, string>): void {
   localStorage.setItem(STORAGE_KEY_COLORS, JSON.stringify(colors));
 }
 
+export type InspectorFilterLevel = "all" | "agent" | "team" | "department" | "division";
+
+export interface InspectorFilter {
+  level: InspectorFilterLevel;
+  id: string;
+  label: string;
+}
+
 export interface AddEntryParams {
   requestId: string;
   providerId: string;
@@ -62,6 +70,8 @@ export interface AddEntryParams {
   durationMs?: number;
   status?: LlmLogStatus;
   error?: string;
+  agentId?: string;
+  agentName?: string;
 }
 
 function extractPreviewLines(payload: unknown): string[] {
@@ -84,6 +94,8 @@ class LlmInspectorStore {
   panelWidth = $state(loadNumber(STORAGE_KEY_WIDTH, 0));
   fontSize = $state(loadNumber(STORAGE_KEY_FONT_SIZE, FONT_SIZE_DEFAULT));
   providerColors = $state<Record<string, string>>(loadColors());
+  searchQuery = $state("");
+  activeFilter = $state<InspectorFilter>({ level: "all", id: "", label: "All" });
 
   private _colorIndex = $state(0);
 
@@ -94,6 +106,15 @@ class LlmInspectorStore {
 
   get entryCount(): number {
     return this.entries.length;
+  }
+
+  setFilter(filter: InspectorFilter): void {
+    this.activeFilter = filter;
+  }
+
+  clearFilter(): void {
+    this.activeFilter = { level: "all", id: "", label: "All" };
+    this.searchQuery = "";
   }
 
   toggle(): void {
@@ -157,6 +178,8 @@ class LlmInspectorStore {
       durationMs: params.durationMs,
       status: params.status ?? "pending",
       error: params.error,
+      agentId: params.agentId,
+      agentName: params.agentName,
     };
 
     this.ensureProviderColor(params.providerSlug);
@@ -200,6 +223,14 @@ export const llmInspectorStore = new LlmInspectorStore();
 
 // ── Wire into the API client interceptor ────────────────────────────────────
 
+let _agentsStoreRef: { getById(id: string): { name: string; display_name: string } | null } | null = null;
+
+export function bindAgentsStore(
+  store: { getById(id: string): { name: string; display_name: string } | null },
+): void {
+  _agentsStoreRef = store;
+}
+
 function resolveProviderFromPath(path: string): { id: string; name: string; slug: string } {
   const sessionMatch = path.match(/^\/sessions\/([^/]+)\//);
   if (sessionMatch !== null) {
@@ -231,9 +262,38 @@ function extractModel(payload: unknown): string {
   return "unknown";
 }
 
+function extractAgentId(path: string, payload: unknown): string | undefined {
+  const agentMatch = path.match(/^\/agents\/([^/]+)\//);
+  if (agentMatch !== null) return agentMatch[1];
+
+  const sessionMatch = path.match(/^\/sessions\/([^/]+)\//);
+  if (sessionMatch !== null && typeof payload === "object" && payload !== null) {
+    const obj = payload as Record<string, unknown>;
+    if (typeof obj.agent_id === "string") return obj.agent_id;
+  }
+
+  if (typeof payload === "object" && payload !== null) {
+    const obj = payload as Record<string, unknown>;
+    if (typeof obj.agent_id === "string") return obj.agent_id;
+  }
+
+  return undefined;
+}
+
+function resolveAgentName(agentId: string | undefined): string | undefined {
+  if (agentId === undefined || _agentsStoreRef === null) return undefined;
+  const agent = _agentsStoreRef.getById(agentId);
+  if (agent === null) return undefined;
+  return agent.display_name || agent.name;
+}
+
 onLlmIntercept((event: LlmInterceptEvent) => {
   const provider = resolveProviderFromPath(event.path);
   const model = event.direction === "sent" ? extractModel(event.payload) : "—";
+  const agentId = event.direction === "sent"
+    ? extractAgentId(event.path, event.payload)
+    : undefined;
+  const agentName = resolveAgentName(agentId);
 
   llmInspectorStore.addEntry({
     requestId: event.requestId,
@@ -246,5 +306,7 @@ onLlmIntercept((event: LlmInterceptEvent) => {
     durationMs: event.durationMs,
     status: event.status,
     error: event.error,
+    agentId,
+    agentName,
   });
 });

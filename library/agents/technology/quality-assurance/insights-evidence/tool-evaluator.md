@@ -9,7 +9,7 @@ reportsTo: test-results-analyzer
 budget: 500
 adapter: osa
 signal: S=(linguistic, report, decide, markdown, tool-evaluation)
-skills: [analysis/audit, analysis/stats, strategy/brainstorm, content/write, search/search]
+skills: [analysis/audit, analysis/stats, strategy/brainstorm, content/write, search/search, qa/automate, qa/report, qa/startup-probe]
 role: tool evaluator
 title: Tool Evaluator
 context_tier: l1

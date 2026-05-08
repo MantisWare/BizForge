@@ -71,6 +71,9 @@ import type {
   Document,
   DocumentTreeNode,
   DocumentRevision,
+  IntegrationBinding,
+  IntegrationBindingOwner,
+  IntegrationBindingCreateRequest,
 } from "./types";
 
 // ── Logging ──────────────────────────────────────────────────────────────────
@@ -1440,7 +1443,11 @@ export const messages = {
   send: (body: SendMessageRequest) =>
     request<SendMessageResponse>(`/sessions/${body.session_id}/message`, {
       method: "POST",
-      body: JSON.stringify({ ...body, stream: true }),
+      body: JSON.stringify({
+        ...body,
+        stream: true,
+        attached_files: body.attached_files ?? undefined,
+      }),
     }),
 };
 
@@ -1825,8 +1832,32 @@ export const integrations = {
       body: config !== undefined ? JSON.stringify(config) : undefined,
     }),
   disconnect: (slug: string) =>
+    request<void>(`/integrations/${slug}/disconnect`, { method: "POST" }),
+  remove: (slug: string) =>
     request<void>(`/integrations/${slug}`, { method: "DELETE" }),
   status: (slug: string) => request<unknown>(`/integrations/${slug}/status`),
+};
+
+// ── Integration Bindings ─────────────────────────────────────────────────────
+
+export const integrationBindings = {
+  list: async (ownerType: IntegrationBindingOwner, ownerId: string): Promise<IntegrationBinding[]> => {
+    const data = await request<{ bindings: IntegrationBinding[] }>(
+      `/integration-bindings?owner_type=${encodeURIComponent(ownerType)}&owner_id=${encodeURIComponent(ownerId)}`,
+    );
+    return data.bindings ?? [];
+  },
+  create: async (params: IntegrationBindingCreateRequest): Promise<IntegrationBinding> => {
+    const data = await request<{ binding: IntegrationBinding }>("/integration-bindings", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+    return data.binding;
+  },
+  remove: (id: string) =>
+    request<{ ok: boolean }>(`/integration-bindings/${id}`, { method: "DELETE" }),
+  removeByOwnerAndProvider: (ownerType: IntegrationBindingOwner, ownerId: string, provider: string) =>
+    request<{ ok: boolean }>(`/integration-bindings/by-owner/${ownerType}/${ownerId}/${provider}`, { method: "DELETE" }),
 };
 
 // ── Adapters ──────────────────────────────────────────────────────────────────

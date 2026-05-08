@@ -9,7 +9,7 @@ reportsTo: software-architect
 budget: 500
 adapter: osa
 signal: S=(data, report, inform, markdown, test-results)
-skills: [development/test, development/tdd, development/debug, development/code-review, security/security-scan, analysis/stats]
+skills: [development/test, development/tdd, development/debug, development/code-review, security/security-scan, analysis/stats, qa/automate, qa/report, qa/startup-probe]
 role: api tester
 title: API Tester
 context_tier: l1

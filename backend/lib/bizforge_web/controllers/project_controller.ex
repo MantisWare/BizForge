@@ -142,6 +142,7 @@ defmodule BizforgeWeb.ProjectController do
       description: p.description,
       status: p.status,
       workspace_id: p.workspace_id,
+      output_path: p.output_path,
       inserted_at: p.inserted_at,
       updated_at: p.updated_at
     }

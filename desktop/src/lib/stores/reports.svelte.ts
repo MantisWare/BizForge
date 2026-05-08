@@ -1,5 +1,7 @@
 // src/lib/stores/reports.svelte.ts
 import { reports as reportsApi } from "$api/client";
+import { isTauri } from "$lib/utils/platform";
+import { toastStore } from "./toasts.svelte";
 import type { Report, ReportCreateRequest, ReportType } from "$api/types";
 
 class ReportsStore {
@@ -162,6 +164,37 @@ class ReportsStore {
 
   setActive(report: Report | null): void {
     this.activeReport = report;
+  }
+
+  /**
+   * Export a report to a project's output directory on disk.
+   * Writes to {outputPath}/reports/{report-name}.{format}
+   */
+  async exportReportToDisk(
+    id: string,
+    outputPath: string,
+    format = "csv",
+  ): Promise<void> {
+    if (!isTauri()) return;
+    this.error = null;
+    try {
+      const data = await reportsApi.exportReport(id, format);
+      const report = this.reports.find((r) => r.id === id);
+      const filename = `${(report?.name ?? "report").toLowerCase().replace(/\s+/g, "-")}.${format}`;
+      let content: string;
+      if (typeof data === "string") {
+        content = data;
+      } else {
+        content = JSON.stringify(data, null, 2);
+      }
+      const diskPath = `${outputPath.replace(/\/+$/, "")}/reports/${filename}`;
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("write_project_file", { path: diskPath, content });
+      toastStore.success("Report exported", `Saved to reports/${filename}`);
+    } catch (e) {
+      this.error = (e as Error).message;
+      toastStore.error("Report export failed", (e as Error).message);
+    }
   }
 }
 

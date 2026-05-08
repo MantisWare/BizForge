@@ -1,6 +1,7 @@
 defmodule Bizforge.Application do
   @moduledoc false
   use Application
+  require Logger
 
   @impl true
   def start(_type, _args) do
@@ -11,6 +12,7 @@ defmodule Bizforge.Application do
       BizforgeWeb.Telemetry,
       Bizforge.Repo,
       Bizforge.BudgetEnforcer,
+      Bizforge.AdapterCircuitBreaker,
       {Phoenix.PubSub, name: Bizforge.PubSub},
       Bizforge.IssueDispatcher,
       Bizforge.Scheduler,
@@ -20,7 +22,9 @@ defmodule Bizforge.Application do
       Bizforge.AlertEvaluator,
       Bizforge.StaleCleanup,
       Bizforge.IdempotencyCleanup,
-      Bizforge.Workflows.Supervisor
+      Bizforge.Workflows.Supervisor,
+      Bizforge.Browser.Sidecar,
+      Bizforge.IssueLifecycle
     ]
 
     children =
@@ -67,8 +71,18 @@ defmodule Bizforge.Application do
     result = Supervisor.start_link(children, opts)
 
     case result do
-      {:ok, _pid} -> Bizforge.Scheduler.load_schedules()
-      _ -> :ok
+      {:ok, _pid} ->
+        Task.start(fn ->
+          Process.sleep(2_000)
+          try do
+            Bizforge.Scheduler.load_schedules()
+          rescue
+            e -> Logger.warning("[Application] Scheduler.load_schedules failed: #{Exception.message(e)}")
+          end
+        end)
+
+      _ ->
+        :ok
     end
 
     result

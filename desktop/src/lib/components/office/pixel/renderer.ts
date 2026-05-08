@@ -41,6 +41,9 @@ import {
   COFFEE_MACHINE_SPRITE,
   FRIDGE_SPRITE,
   TV_SPRITE,
+  TABLE_RECT_SPRITE,
+  LAPTOP_SPRITE,
+  LAPTOP_SPRITE_2,
 } from "./sprites";
 import {
   CORRIDOR_H_START,
@@ -168,6 +171,10 @@ function getFurnitureSprite(
       return FRIDGE_SPRITE;
     case FurnitureType.TV:
       return TV_SPRITE;
+    case FurnitureType.TABLE_RECT:
+      return TABLE_RECT_SPRITE;
+    case FurnitureType.LAPTOP:
+      return null; // handled separately with animation
     default:
       return null;
   }
@@ -262,6 +269,9 @@ export function renderOffice(
 ): void {
   const { cols, rows, tileSize, rooms, furniture } = layout;
   const { zoom } = camera;
+  // Snap sprite generation zoom to nearest 0.5 so cache keys remain stable
+  // during smooth zoom transitions (prevents thousands of canvas allocations)
+  const spriteZoom = Math.round(zoom * 2) / 2;
   const ts = tileSize * zoom;
 
   ctx.imageSmoothingEnabled = false;
@@ -275,11 +285,12 @@ export function renderOffice(
   const camOffX = -camera.x * zoom + canvasWidth / 2;
   const camOffY = -camera.y * zoom + canvasHeight / 2;
 
-  // Calculate visible tile range
-  const startTileX = Math.floor(-camOffX / ts) - 1;
-  const startTileY = Math.floor(-camOffY / ts) - 1;
-  const endTileX = Math.ceil((canvasWidth - camOffX) / ts) + 1;
-  const endTileY = Math.ceil((canvasHeight - camOffY) / ts) + 1;
+  // Calculate visible tile range (clamped to prevent excessive off-screen rendering)
+  const margin = 2;
+  const startTileX = Math.max(-margin, Math.floor(-camOffX / ts) - 1);
+  const startTileY = Math.max(-margin, Math.floor(-camOffY / ts) - 1);
+  const endTileX = Math.min(cols + margin, Math.ceil((canvasWidth - camOffX) / ts) + 1);
+  const endTileY = Math.min(rows + margin, Math.ceil((canvasHeight - camOffY) / ts) + 1);
 
   ctx.save();
   ctx.translate(camOffX, camOffY);
@@ -287,8 +298,8 @@ export function renderOffice(
   for (let ty = startTileY; ty <= endTileY; ty++) {
     for (let tx = startTileX; tx <= endTileX; tx++) {
       const gt = groundTile(tc.groundBase, tc.groundAlt, tc.groundCrack, tx, ty);
-      const gtCanvas = renderSpriteToCanvas(gt, zoom, `ground_${timeOfDay}_${((tx * 7919 + ty * 104729) >>> 0) % 1000}`);
-      ctx.drawImage(gtCanvas, tx * ts, ty * ts);
+      const gtCanvas = renderSpriteToCanvas(gt, spriteZoom, `ground_${timeOfDay}_${((tx * 7919 + ty * 104729) >>> 0) % 1000}`);
+      ctx.drawImage(gtCanvas, tx * ts, ty * ts, ts, ts);
     }
   }
 
@@ -297,11 +308,11 @@ export function renderOffice(
     const rx = room.x * ts;
     const ry = room.y * ts;
 
-    const floorCanvas = getRoomFloorTile(room, zoom);
+    const floorCanvas = getRoomFloorTile(room, spriteZoom);
 
     for (let ty = 0; ty < room.height; ty++) {
       for (let tx = 0; tx < room.width; tx++) {
-        ctx.drawImage(floorCanvas, rx + tx * ts, ry + ty * ts);
+        ctx.drawImage(floorCanvas, rx + tx * ts, ry + ty * ts, ts, ts);
       }
     }
 
@@ -332,8 +343,8 @@ export function renderOffice(
       const ct = corridorTile(tc.corridorEdge, tc.corridorPath, tc.corridorPathAlt, true);
       const isMiddle = cy === CORRIDOR_H_START + 1;
       const tileKey = `corridor_h_${timeOfDay}_${isMiddle ? "mid" : "edge"}`;
-      const ctCanvas = renderSpriteToCanvas(ct, zoom, tileKey);
-      ctx.drawImage(ctCanvas, x * ts, cy * ts);
+      const ctCanvas = renderSpriteToCanvas(ct, spriteZoom, tileKey);
+      ctx.drawImage(ctCanvas, x * ts, cy * ts, ts, ts);
     }
   }
 
@@ -350,8 +361,8 @@ export function renderOffice(
       const ct = corridorTile(tc.corridorEdge, tc.corridorPath, tc.corridorPathAlt, false);
       const isMiddle = cx === CORRIDOR_V_START + 1;
       const tileKey = `corridor_v_${timeOfDay}_${isMiddle ? "mid" : "edge"}`;
-      const ctCanvas = renderSpriteToCanvas(ct, zoom, tileKey);
-      ctx.drawImage(ctCanvas, cx * ts, y * ts);
+      const ctCanvas = renderSpriteToCanvas(ct, spriteZoom, tileKey);
+      ctx.drawImage(ctCanvas, cx * ts, y * ts, ts, ts);
     }
   }
 
@@ -389,19 +400,50 @@ export function renderOffice(
 
     const spriteCanvas = renderSpriteToCanvas(
       sprite,
-      zoom,
+      spriteZoom,
       `furn_${f.type}_${f.x}_${f.y}_${activeDesks.has(`${f.x},${f.y}`)}`,
     );
     const fx = f.x * ts;
     const fy = f.y * ts;
-    const bottomY = isDecor ? fy - 1000 : fy + spriteCanvas.height;
+    const scaleRatio = zoom / spriteZoom;
+    const drawW = spriteCanvas.width * scaleRatio;
+    const drawH = spriteCanvas.height * scaleRatio;
+    const bottomY = isDecor ? fy - 1000 : fy + drawH;
 
     drawables.push({
       zY: bottomY,
       draw: (c: CanvasRenderingContext2D) => {
-        const offX = (ts - spriteCanvas.width) / 2;
-        const offY = ts - spriteCanvas.height;
-        c.drawImage(spriteCanvas, fx + offX, fy + offY);
+        const offX = (ts - drawW) / 2;
+        const offY = ts - drawH;
+        c.drawImage(spriteCanvas, fx + offX, fy + offY, drawW, drawH);
+      },
+    });
+  }
+
+  // Add animated laptops to drawables
+  for (const f of furniture) {
+    if (f.type !== FurnitureType.LAPTOP) continue;
+
+    const isActiveLaptop = activeDesks.has(`${f.x},${f.y}`);
+    const laptopFrame = Math.floor(now / 800) % 2 === 0 ? LAPTOP_SPRITE : LAPTOP_SPRITE_2;
+    const spriteCanvas = renderSpriteToCanvas(
+      isActiveLaptop ? laptopFrame : LAPTOP_SPRITE,
+      spriteZoom,
+      `laptop_${f.x}_${f.y}_${isActiveLaptop}_${Math.floor(now / 800) % 2}`,
+    );
+    const fx = f.x * ts;
+    const fy = f.y * ts;
+    const laptopScaleRatio = zoom / spriteZoom;
+    const laptopDrawW = spriteCanvas.width * laptopScaleRatio;
+    const laptopDrawH = spriteCanvas.height * laptopScaleRatio;
+    const bottomY = fy + laptopDrawH;
+
+    drawables.push({
+      zY: bottomY + 0.1,
+      draw: (c: CanvasRenderingContext2D) => {
+        const offX = (ts - laptopDrawW) / 2;
+        const offY = ts - laptopDrawH;
+        c.drawImage(spriteCanvas, fx + offX, fy + offY, laptopDrawW, laptopDrawH);
       },
     });
   }
@@ -419,9 +461,12 @@ export function renderOffice(
 
     const spriteCanvas = renderSpriteToCanvas(
       coloredSprite,
-      zoom,
+      spriteZoom,
       `char_${char.id}_${char.facing}_${char.state}_${frameIndex}`,
     );
+    const charScaleRatio = zoom / spriteZoom;
+    const charDrawW = spriteCanvas.width * charScaleRatio;
+    const charDrawH = spriteCanvas.height * charScaleRatio;
 
     // Interpolated position
     let px: number, py: number;
@@ -439,15 +484,15 @@ export function renderOffice(
       py = char.gridY * ts;
     }
 
-    const charBottomY = py + spriteCanvas.height;
+    const charBottomY = py + charDrawH;
     const isSelected = selectedCharId === char.id;
     const isHovered = hoveredCharId === char.id;
 
     drawables.push({
       zY: charBottomY + 0.5,
       draw: (c: CanvasRenderingContext2D) => {
-        const offX = (ts - spriteCanvas.width) / 2;
-        const offY = ts - spriteCanvas.height;
+        const offX = (ts - charDrawW) / 2;
+        const offY = ts - charDrawH;
 
         // ─── Character shadow (dark ellipse) ─────────
         c.save();
@@ -470,14 +515,14 @@ export function renderOffice(
           c.save();
           c.shadowColor = isSelected ? "#fb923c" : "#fdba74";
           c.shadowBlur = 8 * zoom;
-          c.drawImage(spriteCanvas, px + offX, py + offY);
+          c.drawImage(spriteCanvas, px + offX, py + offY, charDrawW, charDrawH);
           c.restore();
         }
 
-        c.drawImage(spriteCanvas, px + offX, py + offY);
+        c.drawImage(spriteCanvas, px + offX, py + offY, charDrawW, charDrawH);
 
         // Status dot
-        const dotX = px + offX + spriteCanvas.width - 2 * zoom;
+        const dotX = px + offX + charDrawW - 2 * zoom;
         const dotY = py + offY;
         c.fillStyle = char.statusColor;
         c.beginPath();
@@ -800,19 +845,20 @@ function drawAmbientLighting(
   timeOfDay: TimeOfDay,
   now: number,
 ): void {
-  // PC monitor glow for active desks
+  // PC/laptop monitor glow for active desks
   const glowIntensity = timeOfDay === "night" ? 0.12 : timeOfDay === "dusk" ? 0.08 : 0.04;
   if (glowIntensity > 0) {
     for (const f of furniture) {
-      if (f.type !== FurnitureType.PC) continue;
+      if (f.type !== FurnitureType.PC && f.type !== FurnitureType.LAPTOP) continue;
       if (!activeDesks.has(`${f.x},${f.y}`)) continue;
 
       const cx = (f.x + 0.5) * ts;
       const cy = (f.y + 1.5) * ts;
-      const radius = ts * 2.5;
+      const radius = f.type === FurnitureType.LAPTOP ? ts * 1.8 : ts * 2.5;
+      const intensity = f.type === FurnitureType.LAPTOP ? glowIntensity * 0.7 : glowIntensity;
 
       const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-      gradient.addColorStop(0, `rgba(110, 231, 183, ${glowIntensity})`);
+      gradient.addColorStop(0, `rgba(110, 231, 183, ${intensity})`);
       gradient.addColorStop(1, "rgba(110, 231, 183, 0)");
 
       ctx.fillStyle = gradient;

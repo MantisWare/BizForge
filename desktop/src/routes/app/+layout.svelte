@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
 import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import AppFooter from '$lib/components/layout/AppFooter.svelte';
+  import LogPanel from '$lib/components/layout/LogPanel.svelte';
   import ToastContainer from '$lib/components/layout/ToastContainer.svelte';
   import { connectionStore } from '$lib/stores/connection.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
@@ -16,7 +17,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import ActivityWidget from '$lib/components/activity/ActivityWidget.svelte';
   import LlmInspectorPanel from '$lib/components/inspector/LlmInspectorPanel.svelte';
   import { activityStore } from '$lib/stores/activity.svelte';
-  import { llmInspectorStore } from '$lib/stores/llmInspector.svelte';
+  import { llmInspectorStore, bindAgentsStore } from '$lib/stores/llmInspector.svelte';
   import { sessionsStore } from '$lib/stores/sessions.svelte';
   import { organizationsStore } from '$lib/stores/organizations.svelte';
   import { approvalsStore } from '$lib/stores/approvals.svelte';
@@ -26,6 +27,8 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
 
   let { children } = $props();
+
+  bindAgentsStore(agentsStore);
 
   // ─── Onboarding guard ────────────────────────────────────────────────────
   // NOTE: This guard runs inside initializeAuth().then() (see the second
@@ -195,6 +198,12 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
+  // Log panel state
+  let logPanelOpen = $state(false);
+  function toggleLogPanel(): void {
+    logPanelOpen = !logPanelOpen;
+  }
+
   // Wire user display name from onboarding
   let userName = $state<string | null>(null);
   $effect(() => {
@@ -214,7 +223,10 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     </main>
     <LlmInspectorPanel />
   </div>
-  <AppFooter />
+  {#if logPanelOpen}
+    <LogPanel onClose={() => { logPanelOpen = false; }} />
+  {/if}
+  <AppFooter {logPanelOpen} onToggleLogs={toggleLogPanel} />
 </div>
 
 <!-- Global overlays -->

@@ -77,8 +77,12 @@ export type RawAgent = Omit<
 
 export type RawSkill = Omit<
   LibrarySkill,
-  "enabled" | "tags" | "visibility" | "version" | "isOfficial"
-> & { version?: string };
+  "enabled" | "tags" | "visibility" | "version" | "isOfficial" | "required_integrations" | "required_tools"
+> & {
+  version?: string;
+  required_integrations?: LibrarySkill["required_integrations"];
+  required_tools?: string[];
+};
 
 export type RawOperation = Omit<
   LibraryOperation,
@@ -113,6 +117,8 @@ export function enrichSkill(s: RawSkill): LibrarySkill {
     tags: deriveTags(s.id, s.category),
     visibility: "public" as Visibility,
     version: s.version ?? deriveVersion(s.id),
+    required_integrations: s.required_integrations ?? [],
+    required_tools: s.required_tools ?? [],
   };
 }
 

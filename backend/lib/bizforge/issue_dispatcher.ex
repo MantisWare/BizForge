@@ -14,7 +14,7 @@ defmodule Bizforge.IssueDispatcher do
   require Logger
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Agent, Issue, Workspace}
+  alias Bizforge.Schemas.{Agent, Issue, Session, Workspace}
   import Ecto.Query
 
   # ── Client API ────────────────────────────────────────────────────────────────
@@ -40,8 +40,46 @@ defmodule Bizforge.IssueDispatcher do
 
   # ── Server Callbacks ──────────────────────────────────────────────────────────
 
+  @subscription_retry_ms :timer.seconds(5)
+
   @impl true
   def init(_opts) do
+    {:ok, %{}, {:continue, :subscribe_workspaces}}
+  end
+
+  @impl true
+  def handle_continue(:subscribe_workspaces, state) do
+    try do
+      subscribe_all_workspaces()
+      {:noreply, state}
+    rescue
+      e ->
+        Logger.warning(
+          "[IssueDispatcher] Failed to load workspaces for subscription (will retry in #{div(@subscription_retry_ms, 1_000)}s): #{Exception.message(e)}"
+        )
+
+        Process.send_after(self(), :retry_subscribe_workspaces, @subscription_retry_ms)
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info(:retry_subscribe_workspaces, state) do
+    try do
+      subscribe_all_workspaces()
+      {:noreply, state}
+    rescue
+      e ->
+        Logger.warning(
+          "[IssueDispatcher] Still unable to load workspaces (will retry in #{div(@subscription_retry_ms, 1_000)}s): #{Exception.message(e)}"
+        )
+
+        Process.send_after(self(), :retry_subscribe_workspaces, @subscription_retry_ms)
+        {:noreply, state}
+    end
+  end
+
+  defp subscribe_all_workspaces do
     workspace_ids = Repo.all(from w in Workspace, select: w.id)
 
     for ws_id <- workspace_ids do
@@ -49,7 +87,6 @@ defmodule Bizforge.IssueDispatcher do
     end
 
     Logger.info("[IssueDispatcher] Subscribed to #{length(workspace_ids)} workspace topics")
-    {:ok, %{}}
   end
 
   @impl true
@@ -113,6 +150,27 @@ defmodule Bizforge.IssueDispatcher do
     end
   end
 
-  defp validate_agent(%Agent{status: status}) when status in ["idle", "active"], do: :ok
-  defp validate_agent(%Agent{status: status}), do: {:error, {:agent_not_ready, status}}
+  defp validate_agent(%Agent{status: status}) when status not in ["idle", "active"] do
+    {:error, {:agent_not_ready, status}}
+  end
+
+  defp validate_agent(%Agent{} = agent) do
+    active_count =
+      Repo.aggregate(
+        from(s in Session,
+          where: s.agent_id == ^agent.id and s.status == "active"
+        ),
+        :count
+      )
+
+    if active_count >= agent.max_concurrent_runs do
+      Logger.warning(
+        "[IssueDispatcher] Agent #{agent.name} at capacity (#{active_count}/#{agent.max_concurrent_runs} active runs)"
+      )
+
+      {:error, {:at_capacity, active_count}}
+    else
+      :ok
+    end
+  end
 end
