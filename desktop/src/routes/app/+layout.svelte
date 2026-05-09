@@ -198,15 +198,8 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       const idx = ['1', '2', '3'].indexOf(e.key);
       if (idx !== -1) { e.preventDefault(); goto(NAV_ROUTES[idx]); }
     }
-    function preventGlobalDrop(e: DragEvent) { e.preventDefault(); }
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('dragover', preventGlobalDrop);
-    window.addEventListener('drop', preventGlobalDrop);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('dragover', preventGlobalDrop);
-      window.removeEventListener('drop', preventGlobalDrop);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
   // Log panel state

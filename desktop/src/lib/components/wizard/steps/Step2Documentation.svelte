@@ -1,5 +1,6 @@
 <!-- src/lib/components/wizard/steps/Step2Documentation.svelte -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { wizardStore } from '$lib/stores/wizard.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
@@ -7,6 +8,7 @@
   import { streamMessage } from '$api/sse';
   import type { WizardDocument, DocumentFormat } from '$api/types';
   import type { StreamController } from '$api/sse';
+  import { isTauri } from '$lib/utils/platform';
 
   let dragOver = $state(false);
   let streamCtrl = $state<StreamController | null>(null);
@@ -35,6 +37,14 @@
     return ACCEPTED_EXTENSIONS[ext] ?? 'markdown';
   }
 
+  function getExt(name: string): string {
+    return name.slice(name.lastIndexOf('.')).toLowerCase();
+  }
+
+  function isAccepted(name: string): boolean {
+    return getExt(name) in ACCEPTED_EXTENSIONS;
+  }
+
   function readFileAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -59,8 +69,8 @@
   async function handleFiles(files: FileList | null): Promise<void> {
     if (files === null) return;
     for (const file of Array.from(files)) {
-      const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-      if (!(ext in ACCEPTED_EXTENSIONS)) continue;
+      const ext = getExt(file.name);
+      if (!isAccepted(file.name)) continue;
       const content = await extractTextContent(file, ext);
       const doc: WizardDocument = {
         id: crypto.randomUUID(),
@@ -73,43 +83,64 @@
     }
   }
 
-  function handleDrop(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    dragOver = false;
-    const dt = e.dataTransfer;
-    if (dt === null || dt === undefined) return;
-    void handleFiles(dt.files);
+  async function handleTauriDroppedPaths(paths: string[]): Promise<void> {
+    const fs = await import('@tauri-apps/plugin-fs');
+    for (const filePath of paths) {
+      const name = filePath.split('/').pop() ?? filePath;
+      if (!isAccepted(name)) continue;
+      const ext = getExt(name);
+      try {
+        let content: string;
+        let size: number;
+
+        if (BINARY_EXTENSIONS.has(ext)) {
+          const bytes = await fs.readFile(filePath);
+          size = bytes.byteLength;
+          const base64 = btoa(
+            Array.from(new Uint8Array(bytes.buffer ?? bytes), (b) => String.fromCharCode(b)).join('')
+          );
+          const label = ext.replace('.', '').toUpperCase();
+          content = `[${label} Document: ${name}]\n[Binary content — ${formatSize(size)} — will be processed by AI during enhancement]\n[Base64 length: ${base64.length} chars]\n\n--- Base64 content (first 200 chars) ---\n${base64.slice(0, 200)}...`;
+        } else {
+          content = await fs.readTextFile(filePath);
+          size = new TextEncoder().encode(content).byteLength;
+        }
+
+        const doc: WizardDocument = {
+          id: crypto.randomUUID(),
+          name,
+          content,
+          format: getFormat(name),
+          size,
+        };
+        wizardStore.addDocument(doc);
+      } catch (err) {
+        console.error(`[Wizard] Failed to read dropped file "${filePath}":`, err);
+      }
+    }
   }
 
-  function handleDragOver(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer !== null && e.dataTransfer !== undefined) {
-      e.dataTransfer.dropEffect = 'copy';
-    }
-    dragOver = true;
-  }
-
-  function handleDragEnter(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer !== null && e.dataTransfer !== undefined) {
-      e.dataTransfer.dropEffect = 'copy';
-    }
-    dragOver = true;
-  }
-
-  function handleDragLeave(e: DragEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
-      dragOver = false;
-    }
-  }
+  // Tauri native drag-drop events (HTML5 drag-drop is blocked by Tauri's handler)
+  onMount(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | undefined;
+    (async () => {
+      const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+      unlisten = await getCurrentWebview().onDragDropEvent((event) => {
+        const { type } = event.payload;
+        if (type === 'enter' || type === 'over') {
+          dragOver = true;
+        } else if (type === 'leave' || type === 'cancel') {
+          dragOver = false;
+        } else if (type === 'drop') {
+          dragOver = false;
+          const payload = event.payload as { type: 'drop'; paths: string[] };
+          void handleTauriDroppedPaths(payload.paths);
+        }
+      });
+    })();
+    return () => { unlisten?.(); };
+  });
 
   function removeDoc(id: string): void {
     wizardStore.removeDocument(id);
@@ -269,16 +300,10 @@ Write in clear prose. Be specific and actionable.`;
   <p class="s2-desc">Add project docs, requirements, specs, or ERD files. Then describe your vision and let AI enhance it into a comprehensive project brief.</p>
 
   <!-- File upload zone -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="s2-drop"
     class:dragover={dragOver}
-    ondrop={handleDrop}
-    ondragover={handleDragOver}
-    ondragenter={handleDragEnter}
-    ondragleave={handleDragLeave}
-    role="button"
-    tabindex="0"
+    role="region"
     aria-label="Drop files here or click to upload"
   >
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="s2-drop-icon">
@@ -393,10 +418,6 @@ Write in clear prose. Be specific and actionable.`;
     border-radius: 12px; padding: 28px 20px;
     text-align: center; cursor: pointer;
     transition: all 0.2s;
-    position: relative;
-  }
-  .s2-drop > :not(label) {
-    pointer-events: none;
   }
   .s2-drop:hover, .s2-drop.dragover {
     border-color: var(--accent, #f97316);

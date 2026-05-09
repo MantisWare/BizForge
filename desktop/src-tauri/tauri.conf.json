@@ -22,8 +22,7 @@
         "transparent": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "visible": false,
-        "dragDropEnabled": false
+        "visible": false
       },
       {
         "label": "splash",
