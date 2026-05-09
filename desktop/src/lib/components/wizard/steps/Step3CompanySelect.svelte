@@ -3,16 +3,45 @@
   import { wizardStore } from '$lib/stores/wizard.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
-  import { sessions, isMockEnabled } from '$api/client';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { agents as agentsApi, sessions, isMockEnabled } from '$api/client';
   import { streamMessage } from '$api/sse';
   import { HIREABLE_TEAM_TEMPLATES, TEMPLATE_AGENTS } from '$lib/data/team-templates';
   import type { TeamTemplateId } from '$lib/data/team-templates';
-  import type { CompanyRecommendation, WizardAgent } from '$api/types';
+  import type { CompanyRecommendation, WizardAgent, BizforgeAgent } from '$api/types';
   import type { StreamController } from '$api/sse';
 
   let showBrowse = $state(false);
   let searchQuery = $state("");
   let streamCtrl = $state<StreamController | null>(null);
+  let tempAgentId: string | null = null;
+
+  async function getOrCreateAgent(): Promise<BizforgeAgent> {
+    const existing = agentsStore.agents[0];
+    if (existing !== undefined) return existing;
+    const wsId = workspaceStore.activeWorkspaceId;
+    const model = settingsStore.data.default_model ?? 'claude-sonnet-4-6';
+    const created = await agentsApi.create({
+      name: 'wizard-assistant',
+      display_name: 'Wizard Assistant',
+      role: 'assistant',
+      adapter: 'cursor_cli',
+      model,
+      avatar_emoji: '🧙',
+      system_prompt: 'You are a helpful project planning assistant.',
+      workspace_id: wsId ?? undefined,
+    });
+    tempAgentId = created.id;
+    return created;
+  }
+
+  function cleanupTempAgent(): void {
+    if (tempAgentId !== null) {
+      agentsApi.terminate(tempAgentId).catch(() => undefined);
+      agentsStore.agents = agentsStore.agents.filter((a) => a.id !== tempAgentId);
+      tempAgentId = null;
+    }
+  }
 
   const filteredTemplates = $derived(
     HIREABLE_TEAM_TEMPLATES.filter((t) => {
@@ -113,11 +142,7 @@ Pick 1 primary recommendation and 2-3 alternatives. teamIds should list the team
     }
 
     try {
-      const agent = agentsStore.agents[0];
-      if (agent === undefined) {
-        wizardStore.isAnalyzing = false;
-        return;
-      }
+      const agent = await getOrCreateAgent();
       const session = await sessions.create({
         agent_id: agent.id,
         title: `Wizard: Team recommendation for ${wizardStore.workspaceName}`,
@@ -142,11 +167,16 @@ Pick 1 primary recommendation and 2-3 alternatives. teamIds should list the team
             }
           } catch { /* parse failed */ }
           wizardStore.isAnalyzing = false;
+          cleanupTempAgent();
         },
-        onError() { wizardStore.isAnalyzing = false; },
+        onError() {
+          wizardStore.isAnalyzing = false;
+          cleanupTempAgent();
+        },
       });
     } catch {
       wizardStore.isAnalyzing = false;
+      cleanupTempAgent();
     }
   }
 

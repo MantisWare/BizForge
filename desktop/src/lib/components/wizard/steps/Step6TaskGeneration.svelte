@@ -3,12 +3,41 @@
   import { wizardStore } from '$lib/stores/wizard.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
-  import { sessions, isMockEnabled } from '$api/client';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { agents as agentsApi, sessions, isMockEnabled } from '$api/client';
   import { streamMessage } from '$api/sse';
-  import type { WizardTask, WizardSprintGroup } from '$api/types';
+  import type { WizardTask, WizardSprintGroup, BizforgeAgent } from '$api/types';
   import type { StreamController } from '$api/sse';
 
   let streamCtrl = $state<StreamController | null>(null);
+  let tempAgentId: string | null = null;
+
+  async function getOrCreateAgent(): Promise<BizforgeAgent> {
+    const existing = agentsStore.agents[0];
+    if (existing !== undefined) return existing;
+    const wsId = workspaceStore.activeWorkspaceId;
+    const model = settingsStore.data.default_model ?? 'claude-sonnet-4-6';
+    const created = await agentsApi.create({
+      name: 'wizard-assistant',
+      display_name: 'Wizard Assistant',
+      role: 'assistant',
+      adapter: 'cursor_cli',
+      model,
+      avatar_emoji: '🧙',
+      system_prompt: 'You are a helpful project planning assistant.',
+      workspace_id: wsId ?? undefined,
+    });
+    tempAgentId = created.id;
+    return created;
+  }
+
+  function cleanupTempAgent(): void {
+    if (tempAgentId !== null) {
+      agentsApi.terminate(tempAgentId).catch(() => undefined);
+      agentsStore.agents = agentsStore.agents.filter((a) => a.id !== tempAgentId);
+      tempAgentId = null;
+    }
+  }
   let genPhase = $state("");
   let filterPriority = $state<string | null>(null);
 
@@ -90,11 +119,7 @@ Guidelines:
     }
 
     try {
-      const agent = agentsStore.agents[0];
-      if (agent === undefined) {
-        wizardStore.isGeneratingTasks = false;
-        return;
-      }
+      const agent = await getOrCreateAgent();
       const session = await sessions.create({
         agent_id: agent.id,
         title: `Wizard: Generate tasks for ${wizardStore.projectName}`,
@@ -114,15 +139,20 @@ Guidelines:
             else genPhase = "Generating tasks...";
           }
         },
-        onDone() { parseAndSetTasks(accumulated); },
+        onDone() {
+          parseAndSetTasks(accumulated);
+          cleanupTempAgent();
+        },
         onError() {
           wizardStore.isGeneratingTasks = false;
           genPhase = "";
+          cleanupTempAgent();
         },
       });
     } catch {
       wizardStore.isGeneratingTasks = false;
       genPhase = "";
+      cleanupTempAgent();
     }
   }
 

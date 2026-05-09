@@ -58,20 +58,42 @@ class ProvidersStore {
     saveCache(this.providers);
   }
 
+  private fetchAbort: AbortController | null = null;
+
   async fetch(workspaceId?: string): Promise<void> {
+    if (this.fetchAbort !== null) {
+      this.fetchAbort.abort();
+    }
+    this.fetchAbort = new AbortController();
     this.loading = true;
+    this.error = null;
     try {
-      this.providers = await providersApi.list(workspaceId);
+      const result = await Promise.race([
+        providersApi.list(workspaceId),
+        new Promise<never>((_, reject) => {
+          const timer = setTimeout(
+            () => reject(new Error("Provider fetch timed out after 15s")),
+            15_000,
+          );
+          this.fetchAbort?.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new Error("aborted"));
+          });
+        }),
+      ]);
+      this.providers = result;
       this.persist();
       this.error = null;
     } catch (e) {
       const msg = (e as Error).message;
+      if (msg === "aborted") return;
       this.error = msg;
       if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
         toastStore.error("Failed to load providers", msg);
       }
     } finally {
       this.loading = false;
+      this.fetchAbort = null;
     }
   }
 

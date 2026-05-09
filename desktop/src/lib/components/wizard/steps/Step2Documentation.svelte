@@ -4,9 +4,10 @@
   import { wizardStore } from '$lib/stores/wizard.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
-  import { sessions, messages, isMockEnabled } from '$api/client';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { agents as agentsApi, sessions, messages, isMockEnabled } from '$api/client';
   import { streamMessage } from '$api/sse';
-  import type { WizardDocument, DocumentFormat } from '$api/types';
+  import type { WizardDocument, DocumentFormat, BizforgeAgent } from '$api/types';
   import type { StreamController } from '$api/sse';
   import { isTauri } from '$lib/utils/platform';
 
@@ -152,6 +153,29 @@
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  let tempAgentId: string | null = null;
+
+  async function getOrCreateAgent(): Promise<BizforgeAgent> {
+    const existing = agentsStore.agents[0];
+    if (existing !== undefined) return existing;
+
+    enhanceProgress = "Setting up AI assistant...";
+    const wsId = workspaceStore.activeWorkspaceId;
+    const model = settingsStore.data.default_model ?? 'claude-sonnet-4-6';
+    const created = await agentsApi.create({
+      name: 'wizard-assistant',
+      display_name: 'Wizard Assistant',
+      role: 'assistant',
+      adapter: 'cursor_cli',
+      model,
+      avatar_emoji: '🧙',
+      system_prompt: 'You are a helpful project planning assistant.',
+      workspace_id: wsId ?? undefined,
+    });
+    tempAgentId = created.id;
+    return created;
+  }
+
   async function enhanceWithAI(): Promise<void> {
     wizardStore.isEnhancing = true;
     enhanceProgress = "Preparing context...";
@@ -189,12 +213,7 @@ Write in clear prose. Be specific and actionable.`;
     }
 
     try {
-      const agent = agentsStore.agents[0];
-      if (agent === undefined) {
-        wizardStore.enhancedContext = "No agents available to enhance context. Please add agents first or skip this step.";
-        wizardStore.isEnhancing = false;
-        return;
-      }
+      const agent = await getOrCreateAgent();
 
       const session = await sessions.create({
         agent_id: agent.id,
@@ -223,16 +242,29 @@ Write in clear prose. Be specific and actionable.`;
         onDone() {
           wizardStore.isEnhancing = false;
           enhanceProgress = "";
+          cleanupTempAgent();
         },
         onError() {
           wizardStore.isEnhancing = false;
           enhanceProgress = "";
+          cleanupTempAgent();
           if (!accumulated) wizardStore.enhancedContext = "Enhancement failed. You can try again or proceed with your manual context.";
         },
       });
-    } catch {
+    } catch (err) {
+      console.error('[Wizard] Enhancement failed:', err);
+      wizardStore.enhancedContext = `Enhancement failed: ${(err as Error).message}. You can try again or proceed with your manual context.`;
       wizardStore.isEnhancing = false;
       enhanceProgress = "";
+      cleanupTempAgent();
+    }
+  }
+
+  function cleanupTempAgent(): void {
+    if (tempAgentId !== null) {
+      agentsApi.terminate(tempAgentId).catch(() => undefined);
+      agentsStore.agents = agentsStore.agents.filter((a) => a.id !== tempAgentId);
+      tempAgentId = null;
     }
   }
 
