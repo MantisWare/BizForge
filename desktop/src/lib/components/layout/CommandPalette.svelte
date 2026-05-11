@@ -162,7 +162,7 @@
           bind:value={paletteStore.query}
           class="cp-input"
           type="text"
-          placeholder="Search commands, agents, issues..."
+          placeholder="Search commands, agents, tasks..."
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"

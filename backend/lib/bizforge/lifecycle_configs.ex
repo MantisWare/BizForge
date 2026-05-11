@@ -3,7 +3,7 @@ defmodule Bizforge.LifecycleConfigs do
   Default lifecycle configuration templates for projects.
 
   Each config defines the FSM states, transitions, and automation flags
-  that IssueLifecycle uses to drive the dev pipeline.
+  that TaskLifecycle uses to drive the dev pipeline.
   """
 
   @doc "Default lifecycle for Domo development projects."

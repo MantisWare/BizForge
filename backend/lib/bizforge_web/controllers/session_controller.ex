@@ -352,7 +352,7 @@ defmodule BizforgeWeb.SessionController do
     end
   end
 
-  defp execute_chat_message(session, agent, message, model_override, attachments \\ []) do
+  defp execute_chat_message(session, agent, message, model_override, attachments) do
     adapter_type = agent.adapter || "osa"
 
     case Bizforge.Adapter.resolve(adapter_type) do

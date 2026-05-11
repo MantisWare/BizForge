@@ -71,7 +71,7 @@ function buildTree(goals: Goal[], parentId: string | null): GoalTreeNode[] {
     .map((g) => ({
       ...g,
       children: buildTree(goals, g.id),
-      issue_count: ISSUE_COUNTS[g.id] ?? 0,
+      task_count: ISSUE_COUNTS[g.id] ?? 0,
     }));
 }
 
@@ -94,7 +94,7 @@ export function getGoalById(id: string): GoalTreeNode | undefined {
   return {
     ...goal,
     children: buildTree(mockGoals, goal.id),
-    issue_count: ISSUE_COUNTS[goal.id] ?? 0,
+    task_count: ISSUE_COUNTS[goal.id] ?? 0,
   };
 }
 

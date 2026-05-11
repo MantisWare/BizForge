@@ -20,7 +20,6 @@ defmodule Bizforge.Governance.HeadlessResolver do
 
   alias Bizforge.Repo
   alias Bizforge.Schemas.Approval
-  alias Bizforge.Governance.Policy
   import Ecto.Query
 
   @sweep_interval :timer.seconds(30)

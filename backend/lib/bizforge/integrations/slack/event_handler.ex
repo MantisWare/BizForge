@@ -176,7 +176,7 @@ defmodule Bizforge.Integrations.Slack.EventHandler do
     end
   end
 
-  defp execute_and_reply(session, agent, message, reply_to) do
+  defp execute_and_reply(_session, agent, message, reply_to) do
     adapter_type = agent.adapter || "osa"
 
     case Bizforge.Adapter.resolve(adapter_type) do
@@ -188,10 +188,8 @@ defmodule Bizforge.Integrations.Slack.EventHandler do
 
         case adapter_mod.start(config) do
           {:ok, osa_session} ->
-            response_parts = []
-
-            try do
-              response_parts =
+            response_parts =
+              try do
                 adapter_mod.send_message(osa_session, message)
                 |> Enum.reduce([], fn raw_event, acc ->
                   event = normalize_adapter_event(raw_event)
@@ -203,9 +201,9 @@ defmodule Bizforge.Integrations.Slack.EventHandler do
                     acc
                   end
                 end)
-            after
-              adapter_mod.stop(osa_session)
-            end
+              after
+                adapter_mod.stop(osa_session)
+              end
 
             full_response = response_parts |> Enum.reverse() |> Enum.join("")
 

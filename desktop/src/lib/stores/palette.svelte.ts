@@ -70,9 +70,9 @@ class PaletteStore {
         action: () => void goto("/app/agents"),
       },
       {
-        id: "goto-issues",
-        name: "Go to Issues",
-        action: () => void goto("/app/issues"),
+        id: "goto-tasks",
+        name: "Go to Tasks",
+        action: () => void goto("/app/tasks"),
       },
       {
         id: "goto-schedules",

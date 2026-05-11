@@ -93,6 +93,7 @@ Active development phases and their progress.
 - [x] Ensure secrets/credentials are never logged or exposed in stats dashboard
 - [x] Add TLS support for remote stats dashboard connections
 - [x] Implement session token rotation for long-running headless instances
+- [x] Fix rate limiter false positives — move plug after Auth for per-user buckets, granular path-based keys (list vs detail vs nested), raise default limit to 300 req/min, add 429 retry with backoff in API client, add response cache for projects/phases
 
 ### 8. Testing & Validation
 
@@ -1031,3 +1032,335 @@ Active development phases and their progress.
 - [x] "New Workspace" command registered in Command Palette (Cmd+K)
 
 > **Auto-updated by Cursor:** Implemented New Workspace Wizard — 7-step modal wizard (Name → Docs → Company → Team → Project → Tasks → Launch) with AI-enhanced context generation, AI team recommendations with fit scores, agent review/customization, project lifecycle setup, AI task generation with sprint grouping, and automated 10-step launch sequence; entry points in sidebar (expanded + collapsed) and Command Palette; `wizard.svelte.ts` store, `WizardProgress` component, 7 step components, `WorkspaceWizard` modal shell mounted globally on 2026-05-08.
+
+---
+
+## Phase: Automated Task Pipeline with ForgeMap & Hierarchical Memory
+
+> Intelligent automated task creation pipeline with codebase detection, ForgeMap file annotation/indexing, hierarchical memory (company + project scopes), AI-driven dependency-aware task generation, and task splitting.
+
+### 1. Backend: Hierarchical Memory System
+
+- [x] Add `project_id`, `scope`, `source` fields to `memory_entry` schema
+- [x] Database migration for new memory hierarchy columns + indexes
+- [x] Validation for scope (company/project/agent) and source (manual/forgemap/ai_generated/system) values
+- [x] `GET /api/v1/memory/project/:project_id` — project-scoped memory endpoint
+- [x] `GET /api/v1/memory/company` — company-level memory endpoint
+- [x] `GET /api/v1/memory/resolve/:project_id` — merged company + project memory resolution
+- [x] Updated search with project_id/scope filters
+- [x] Memory controller serialize includes scope, source, project_id
+
+### 2. Backend: Issue Dependencies & Task Hierarchy
+
+- [x] Add `parent_id`, `depends_on_ids`, `task_type`, `execution_order` to issue schema
+- [x] Self-referencing FK for subtask relationships (parent_id → issues)
+- [x] Task type validation (prerequisite/feature/subtask/validation/scaffold)
+- [x] `resolve_execution_order/1` — topological sort of project issues by dependencies
+- [x] `ready_issues/1` — returns issues whose dependencies are all done/closed
+- [x] `POST /api/v1/projects/:id/resolve-execution-order` endpoint
+- [x] `GET /api/v1/projects/:id/ready-issues` endpoint
+- [x] Issue serialization includes parent_id, depends_on_ids, task_type, execution_order
+
+### 3. ForgeMap: File Annotation & Indexing System
+
+- [x] `Bizforge.ForgeMap.Detector` — detects existing codebase from output_path (languages, manifests, stack detection)
+- [x] `Bizforge.ForgeMap.Scanner` — walks project files, extracts exports/imports (TypeScript/JS/Svelte/Elixir/Python)
+- [x] `Bizforge.ForgeMap.Annotator` — generates header annotation blocks per file, optional disk write
+- [x] `Bizforge.ForgeMap.Resolver` — resolves cross-file used_by references by tracing imports
+- [x] `Bizforge.ForgeMap.Indexer` — creates memory_entries for each file (category: forgemap, source: forgemap)
+- [x] `POST /api/v1/projects/:id/forgemap/detect` — codebase detection endpoint
+- [x] `POST /api/v1/projects/:id/forgemap/scan` — scan and index endpoint
+- [x] `GET /api/v1/projects/:id/forgemap` — list ForgeMap entries
+- [x] `PATCH /api/v1/projects/:id/forgemap/:file_path` — update file entry
+
+### 4. ForgeMap Agent Integration (MCP Tools)
+
+- [x] `bizforge_forgemap_index` tool — agents query ForgeMap for any project
+- [x] `bizforge_forgemap_update` tool — agents update header annotation and memory entry after file modifications
+- [x] `bizforge_forgemap_rescan` tool — re-scan single file after substantial changes
+- [x] IssueContext injects relevant ForgeMap context into agent session preamble based on task keywords
+- [x] IssueContext includes dependency status in agent preamble
+
+### 5. Frontend: Types, API Client & Store Updates
+
+- [x] `IssueTaskType` type and updated `Issue` interface with parent_id, depends_on_ids, task_type, execution_order
+- [x] `MemoryScope`/`MemorySource` types and updated `MemoryEntry` interface
+- [x] `ForgeMapDetection`, `ForgeMapScanResult`, `ForgeMapFile`, `ForgeMapEntry` types
+- [x] `WizardTask.taskType` field added
+- [x] `forgemap` API client (detect, scan, index, updateEntry, resolveExecutionOrder, readyIssues)
+- [x] `memory.byProject()`, `memory.company()`, `memory.resolve()` API client methods
+- [x] ForgeMap store (`forgemap.svelte.ts`) — detect, scan, fetchIndex, reset
+- [x] Memory store — `fetchByProject()`, `fetchCompanyMemory()`, `resolveMemory()` methods
+- [x] ~~Mock issues updated with dependency fields~~ (removed — mock mode permanently disabled)
+
+### 6. Frontend: Automated Task Pipeline Modal
+
+- [x] `AutomatedTaskPipeline.svelte` — 6-phase modal (Context → Detection → ForgeMap → Generation → Review → Create)
+- [x] Phase 1: Context gathering — document selector, additional context textarea
+- [x] Phase 2: Codebase detection — auto-detect via ForgeMap, scaffold option for new projects
+- [x] Phase 3: ForgeMap scan — progress indicator, result stats (files, exports, languages)
+- [x] Phase 4: AI task generation — enriched prompt with docs + ForgeMap + team context, sprint groups with task_type
+- [x] Phase 5: Review & edit — dependency graph visualization, inline title editing, priority selectors, task splitting
+- [x] Phase 6: Batch create with dependency data preserved
+- [x] Progress stepper with phase navigation
+- [x] ~~Mock mode support for all phases~~ (removed — mock mode permanently disabled)
+
+### 7. Frontend: Supporting Components
+
+- [x] `DependencyGraph.svelte` — SVG DAG visualization of task dependencies with topological layout
+- [x] `CodebaseDetector.svelte` — detection result display, scaffold form with stack/template selectors
+- [x] `StackSelector.svelte` — tech stack grid selector (10 stacks with icons and descriptions)
+- [x] `TaskSplitDialog.svelte` — AI-assisted task splitting modal with configurable count and editable subtasks
+
+### 8. Wizard Integration
+
+- [x] Step 6: Updated prompt to request task_type (prerequisite/scaffold/feature/subtask/validation)
+- [x] Step 6: Parser updated to extract and set taskType field
+- [x] ~~Step 6: Mock tasks include taskType~~ (removed — mock mode permanently disabled)
+- [x] Step 7: Issue creation passes task_type and depends_on_ids to backend
+
+### 9. Project Detail Page Integration
+
+- [x] "Generate Tasks" button with pipeline icon in Issues tab toolbar
+- [x] "Quick Generate" option (uses existing GenerateIssuesModal for doc-only analysis)
+- [x] AutomatedTaskPipeline modal triggered from project page with project context
+- [x] `.pj-btn-accent` style for pipeline button (indigo theme, distinct from primary/ghost)
+
+> **Auto-updated by Cursor:** Implemented Automated Task Pipeline with ForgeMap & Hierarchical Memory — backend: memory_entry schema extended with project_id/scope/source fields, issue schema extended with parent_id/depends_on_ids/task_type/execution_order, ForgeMap modules (Scanner/Annotator/Indexer/Resolver/Detector) for codebase analysis, ForgeMapController with detect/scan/index/update endpoints, dependency resolver with topological sort and ready_issues query, ForgeMap MCP tools for agent integration, IssueContext enriched with ForgeMap file context and dependency status; frontend: 6-phase AutomatedTaskPipeline modal, DependencyGraph SVG visualization, CodebaseDetector/StackSelector/TaskSplitDialog components, forgemap store, memory store with project/company scoping, updated types/API client/mock layers, wizard Step6/Step7 updated for task_type and depends_on_ids, "Generate Tasks" button on project detail page Issues tab on 2026-05-10.
+
+> **Auto-updated by Cursor:** Code review fixes on 2026-05-10 — fixed depends_on_ids wiring (topological sort + sequential creation with idMapping), surfaced detection/scan errors in pipeline UI, added progress bar to creation phase, added description/labels editing in review phase, fixed SSE lifecycle (onDestroy abort), fixed TaskSplitDialog error vs success handling, fixed Svelte/HTML ForgeMap comment blocks (proper `<!--…-->` wrapping), fixed write_headers boolean coercion in controller, improved ForgeMap keyword search with relevance scoring, normalized language casing between Detector and Scanner, improved import/export regex coverage (wildcard/type/side-effect imports, export default/re-export), fixed rescan tool to check update_entry result, fixed mock store consistency.
+
+> **Auto-updated by Cursor:** Second review pass on 2026-05-10 — fixed same depends_on_ids bug in wizard Step7Review.svelte (was building all payloads before any creation, so idMap was always empty; now creates sequentially with topological sort), fixed issue.ex validate_inclusion(:task_type) rejecting nil values (conditional validation only when field is actually set), fixed DependencyGraph SVG marker ID collision (unique per instance), added keyboard accessibility (Enter/Space) to DependencyGraph node buttons, fixed Detector/Scanner dot-directory handling inconsistency (both now skip dot-prefixed dirs), normalized Detector Java/Kotlin label to match Scanner, fixed Elixir extract_exports capturing private functions (defp).
+
+> **Auto-updated by Cursor:** Fixed workspace delete dialog showing wrong path — confirmation dialog checkbox and warning text now show the actual resolved directory that will be deleted (e.g. `~/.bizforge/default/`) instead of the generic `.bizforge/` label; path is derived from the workspace's stored path and shortened for display on 2026-05-10.
+
+> **Auto-updated by Cursor:** Redesigned New Project dialog into a 3-step wizard — Step 1: project name, description, status; Step 2: project directory picker (browse or type path, detects whether directory is new or existing with source code via Tauri FS plugin, shows status badge); Step 3: documentation upload with drag-and-drop file zone (Tauri native drag-drop + HTML file input), uploaded file list with remove, and context textarea for additional project knowledge; step navigation with animated fly transitions, progress indicator with clickable completed steps, skip buttons, and validation gating; on create, uploaded files are attached as project documents via `documents.create()` API with `project_id`, context text saved as `context.md` on 2026-05-10.
+
+> **Auto-updated by Cursor:** Fixed project creation 422 error and modal trapping — root cause: backend `workspaces` table was empty so `resolve_workspace_id` always resolved to `nil`, failing the changeset's `validate_required([:workspace_id])`; fix: auto-creates a "Default" workspace for the user when none exist; frontend: `handleCreate` now shows inline error bar in wizard footer instead of silently failing behind the modal overlay; projects store extracts field-level validation details from `ApiError.body.details` instead of showing raw "validation_failed" on 2026-05-10.
+
+> **Auto-updated by Cursor:** Fixed DocumentController 500 crash and project-scoped documents — (1) `File.stat!.mtime` returns Erlang datetime tuple `{{Y,M,D},{H,Mi,S}}` which Jason can't encode; added `format_mtime/1` to convert to ISO 8601 string; (2) `index` now supports `project_id` param — scopes file scan to `projects/{id}/` subdirectory under the reference dir and returns `documents` and `tree` alongside `files` so the frontend `listByProject`/`fetchByProject` flow works; (3) `create` now accepts `title`, `format`, `project_id` and builds file path automatically (`projects/{id}/{slugified_title}.md`) when no explicit `path` is provided; returns `{ document: ... }` matching frontend unwrap; (4) added `expand_home/1` to resolve `~` in workspace paths since Elixir `File.*` doesn't expand tilde; (5) recursive `scan_directory/1` traverses subdirectories; (6) auto-created workspace now uses `System.user_home!()` for absolute path on 2026-05-10.
+
+> **Auto-updated by Cursor:** Added prominent backend-disconnected banner to main app layout — full-width animated banner slides down at the top of the app shell when connection status is `reconnecting` or `disconnected`; two visual variants: yellow "Reconnecting to Backend" with spinner and attempt count, red "Backend Disconnected"; each has explanatory subtitle, "Retry Now" button, and dismiss X; banner auto-reappears when connection drops again (dismissed flag resets on reconnect) on 2026-05-10.
+
+> **Auto-updated by Cursor:** Removed mock data fallback system on 2026-05-10 — the frontend will never silently fall back to mock/placeholder data when the backend is unreachable. Changes: (1) `useMock` variable removed entirely from `client.ts`; (2) `setMockEnabled()`, `enableMock()`, `disableMock()`, `clearMockData()` functions removed; (3) `_doInitializeAuth()` no longer enables mock on health probe failure — resolves auth gate so connection store surfaces disconnected state; (4) `request()` GET branch no longer falls back to mock on network error — throws instead; (5) `health.get()` throws `ApiError(0, "Backend unreachable")` instead of returning mock health data; (6) `isMockEnabled()` is a deprecated stub that always returns `false`; (7) `ConnectionStatus` type no longer includes `"mock"` — only `connecting`, `connected`, `reconnecting`, `disconnected`; (8) connection store `check()` simplified to remove mock branches; `isConnected`/`isReady` only true for `"connected"`; (9) `#syncOnReconnect()` no longer calls `disableMock()`; (10) removed `isMockEnabled()` guards from 17 consumer files: forgemap store, SSE module, workspace store, template-deploy service, and all wizard/issue/document generation components; (11) auth routing simplified: root page, auth page, onboarding, and app layout no longer branch on mock mode; (12) `bizforge-mock-mode` localStorage key removed from session persistence; (13) disconnected banner updated to show only `reconnecting` and `disconnected` states (no more orange mock banner); (14) `ConnectionStatusBar` mock dot style removed.
+
+> **Auto-updated by Cursor:** Added "Upload Files" button and dialog to project Documents tab on 2026-05-10 — Docs tab toolbar now has three actions: "Generate with AI", "Upload Files", and "+ New Document"; empty state also includes the Upload Files button; upload dialog features drag-and-drop zone (supports Tauri native drag-drop events + HTML file input), file list with format/size metadata and remove buttons, supported formats (.md, .txt, .json, .yaml, .yml, .csv, .sql, .pdf, .doc, .docx, .xls, .xlsx), binary file handling for PDF/Office documents, batch upload that creates each file as a project document via `documentsStore.createDocument()`, inline error reporting for partial upload failures, and styled with consistent dialog/upload-zone CSS.
+
+---
+
+## Phase: Phases + Tasks Full-Stack Rename & UX Redesign
+
+> Renamed Goals → Phases and Issues → Tasks across the entire stack (database, backend, frontend). Redesigned project detail page with reordered tabs and doc-driven onboarding. Added GeneratePhasesTasksModal for AI-powered phase & task generation.
+
+### 1. Database Migration
+
+- [x] Create Ecto migration: rename `goals` table → `phases`, `issues.goal_id` → `phase_id`, `sprints.goal` → `sprints.objective`
+
+### 2. Backend Schemas
+
+- [x] Rename `Goal` schema → `Phase` (`phase.ex`), `Issue` schema → `Task` (`task.ex`)
+- [x] Update `Sprint` schema: `field :goal` → `field :objective`, `has_many :issues` → `has_many :tasks`
+- [x] Update `Project` schema: `has_many :goals` → `has_many :phases`, `has_many :issues` → `has_many :tasks`
+
+### 3. Backend Controllers
+
+- [x] Rename `GoalController` → `PhaseController`, `IssueController` → `TaskController`
+- [x] Update `SprintController`: `assign_issues` → `assign_tasks`, `issue_ids` → `task_ids`, `goal` → `objective`
+- [x] Update `ProjectController`: `goals` action → `phases`, `goal_count` → `phase_count`
+
+### 4. Router
+
+- [x] Update routes: `/goals` → `/phases`, `/issues` → `/tasks`, `/assign-issues` → `/assign-tasks`, `/ready-issues` → `/ready-tasks`
+
+### 5. Backend Support Modules
+
+- [x] Rename `GoalDecomposer` → `PhaseDecomposer`, `IssueContext` → `TaskContext`, `IssueDispatcher` → `TaskDispatcher`, `IssueLifecycle` → `TaskLifecycle`
+- [x] Update `work.ex`: all `Goal`/`Issue` aliases and function names
+- [x] Update `delegation.ex`: `goal_id` → `phase_id`
+- [x] Update `application.ex`, `heartbeat.ex`, code review adapters, `qa_report_controller.ex`
+
+### 6. Frontend Types & API Client
+
+- [x] Rename types: `Issue` → `Task`, `Goal` → `Phase`, `IssueStatus` → `TaskStatus`, etc. (deprecated aliases kept)
+- [x] Rename API namespaces: `issues` → `tasks`, `goals` → `phases`
+- [x] Update sprint methods: `assignIssues` → `assignTasks`, `goal` → `objective`
+
+### 7. Frontend Stores
+
+- [x] Rename `goals.svelte.ts` → `phases.svelte.ts` (`GoalsStore` → `PhasesStore`)
+- [x] Rename `issues.svelte.ts` → `tasks.svelte.ts` (`IssuesStore` → `TasksStore`)
+
+### 8. Frontend Components
+
+- [x] Rename `components/goals/` → `components/phases/` (GoalHierarchy, GoalCard, GoalDetail, GoalForm → Phase*)
+- [x] Rename `components/issues/` → `components/tasks/` (IssueList, IssueCard, IssueForm, IssueKanban, IssueTable, IssueViewSwitcher → Task*)
+- [x] Copy utility components (DependencyGraph, StackSelector, TaskSplitDialog, AutomatedTaskPipeline, CodebaseDetector) to tasks/
+
+### 9. Frontend Routes & Sidebar
+
+- [x] Move `routes/app/goals/` → `routes/app/phases/`, `routes/app/issues/` → `routes/app/tasks/`
+- [x] Update sidebar navigation: Goals → Phases, Issues → Tasks
+
+### 10. Project Detail Page Redesign
+
+- [x] Reorder tabs: Overview, Docs, Phases, Tasks, Agents, Sessions, Costs
+- [x] Update tab content: Goals → Phases, Issues → Tasks
+- [x] Update Overview KPIs: `goal_count` → `phase_count`, "Open Issues" → "Open Tasks", "Goals Progress" → "Phases Progress"
+
+### 11. Overview Doc-Driven CTA
+
+- [x] Add conditional CTA to Overview tab: "Create a Document" when no docs, "Generate Phases & Tasks with AI" when docs exist but no phases/tasks
+
+### 12. GeneratePhasesTasksModal
+
+- [x] Create `GeneratePhasesTasksModal.svelte` with 4-step flow: Select → Analyze → Review → Create
+- [x] Step 1: Document checkbox selector + additional context textarea
+- [x] Step 2: AI generation with SSE streaming (phases with grouped tasks JSON prompt)
+- [x] Step 3: Collapsible phase cards with inline-editable task list, per-phase select all/none
+- [x] Step 4: Batch create phases via `phasesApi.create()` then tasks via `tasksApi.create()` with progress bar
+
+### 13. Wizard & Pipeline Updates
+
+- [x] Update `Step7Review.svelte`: sprint `goal` → `objective`
+- [x] Update `Step6TaskGeneration.svelte`: prompt JSON `goal` → `objective`, `issues` → `tasks`; parser accepts both old and new format
+- [x] Update `AutomatedTaskPipeline.svelte`: `IssuePriority` → `TaskPriority`, `IssueTaskType` → `TaskType`, `issues` API → `tasks` API, UI text "Issue" → "Task"
+
+### 14. Cleanup
+
+- [x] Remove old directories: `components/goals/`, `components/issues/`, `routes/app/goals/`, `routes/app/issues/`
+- [x] Remove old `GenerateTasksModal.svelte` (replaced by GeneratePhasesTasksModal)
+- [x] Fix component header comments to reference `tasks/` instead of `issues/`
+- [x] Update wiki page references: Goals → Phases, Issues → Tasks
+- [x] Update CHECKLIST.md
+
+### 15. Comprehensive Review & Gap Fixes
+
+- [x] Fix 6 backend schemas still referencing `Bizforge.Schemas.Issue` → `Task` (comment.ex, attachment.ex, work_product.ex, session.ex, workspace.ex, issue_label.ex)
+- [x] Fix 13+ backend controllers/libs still aliasing `Bizforge.Schemas.Issue` (attachment_controller, comment_controller, work_product_controller, delegation_controller, sidebar_badge_controller, dashboard_controller, stale_cleanup, skill_router, health_plug, watchdog, virtual_pr_adapter, supervisor_escalation, heartbeat)
+- [x] Fix `supervisor_escalation.ex`: `Work.create_issue` → `create_task`, event `issue.assigned` → `task.assigned`
+- [x] Fix `health_plug.ex`: invalid status `"assigned"` → `"in_review"` for task queries
+- [x] Fix `audit.ex` singularize: add `"tasks"` → `"task"`, `"phases"` → `"phase"`; remove stale `"issues"` and `"goals"` entries
+- [x] Fix `dashboard_controller.ex`: `open_issues` → `open_tasks` in KPI JSON response
+- [x] Fix `sidebar_badge_controller.ex`: `open_issues` → `open_tasks`
+- [x] Fix frontend palette store: `/app/issues` → `/app/tasks`
+- [x] Fix QuickActions: "New Issue" → "New Task", route `/app/issues` → `/app/tasks`
+- [x] Fix projects list page: `goal_count`/`issue_count` → `phase_count`/`task_count`
+- [x] Fix GenerateDocModal: `includeGoals`/`includeIssues` → `includePhases`/`includeTasks`
+- [x] Fix KpiGrid: "Open Issues" → "Open Tasks", `open_issues` → `open_tasks`
+- [x] Fix ActivityFilters: `issue_created`/`issue_updated`/`goal_completed` → `task_created`/`task_updated`/`phase_completed`
+- [x] Fix CommandPalette: search placeholder "issues" → "tasks"
+- [x] Fix McpSettings: "Issues"/"Goals" categories → "Tasks"/"Phases"
+- [x] Fix ProvidersSettings: "Issue analysis" → "Task analysis"
+- [x] Fix mock data: `goal_id` → `phase_id` in issues.ts, `goal_count`/`issue_count` → `phase_count`/`task_count` in projects.ts
+- [x] Fix mock data: `open_issues` → `open_tasks` in dashboard.ts, stale `/app/issues` URLs in notifications/inbox/memory mocks
+- [x] Fix project detail page: "Create Task" button missing onclick handler, "Create Phase" button calling `setActiveProject` instead of navigating
+- [x] Clean up doc/comment references: delegation.ex, router.ex, supervisor_escalation.ex
+
+> **Auto-updated by Cursor:** Completed full-stack Phases + Tasks rename on 2026-05-10 — Goals renamed to Phases, Issues renamed to Tasks across database migration, backend schemas/controllers/router/support modules, frontend types/API client/stores/components/routes/sidebar, project detail page redesign with reordered tabs and doc-driven CTA, new GeneratePhasesTasksModal with 4-step AI flow, wizard and pipeline updates.
+
+> **Auto-updated by Cursor:** Comprehensive review sweep on 2026-05-10 — Fixed 20+ missed references across backend schemas, controllers, support modules, frontend UI, mock data, navigation, and project detail page action buttons.
+
+### 16. Compiler Warning & Error Fixes
+
+- [x] Fix `:gen_smtp_client` undefined — wrapped with `Code.ensure_loaded?/1` runtime check in `email_digest.ex`
+- [x] Fix `catch` before `rescue` ordering in `heartbeat.ex`
+- [x] Fix unused variable `partial` → `_partial` in `heartbeat.ex`
+- [x] Remove unused `@sidecar_startup_timeout` module attribute in `browser/sidecar.ex`
+- [x] Fix unused `response_parts` outer binding and unused `session` param in `slack/event_handler.ex`
+- [x] Fix unused `part` variable in `cursor_cli.ex` filter/map pipeline
+- [x] Remove unused `@model_list_timeout_ms` module attribute in `cursor_cli.ex`
+- [x] Remove unused default `\\ []` on private `execute_chat_message/5` in `session_controller.ex`
+- [x] Remove unused default `\\ []` on private `call_gemini_stream/5` in `gemini.ex`
+- [x] Move `@keyword_to_skill_map` definition before first access in `skill_router.ex`
+- [x] Remove unused `alias Bizforge.Governance.Policy` in `headless_resolver.ex`
+- [x] Group all `handle_info/2` clauses together in `task_dispatcher.ex`
+- [x] Fix unused `reason` → `_reason` in `github_adapter.ex` `request_changes/2`
+- [x] Remove stale `Bizforge.Schemas.Task` beam file to fix module redefine warning
+- [x] Add `foreign_key: :issue_id` to `has_many :comments` in `task.ex` schema
+- [x] Downgrade Browser.Sidecar startup failure from error to warning (expected when playwright-sidecar not built)
+- [x] Stop Browser.Sidecar retry loop when sidecar binary not found — warn once then give up (was retrying every 5s forever, flooding logs)
+- [x] Fix Svelte a11y warnings in project detail page — remove invalid `role="listitem"` and `aria-pressed` from `<button>`, add `tabindex`/`onkeydown`/svelte-ignore to dialog overlays, suppress `autofocus` warnings
+- [x] Fix WorkspaceWizard overlay svelte-ignore — expand to cover `a11y_click_events_have_key_events` and `a11y_no_static_element_interactions`
+- [x] Fix TaskList nested `<button>` — change outer `<button>` to `<div role="row">` with keyboard handler to eliminate `node_invalid_placement_ssr`
+- [x] Fix PhaseHierarchy — add missing `aria-selected` on `treeitem`, replace deprecated `<svelte:self>` with self-import
+- [x] Fix LogPanel resize handle — add `tabindex` and svelte-ignore for `a11y_no_noninteractive_element_interactions`
+- [x] Fix AppFooter `state_referenced_locally` — extract `initialZoom` constant to avoid capturing reactive `zoomPct` in `$state` initializer
+- [x] Fix GeneratePhasesTasksModal — suppress `state_referenced_locally` for intentional initial-value capture of `documents` prop, add dialog a11y attrs
+- [x] Fix AutomatedTaskPipeline — suppress `state_referenced_locally` for `documents`/`preloadedContext` props, add dialog a11y attrs
+- [x] Fix DocumentViewer `state_referenced_locally` — initialize `editContent` empty and sync via existing `$effect`
+- [x] Fix GenerateDocModal — add dialog a11y attrs, change orphan `<label>` to `<span>` with `aria-labelledby` for radiogroup
+- [x] Fix SidebarSection — suppress `state_referenced_locally` for `defaultOpen`, expand svelte-ignore on info span
+- [x] Fix Step1Name, Step6TaskGeneration, WorkspaceSwitcher — suppress `a11y_autofocus` warnings on intentional autofocus inputs
+- [x] Fix TaskSplitDialog — add `tabindex`/`onkeydown`/svelte-ignore to dialog overlay
+- [x] Fix SidebarNavItem — expand svelte-ignore to cover `a11y_click_events_have_key_events` and `a11y_no_noninteractive_element_interactions`
+- [x] Fix PhaseCard — remove redundant `role="article"` on `<article>`, add svelte-ignore for interactive tabindex/event listeners
+- [x] Fix WorkspaceSwitcher delete dialog — expand svelte-ignore, add `tabindex`, suppress autofocus on create input
+- [x] Fix LlmInspectorPanel — expand svelte-ignore on filter backdrop to cover `a11y_click_events_have_key_events`
+
+> **Auto-updated by Cursor:** Fixed 16 compiler warnings and 1 startup error on 2026-05-11 — all warnings were from unused variables/attributes, ordering issues, or missing foreign key options; sidecar error downgraded to warning since it's expected when the optional playwright-sidecar package isn't built.
+
+> **Auto-updated by Cursor:** Fixed 40+ Vite/Svelte a11y and state warnings across 18 components on 2026-05-11 — eliminated all `vite-plugin-svelte` warnings: a11y dialog overlays (tabindex + keyboard handlers), nested button violations, deprecated `<svelte:self>`, missing ARIA attributes, `state_referenced_locally` for intentional initial-value captures, orphan labels, redundant roles, and autofocus suppressions.
+
+- [x] Build playwright-sidecar — `npm install`, fix deprecated `page.accessibility.snapshot()` → `page.locator(':root').ariaSnapshot()` for Playwright 1.59, compile TypeScript, install Chromium browser
+- [x] Wire sidecar into `justfile` — add `sidecar` directory variable, `_build-sidecar` recipe (install + compile + browser), `_ensure-sidecar` prerequisite (build if `dist/index.js` missing), added to `setup`, `dev`, and `app` recipes
+- [x] Add `desktop/playwright-sidecar/dist/` to `.gitignore`
+- [x] Sidecar GenServer: stop infinite retry loop when binary not found (warn once, set `gave_up: true`); still retries on transient startup failures
+
+> **Auto-updated by Cursor:** Built and wired playwright-sidecar into dev workflow on 2026-05-11 — fixed Playwright 1.59 API break (`page.accessibility` removed → `ariaSnapshot()`), added `_build-sidecar` and `_ensure-sidecar` justfile recipes so `just setup`/`dev`/`app` automatically build the sidecar and install Chromium; sidecar GenServer now warns once and stops retrying when binary isn't found instead of flooding logs every 5s.
+
+- [x] Fix document viewer scroll — constrain docs layout height with `clamp(350px, 60vh, 700px)` so the preview panel scrolls internally instead of expanding the page
+- [x] Add `pdf` and `binary` to `DocumentFormat` type — PDFs are no longer mislabeled as `markdown`
+- [x] Fix upload format mapping — `.pdf` → `pdf`, `.doc/.docx` → `binary`, `.xls/.xlsx` → `binary`, `.txt/.csv/.dbml` → `text`, `.sql` → `sql` (was all `markdown`)
+- [x] Add binary document viewer — centered file icon, filename, type badge, size, and "not previewable" hint for PDF/binary formats
+- [x] Fix same format mapping in wizard Step2Documentation
+
+- [x] Hide Edit button for non-editable formats — only `markdown`, `text`, `yaml`, `json`, `sql`, `dbml` show the edit toggle; `pdf`, `binary`, `erd-graph`, `erd-source` show read-only view only
+- [x] Guard edit mode in content area — `editMode && canEdit` prevents stale edit state on format switch
+
+- [x] Fix document persistence — `create` and `listByProject` now pass `workspace_id` to the backend so documents are written and read from the correct workspace's reference directory
+- [x] Add `workspace_id` param to `documents.create()` API client signature
+- [x] Add `workspace_id` param to `documents.listByProject()` API client signature
+- [x] Documents store injects `workspaceStore.activeWorkspaceId` into both `createDocument()` and `fetchByProject()` calls
+- [x] Backend `ext_to_format` — add `.txt`, `.sql`, `.dbml`, `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx` mappings so files read from disk get the correct format
+- [x] Backend `format_to_ext` — add `text`, `sql`, `dbml`, `pdf` reverse mappings
+
+> **Auto-updated by Cursor:** Fixed document viewer on 2026-05-11 — preview panel now scrolls internally (constrained height) instead of growing the page; PDF and binary documents show a proper placeholder card instead of rendering their placeholder text as markdown; added `pdf`/`binary` format types and corrected upload format mappings across project upload and workspace wizard. Edit button conditionally shown only for text-based editable formats.
+
+> **Auto-updated by Cursor:** Fixed document persistence on 2026-05-11 — documents were disappearing on reload because `create` and `listByProject` did not send `workspace_id`, causing the backend to fall back to whichever workspace had `status=active` in Postgres (which could differ from the UI's active workspace). Both API methods now explicitly pass the active workspace ID. Backend format detection also expanded to cover `.txt`, `.sql`, `.dbml`, `.pdf`, and binary extensions.
+
+- [x] Fix document path mismatch — `create` now nests files under `projects/<pid>/` when `project_id` is provided, instead of writing to the raw `path` (e.g. `docs/file.md`). This ensures `index` (which scans `projects/<pid>/`) finds them after refresh.
+- [x] Fix `index` relative path base — `files_to_documents` and `build_tree` now compute paths relative to `ref_dir` (workspace root) instead of `scan_dir` (project subdirectory), so document IDs/paths are consistent with what `create`/`show`/`update`/`delete` expect.
+
+> **Auto-updated by Cursor:** Fixed document path mismatch on 2026-05-11 — uploaded documents with `project_id` were written to `<ref>/docs/file.md` but the listing endpoint scanned `<ref>/projects/<pid>/`, so files vanished on refresh. Backend `create` now always nests under `projects/<pid>/` when a project ID is provided. Additionally, `index` now computes document paths relative to the workspace reference root (not the project scan subdirectory) so IDs stay consistent across create/list/show/update/delete.
+
+- [x] Clarify document action buttons — "Analyze Docs" → "Decompose Docs" with layers icon, "Generate with AI" → "Generate Document" with doc+arrow icon, "Quick Generate" → "Decompose Docs", "Generate Tasks" → "Auto-Generate Tasks"
+- [x] Add native `title` tooltips to all document/task generation buttons explaining what each action does
+- [x] Overview CTA button updated to "Decompose Docs into Phases & Tasks" with tooltip
+
+> **Auto-updated by Cursor:** Clarified document action button labels and tooltips on 2026-05-11 — renamed ambiguous buttons ("Analyze Docs", "Generate with AI", "Quick Generate") to descriptive labels ("Decompose Docs", "Generate Document", "Auto-Generate Tasks") and added `title` tooltips explaining each action's purpose.
+
+- [x] Fix post-auth boot waterfall — `syncFromBackend()` and `ensureDefault()` no longer block with sequential `await`; all data fetches (workspaces, orgs, hierarchy, agents, projects, providers, approvals) fire concurrently after auth resolves
+- [x] Hierarchy fetches chained to org init via `.then()` instead of blocking the main thread
+
+> **Auto-updated by Cursor:** Fixed app startup responsiveness on 2026-05-11 — the post-auth boot sequence in `+layout.svelte` was running `syncFromBackend()` and `ensureDefault()` as sequential awaits, blocking all subsequent data fetches (agents, projects, providers, hierarchy, approvals) for 200–500ms+ of dead time. Converted to concurrent fire-and-forget calls so all stores load in parallel and the UI becomes interactive immediately after auth resolves.
+
+- [x] Speed up `verifyToken()` — reduced from 4 retries (1.5s/2.5s/3.5s delays, 8s timeout) to 2 retries (500ms delay, 4s timeout); health probe already confirmed backend is reachable
+- [x] Parallelize auth init — session restore and health probe now run concurrently; auth/status check runs in parallel with session restore completion
+- [x] Skip redundant token restoration — module-level `_restoreFromLocalStorage()` already set `_token`; Tauri/localStorage lookups only run when token is still `null`
+- [x] Add `.catch()` to boot sequence — unhandled rejections from `syncFromBackend()` or other async errors no longer crash the SvelteKit router
+- [x] Wrap `syncFromBackend()` in try-catch — falls back to localStorage workspace state on failure instead of aborting the entire boot
+
+> **Auto-updated by Cursor:** Fixed navigation delay and boot resilience on 2026-05-11 — `initializeAuth()` was blocking for 3-11s on reload due to aggressive `verifyToken()` retries (4 attempts with 1.5-3.5s backoff). Reduced to 2 fast attempts since the health probe already confirms backend reachability. Parallelized session restore with health probing. Added error handling (`.catch()` on boot chain, try-catch around `syncFromBackend()`) so failures don't crash SvelteKit routing.
+
+- [x] Fast-path `initializeAuth()` — when a token exists in localStorage, resolves immediately with `Promise.resolve()` instead of blocking on health/verify network calls; verification runs in background
+- [x] Move `workspaceStore.fetchWorkspaces()` before `initializeAuth()` — child pages get `activeWorkspaceId` immediately from localStorage
+- [x] Remove all sequential `await` calls from boot — `syncFromBackend()` is now fire-and-forget with `.catch()`, zero blocking between auth resolve and first data fetch
+- [x] Fix ProvidersSettings — removed workspace_id scoping for provider fetches (providers are a global resource)
+- [x] Fix providers disappearing when filtering by `workspace_id` — backend now includes providers with `NULL` workspace_id in workspace-scoped queries
+- [x] Prevent empty backend response from wiping cached providers — providers store now preserves localStorage cache if backend returns empty and cache was non-empty
+- [x] Reduce API retry aggression — `withRetry` reduced from 3 retries / 1s backoff / 30s max to 2 retries / 500ms backoff / 5s max; request timeout reduced from 15s to 8s
+- [x] Remove workspace_id scoping from provider fetch calls — providers are workspace-agnostic; layout and ProvidersSettings now call `providersStore.fetch()` without workspace ID
+
+> **Auto-updated by Cursor:** Fixed UI freeze on reload on 2026-05-11 — `initializeAuth()` was blocking the entire layout boot (connection polling, SSE, all store fetches) behind 3+ sequential network calls even when the user was already logged in. Now uses a fast path: if a token is already in localStorage, `initializeAuth()` resolves instantly and health/token verification runs in the background. Workspace context loads from localStorage before auth. All store fetches fire concurrently with zero sequential awaits. ProvidersSettings now passes workspace ID to avoid a duplicate race condition.
+
+> **Auto-updated by Cursor:** Fixed providers not loading and UI lockups on 2026-05-11 — Root causes: (1) Providers were created without `workspace_id` but frontend was filtering by workspace ID, returning 0 results. Fixed backend to include `is_nil(workspace_id)` in queries. (2) Frontend now fetches providers without workspace scoping since they are a global resource. (3) Reduced retry/backoff aggressiveness (2 retries, 500ms backoff, 8s timeout) to prevent cascading delays when backend is slow. (4) Providers store preserves cached data when backend returns empty results.

@@ -609,7 +609,7 @@
       </p>
       <ul class="pst-default-model-uses">
         <li><strong>Document generation</strong> — creating PRDs, technical specs, architecture docs, and other project documentation from the Docs tab</li>
-        <li><strong>Issue analysis</strong> — reading project documentation to propose actionable tasks and issues</li>
+        <li><strong>Task analysis</strong> — reading project documentation to propose actionable phases and tasks</li>
         <li><strong>Content assistance</strong> — any other in-app AI operation triggered from the UI</li>
       </ul>
       <p class="pst-default-model-desc">

@@ -48,7 +48,7 @@ defmodule Bizforge.Heartbeat do
     # Pre-fetch the issue (if provided) so the dispatch router can inspect it.
     # This is done before adapter resolution to enable task-level override routing.
     prefetched_issue =
-      if issue_id, do: Repo.get(Bizforge.Schemas.Issue, issue_id), else: nil
+      if issue_id, do: Repo.get(Bizforge.Schemas.Task, issue_id), else: nil
 
     with %Agent{} = agent <- Repo.get(Agent, agent_id),
          :clear <- Bizforge.Governance.Gate.heartbeat_blocked?(agent_id),
@@ -100,14 +100,14 @@ defmodule Bizforge.Heartbeat do
       if issue_id do
         Repo.transaction(fn ->
           case Repo.one(
-                 from i in Bizforge.Schemas.Issue, where: i.id == ^issue_id, lock: "FOR UPDATE"
+                 from i in Bizforge.Schemas.Task, where: i.id == ^issue_id, lock: "FOR UPDATE"
                ) do
             nil ->
-              Logger.warning("[Heartbeat] Issue #{issue_id} not found, skipping checkout")
+              Logger.warning("[Heartbeat] Task #{issue_id} not found, skipping checkout")
 
             %{checked_out_by: existing} when not is_nil(existing) ->
               Logger.warning(
-                "[Heartbeat] Issue #{issue_id} already checked out by #{existing}, skipping"
+                "[Heartbeat] Task #{issue_id} already checked out by #{existing}, skipping"
               )
 
               Repo.rollback(:already_checked_out)
@@ -163,9 +163,9 @@ defmodule Bizforge.Heartbeat do
 
         if issue_id do
           Repo.transaction(fn ->
-            case Repo.one(from i in Bizforge.Schemas.Issue, where: i.id == ^issue_id, lock: "FOR UPDATE") do
+            case Repo.one(from i in Bizforge.Schemas.Task, where: i.id == ^issue_id, lock: "FOR UPDATE") do
               nil -> :ok
-              issue -> issue |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
+              task -> task |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
             end
           end)
         end
@@ -229,8 +229,8 @@ defmodule Bizforge.Heartbeat do
               nil
           end
 
-        Bizforge.IssueLifecycle.notify_session_complete(issue_id, agent.id, wp_id)
-        Logger.info("[Heartbeat] Notified IssueLifecycle for issue #{issue_id}")
+        Bizforge.TaskLifecycle.notify_session_complete(issue_id, agent.id, wp_id)
+        Logger.info("[Heartbeat] Notified TaskLifecycle for task #{issue_id}")
       end
 
       cleanup_workspace(workspace)
@@ -270,16 +270,16 @@ defmodule Bizforge.Heartbeat do
       )
 
       {:ok, session.id}
+      rescue
+        e ->
+          Logger.error("[Heartbeat] Unhandled error in run/2: #{Exception.message(e)}")
+          {:error, {:unhandled, Exception.message(e)}}
       catch
         {:circuit_open, adapter} ->
           {:error, {:circuit_open, adapter}}
 
         {:execution_failed, reason} ->
           {:error, {:execution_failed, reason}}
-      rescue
-        e ->
-          Logger.error("[Heartbeat] Unhandled error in run/2: #{Exception.message(e)}")
-          {:error, {:unhandled, Exception.message(e)}}
       end
     else
       nil ->
@@ -332,16 +332,16 @@ defmodule Bizforge.Heartbeat do
     if issue_id !== nil do
       Repo.transaction(fn ->
         case Repo.one(
-               from i in Bizforge.Schemas.Issue,
+               from i in Bizforge.Schemas.Task,
                  where: i.id == ^issue_id,
                  lock: "FOR UPDATE"
              ) do
           nil ->
             :ok
 
-          issue ->
-            issue |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
-            Logger.info("[Heartbeat] Rolled back issue #{issue_id} to backlog after failure")
+          task ->
+            task |> change(status: "backlog", checked_out_by: nil) |> Repo.update!()
+            Logger.info("[Heartbeat] Rolled back task #{issue_id} to backlog after failure")
         end
       end)
     end
@@ -456,7 +456,7 @@ defmodule Bizforge.Heartbeat do
       end
 
     case result do
-      {:error, reason, partial} when attempt < @max_heartbeat_retries ->
+      {:error, reason, _partial} when attempt < @max_heartbeat_retries ->
         backoff = (@heartbeat_backoff_base_ms * :math.pow(2, attempt)) |> round()
 
         Logger.warning(

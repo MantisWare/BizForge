@@ -12,7 +12,7 @@ defmodule BizforgeWeb.ProviderController do
     query =
       case params["workspace_id"] do
         nil -> query
-        ws_id -> from(p in query, where: p.workspace_id == ^ws_id)
+        ws_id -> from(p in query, where: p.workspace_id == ^ws_id or is_nil(p.workspace_id))
       end
 
     providers = Repo.all(query)

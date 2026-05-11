@@ -2,7 +2,7 @@ defmodule BizforgeWeb.CommentController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Comment, Issue}
+  alias Bizforge.Schemas.{Comment, Task}
   import Ecto.Query
 
   def index(conn, %{"issue_id" => issue_id}) do
@@ -23,10 +23,10 @@ defmodule BizforgeWeb.CommentController do
 
     case Repo.insert(changeset) do
       {:ok, comment} ->
-        issue = Repo.get!(Issue, issue_id)
+        task = Repo.get!(Task, issue_id)
 
         Bizforge.EventBus.broadcast(
-          Bizforge.EventBus.workspace_topic(issue.workspace_id),
+          Bizforge.EventBus.workspace_topic(task.workspace_id),
           %{event: "comment.created", issue_id: issue_id, comment_id: comment.id}
         )
 

@@ -2,22 +2,37 @@ defmodule BizforgeWeb.Plugs.RateLimiter do
   @moduledoc """
   Token-bucket rate limiter using ETS.
 
-  Limits requests per IP (or per user for authenticated routes).
-  Default: 120 requests per minute for API, 10 per minute for auth endpoints.
+  Limits requests per user (authenticated) or per IP (unauthenticated).
+  Uses the full request path for bucket granularity so nested resources
+  (e.g. /projects/:id/phases) don't starve the parent resource bucket.
+
+  Defaults:
+    - 300 req/min for authenticated API routes
+    - 120 req/min for unauthenticated API routes
+    - 10 req/min for auth endpoints (login/register)
+
+  Override via application config:
+    config :bizforge, BizforgeWeb.Plugs.RateLimiter,
+      default_limit: 300,
+      unauth_limit: 120,
+      auth_limit: 10,
+      window_ms: 60_000
   """
   import Plug.Conn
   import Phoenix.Controller, only: [json: 2]
 
   @table :bizforge_rate_limiter
-  @default_limit 120
-  @default_window_ms 60_000
-  @auth_limit 10
+
+  defp config(key, fallback) do
+    Application.get_env(:bizforge, __MODULE__, [])
+    |> Keyword.get(key, fallback)
+  end
 
   def init(opts), do: opts
 
   def call(conn, opts) do
     limit = opts[:limit] || rate_limit_for(conn)
-    window_ms = opts[:window_ms] || @default_window_ms
+    window_ms = opts[:window_ms] || config(:window_ms, 60_000)
     key = bucket_key(conn)
 
     case check_rate(key, limit, window_ms) do
@@ -46,20 +61,29 @@ defmodule BizforgeWeb.Plugs.RateLimiter do
         _ -> "ip:#{format_ip(conn.remote_ip)}"
       end
 
-    path_prefix =
-      case conn.path_info do
-        ["api", "v1", "auth" | _] -> "auth"
-        ["api", "v1", resource | _] -> resource
-        _ -> "global"
-      end
+    path_segment = bucket_path(conn.path_info)
 
-    "#{identifier}:#{path_prefix}"
+    "#{identifier}:#{path_segment}"
   end
+
+  defp bucket_path(["api", "v1", "auth" | _]), do: "auth"
+  defp bucket_path(["api", "v1", resource, id, nested | _]),
+    do: "#{resource}/*/#{nested}"
+  defp bucket_path(["api", "v1", resource, _id]),
+    do: "#{resource}/*"
+  defp bucket_path(["api", "v1", resource | _]), do: resource
+  defp bucket_path(_), do: "global"
 
   defp rate_limit_for(conn) do
     case conn.path_info do
-      ["api", "v1", "auth" | _] -> @auth_limit
-      _ -> @default_limit
+      ["api", "v1", "auth" | _] ->
+        config(:auth_limit, 10)
+
+      _ ->
+        case conn.assigns[:current_user] do
+          %{id: _} -> config(:default_limit, 300)
+          _ -> config(:unauth_limit, 120)
+        end
     end
   end
 
@@ -67,7 +91,6 @@ defmodule BizforgeWeb.Plugs.RateLimiter do
     now = System.monotonic_time(:millisecond)
     window_start = now - window_ms
 
-    # Clean old entries and count current
     :ets.select_delete(@table, [
       {{key, :"$1"}, [{:<, :"$1", window_start}], [true]}
     ])
@@ -78,7 +101,6 @@ defmodule BizforgeWeb.Plugs.RateLimiter do
       :ets.insert(@table, {key, now})
       {:ok, limit - count - 1}
     else
-      # Find oldest entry in window to calculate retry-after
       oldest =
         case :ets.select(@table, [{{key, :"$1"}, [], [:"$1"]}]) do
           [first | _] -> first

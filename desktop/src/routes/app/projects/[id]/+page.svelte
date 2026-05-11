@@ -3,16 +3,17 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import PageShell from '$lib/components/layout/PageShell.svelte';
-  import GoalHierarchy from '$lib/components/goals/GoalHierarchy.svelte';
-  import IssueList from '$lib/components/issues/IssueList.svelte';
+  import PhaseHierarchy from '$lib/components/phases/PhaseHierarchy.svelte';
+  import TaskList from '$lib/components/tasks/TaskList.svelte';
   import AgentCard from '$lib/components/agents/AgentCard.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import DocumentViewer from '$lib/components/documents/DocumentViewer.svelte';
   import GenerateDocModal from '$lib/components/documents/GenerateDocModal.svelte';
-  import GenerateIssuesModal from '$lib/components/issues/GenerateIssuesModal.svelte';
+  import GeneratePhasesTasksModal from '$lib/components/tasks/GeneratePhasesTasksModal.svelte';
+  import AutomatedTaskPipeline from '$lib/components/tasks/AutomatedTaskPipeline.svelte';
   import { projectsStore } from '$lib/stores/projects.svelte';
-  import { goalsStore } from '$lib/stores/goals.svelte';
-  import { issuesStore } from '$lib/stores/issues.svelte';
+  import { phasesStore } from '$lib/stores/phases.svelte';
+  import { tasksStore } from '$lib/stores/tasks.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { sessionsStore } from '$lib/stores/sessions.svelte';
   import { costsStore } from '$lib/stores/costs.svelte';
@@ -22,18 +23,20 @@
   import { integrationBindings as bindingsApi } from '$api/client';
   import IntegrationBindingSelector from '$lib/components/integrations/IntegrationBindingSelector.svelte';
   import { SKILLS } from '$api/mock/library/skills';
-  import type { Project, Document, IntegrationBinding, SkillIntegrationRequirement } from '$api/types';
+  import type { Project, Document, IntegrationBinding, SkillIntegrationRequirement, DocumentFormat } from '$api/types';
+  import { isTauri } from '$lib/utils/platform';
+  import { onMount, onDestroy } from 'svelte';
 
   // ── Route params ────────────────────────────────────────────────────────────
   const id = $derived(page.params.id ?? '');
 
   // ── Tab state — URL-persisted via ?tab= ─────────────────────────────────────
-  type ProjectTab = 'overview' | 'goals' | 'docs' | 'issues' | 'agents' | 'sessions' | 'costs';
+  type ProjectTab = 'overview' | 'docs' | 'phases' | 'tasks' | 'agents' | 'sessions' | 'costs';
   const TABS: { id: ProjectTab; label: string }[] = [
     { id: 'overview',  label: 'Overview'  },
-    { id: 'goals',     label: 'Goals'     },
     { id: 'docs',      label: 'Docs'      },
-    { id: 'issues',    label: 'Issues'    },
+    { id: 'phases',    label: 'Phases'    },
+    { id: 'tasks',     label: 'Tasks'     },
     { id: 'agents',    label: 'Agents'    },
     { id: 'sessions',  label: 'Sessions'  },
     { id: 'costs',     label: 'Costs'     },
@@ -41,7 +44,7 @@
 
   const activeTab = $derived.by<ProjectTab>(() => {
     const t = page.url.searchParams.get('tab');
-    if (t === 'goals' || t === 'docs' || t === 'issues' || t === 'agents' || t === 'sessions' || t === 'costs') {
+    if (t === 'docs' || t === 'phases' || t === 'tasks' || t === 'agents' || t === 'sessions' || t === 'costs') {
       return t;
     }
     return 'overview';
@@ -89,19 +92,36 @@
   // Track which tabs have already triggered their fetch so we don't re-fire.
   let loadedTabs = $state(new Set<ProjectTab>());
 
+  // Overview needs docs + phases to render the conditional CTA, so pre-fetch them.
+  $effect(() => {
+    if (!id) return;
+    if (!loadedTabs.has('docs')) {
+      loadedTabs = new Set([...loadedTabs, 'docs']);
+      void documentsStore.fetchByProject(id);
+    }
+    if (!loadedTabs.has('phases')) {
+      loadedTabs = new Set([...loadedTabs, 'phases']);
+      void phasesStore.fetchPhases(id);
+    }
+    if (!loadedTabs.has('tasks')) {
+      loadedTabs = new Set([...loadedTabs, 'tasks']);
+      void tasksStore.fetchTasks(workspaceStore.activeWorkspaceId ?? undefined);
+    }
+  });
+
   $effect(() => {
     const tab = activeTab;
     if (!id || loadedTabs.has(tab)) return;
 
-    if (tab === 'goals') {
-      loadedTabs = new Set([...loadedTabs, 'goals']);
-      void goalsStore.fetchGoals(id);
+    if (tab === 'phases') {
+      loadedTabs = new Set([...loadedTabs, 'phases']);
+      void phasesStore.fetchPhases(id);
     } else if (tab === 'docs') {
       loadedTabs = new Set([...loadedTabs, 'docs']);
       void documentsStore.fetchByProject(id);
-    } else if (tab === 'issues') {
-      loadedTabs = new Set([...loadedTabs, 'issues']);
-      void issuesStore.fetchIssues(workspaceStore.activeWorkspaceId ?? undefined);
+    } else if (tab === 'tasks') {
+      loadedTabs = new Set([...loadedTabs, 'tasks']);
+      void tasksStore.fetchTasks(workspaceStore.activeWorkspaceId ?? undefined);
     } else if (tab === 'agents') {
       loadedTabs = new Set([...loadedTabs, 'agents']);
       void agentsStore.fetchAgents(workspaceStore.activeWorkspaceId ?? undefined);
@@ -179,11 +199,11 @@
   });
 
   // ── Derived: project-scoped data ─────────────────────────────────────────────
-  const projectIssues = $derived(
-    issuesStore.issues.filter((i) => i.project_id === id),
+  const projectTasks = $derived(
+    tasksStore.tasks.filter((t) => t.project_id === id),
   );
-  const openIssueCount = $derived(
-    projectIssues.filter((i) => i.status !== 'done').length,
+  const openTaskCount = $derived(
+    projectTasks.filter((t) => t.status !== 'done').length,
   );
 
   // Sessions: Session type has no project_id — filter by agents assigned to project.
@@ -193,22 +213,22 @@
   // Cost breakdown: show agents with cost (workspace-scoped, no project_id on breakdown)
   const projectAgentCosts = $derived(costsStore.agentBreakdown);
 
-  // ── Overview: recent activity (last 5 issues + goals combined, by updated_at) ──
+  // ── Overview: recent activity (last 5 tasks + phases combined, by updated_at) ──
   const recentActivity = $derived.by(() => {
-    type ActivityItem = { kind: 'issue' | 'goal'; id: string; title: string; updated_at: string; status: string };
+    type ActivityItem = { kind: 'task' | 'phase'; id: string; title: string; updated_at: string; status: string };
     const items: ActivityItem[] = [
-      ...projectIssues.map((i) => ({ kind: 'issue' as const, id: i.id, title: i.title, updated_at: i.updated_at, status: i.status })),
-      ...goalsStore.flatGoals.map((g) => ({ kind: 'goal' as const, id: g.id, title: g.title, updated_at: g.updated_at, status: g.status })),
+      ...projectTasks.map((i) => ({ kind: 'task' as const, id: i.id, title: i.title, updated_at: i.updated_at, status: i.status })),
+      ...phasesStore.flatPhases.map((g) => ({ kind: 'phase' as const, id: g.id, title: g.title, updated_at: g.updated_at, status: g.status })),
     ];
     return items
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
       .slice(0, 5);
   });
 
-  // ── Goals progress ────────────────────────────────────────────────────────────
-  const goalsTotal = $derived(goalsStore.totalCount);
-  const goalsCompleted = $derived(goalsStore.completedCount);
-  const goalsProgress = $derived(goalsTotal > 0 ? Math.round((goalsCompleted / goalsTotal) * 100) : 0);
+  // ── Phases progress (overview KPI) ────────────────────────────────────────────
+  const phasesTotal = $derived(phasesStore.totalCount);
+  const phasesCompleted = $derived(phasesStore.completedCount);
+  const phasesProgress = $derived(phasesTotal > 0 ? Math.round((phasesCompleted / phasesTotal) * 100) : 0);
 
   // ── Docs tab state ──────────────────────────────────────────────────────────
   let selectedDoc = $state<Document | null>(null);
@@ -217,7 +237,8 @@
   let docFormContent = $state('');
   let docCreating = $state(false);
   let showGenerateDocModal = $state(false);
-  let showGenerateIssuesModal = $state(false);
+  let showGenerateTasksModal = $state(false);
+  let showPipelineModal = $state(false);
 
   const projectDocs = $derived(documentsStore.projectDocuments);
   const projectDocsCount = $derived(projectDocs.length);
@@ -247,6 +268,141 @@
     docFormPath = '';
     docFormContent = '';
   }
+
+  // ── Upload files dialog ───────────────────────────────────────────────────────
+  let showUploadDialog = $state(false);
+  let uploadFiles = $state<{ id: string; name: string; content: string; format: DocumentFormat; size: number }[]>([]);
+  let uploadDragOver = $state(false);
+  let uploading = $state(false);
+  let uploadError = $state<string | null>(null);
+
+  const UPLOAD_ACCEPTED_EXTENSIONS: Record<string, DocumentFormat> = {
+    '.md': 'markdown', '.txt': 'text', '.json': 'json', '.yaml': 'yaml',
+    '.yml': 'yaml', '.csv': 'text', '.dbml': 'text', '.sql': 'sql',
+    '.pdf': 'pdf', '.doc': 'binary', '.docx': 'binary',
+    '.xls': 'binary', '.xlsx': 'binary',
+  };
+  const UPLOAD_BINARY_EXTENSIONS = new Set(['.pdf', '.doc', '.docx', '.xls', '.xlsx']);
+  const UPLOAD_ACCEPT_STRING = Object.keys(UPLOAD_ACCEPTED_EXTENSIONS).join(',');
+
+  function getUploadExt(name: string): string { return name.slice(name.lastIndexOf('.')).toLowerCase(); }
+  function getUploadFormat(name: string): DocumentFormat { return UPLOAD_ACCEPTED_EXTENSIONS[getUploadExt(name)] ?? 'markdown'; }
+  function isUploadAccepted(name: string): boolean { return getUploadExt(name) in UPLOAD_ACCEPTED_EXTENSIONS; }
+  function uploadFormatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  async function handleUploadFileInput(files: FileList | null): Promise<void> {
+    if (files === null) return;
+    for (const file of Array.from(files)) {
+      if (!isUploadAccepted(file.name)) continue;
+      const ext = getUploadExt(file.name);
+      let content: string;
+      if (UPLOAD_BINARY_EXTENSIONS.has(ext)) {
+        const label = ext.replace('.', '').toUpperCase();
+        content = `[${label} Document: ${file.name}] — ${uploadFormatSize(file.size)}`;
+      } else {
+        content = await file.text();
+      }
+      uploadFiles = [...uploadFiles, {
+        id: crypto.randomUUID(),
+        name: file.name,
+        content,
+        format: getUploadFormat(file.name),
+        size: file.size,
+      }];
+    }
+  }
+
+  async function handleUploadTauriPaths(paths: string[]): Promise<void> {
+    const fs = await import('@tauri-apps/plugin-fs');
+    for (const filePath of paths) {
+      const name = filePath.split('/').pop() ?? filePath;
+      if (!isUploadAccepted(name)) continue;
+      const ext = getUploadExt(name);
+      try {
+        let content: string;
+        let size: number;
+        if (UPLOAD_BINARY_EXTENSIONS.has(ext)) {
+          const bytes = await fs.readFile(filePath);
+          size = bytes.byteLength;
+          const label = ext.replace('.', '').toUpperCase();
+          content = `[${label} Document: ${name}] — ${uploadFormatSize(size)}`;
+        } else {
+          content = await fs.readTextFile(filePath);
+          size = new TextEncoder().encode(content).byteLength;
+        }
+        uploadFiles = [...uploadFiles, {
+          id: crypto.randomUUID(),
+          name,
+          content,
+          format: getUploadFormat(name),
+          size,
+        }];
+      } catch (err) {
+        console.error(`[Upload] Failed to read dropped file "${filePath}":`, err);
+      }
+    }
+  }
+
+  function removeUploadFile(fileId: string): void {
+    uploadFiles = uploadFiles.filter((f) => f.id !== fileId);
+  }
+
+  async function handleUploadSubmit(): Promise<void> {
+    if (uploadFiles.length === 0 || project === undefined) return;
+    uploading = true;
+    uploadError = null;
+    let successCount = 0;
+    try {
+      for (const file of uploadFiles) {
+        await documentsStore.createDocument({
+          title: file.name,
+          path: `docs/${file.name}`,
+          content: file.content,
+          format: file.format,
+          project_id: project.id,
+          output_path: project.output_path,
+          disk_subdir: 'docs',
+        });
+        successCount++;
+      }
+      showUploadDialog = false;
+      uploadFiles = [];
+    } catch (err) {
+      uploadError = `Uploaded ${successCount}/${uploadFiles.length} files. Error: ${(err as Error).message}`;
+    } finally {
+      uploading = false;
+    }
+  }
+
+  function cancelUpload(): void {
+    showUploadDialog = false;
+    uploadFiles = [];
+    uploadError = null;
+  }
+
+  let unlistenUploadDrag: (() => void) | undefined;
+  onMount(() => {
+    if (!isTauri()) return;
+    (async () => {
+      const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+      unlistenUploadDrag = await getCurrentWebview().onDragDropEvent((event) => {
+        if (!showUploadDialog) return;
+        const { type } = event.payload;
+        if (type === 'enter' || type === 'over') { uploadDragOver = true; }
+        else if (type === 'leave' || type === 'cancel') { uploadDragOver = false; }
+        else if (type === 'drop') {
+          uploadDragOver = false;
+          const payload = event.payload as { type: 'drop'; paths: string[] };
+          void handleUploadTauriPaths(payload.paths);
+        }
+      });
+    })();
+  });
+  onDestroy(() => { unlistenUploadDrag?.(); });
 
   // ── Inline-edit description ───────────────────────────────────────────────────
   let editingDesc = $state(false);
@@ -315,9 +471,9 @@
                 {projectDocsCount}
               </span>
             {/if}
-            {#if tab.id === 'issues' && openIssueCount > 0}
-              <span class="pj-tab-badge" aria-label="{openIssueCount} open issues">
-                {openIssueCount}
+            {#if tab.id === 'tasks' && openTaskCount > 0}
+              <span class="pj-tab-badge" aria-label="{openTaskCount} open tasks">
+                {openTaskCount}
               </span>
             {/if}
           </button>
@@ -422,12 +578,12 @@
           <!-- KPI row -->
           <div class="pj-kpi-row" role="list" aria-label="Project metrics">
             <div class="pj-kpi" role="listitem">
-              <span class="pj-kpi-value">{project.goal_count}</span>
-              <span class="pj-kpi-label">Goals</span>
+              <span class="pj-kpi-value">{project.phase_count}</span>
+              <span class="pj-kpi-label">Phases</span>
             </div>
             <div class="pj-kpi" role="listitem">
-              <span class="pj-kpi-value">{openIssueCount}</span>
-              <span class="pj-kpi-label">Open Issues</span>
+              <span class="pj-kpi-value">{openTaskCount}</span>
+              <span class="pj-kpi-label">Open Tasks</span>
             </div>
             <div class="pj-kpi" role="listitem">
               <span class="pj-kpi-value">{project.agent_count}</span>
@@ -443,17 +599,60 @@
             </div>
           </div>
 
-          <!-- Goals progress -->
-          {#if goalsTotal > 0}
+          <!-- Doc-driven onboarding CTA -->
+          {#if projectDocsCount === 0}
+            <div class="pj-cta-card">
+              <div class="pj-cta-icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                </svg>
+              </div>
+              <h3 class="pj-cta-title">Get started with documentation</h3>
+              <p class="pj-cta-desc">Add project documentation to unlock AI-powered phase and task generation.</p>
+              <button
+                class="pj-btn-primary pj-cta-btn"
+                type="button"
+                onclick={() => setTab('docs')}
+                aria-label="Navigate to Docs tab to create a document"
+              >
+                Create a Document
+              </button>
+            </div>
+          {:else if phasesTotal === 0 && projectTasks.length === 0}
+            <div class="pj-cta-card">
+              <div class="pj-cta-icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <h3 class="pj-cta-title">Ready to plan your project</h3>
+              <p class="pj-cta-desc">You have {projectDocsCount} document{projectDocsCount === 1 ? '' : 's'}. Use AI to generate implementation phases and tasks.</p>
+              <button
+                class="pj-btn-accent pj-cta-btn"
+                type="button"
+                onclick={() => { showGenerateTasksModal = true; }}
+                aria-label="Decompose documents into phases and tasks"
+                title="Analyze your project documents and break them down into implementation phases and individual tasks"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                Decompose Docs into Phases &amp; Tasks
+              </button>
+            </div>
+          {/if}
+
+          <!-- Phases progress -->
+          {#if phasesTotal > 0}
             <div class="pj-card">
               <div class="pj-card-header">
-                <h2 class="pj-card-title">Goals Progress</h2>
-                <span class="pj-card-meta">{goalsCompleted} / {goalsTotal} completed</span>
+                <h2 class="pj-card-title">Phases Progress</h2>
+                <span class="pj-card-meta">{phasesCompleted} / {phasesTotal} completed</span>
               </div>
-              <div class="pj-progress-track" role="progressbar" aria-valuenow={goalsProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Goals completion progress">
-                <div class="pj-progress-fill" style="width: {goalsProgress}%"></div>
+              <div class="pj-progress-track" role="progressbar" aria-valuenow={phasesProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Phases completion progress">
+                <div class="pj-progress-fill" style="width: {phasesProgress}%"></div>
               </div>
-              <p class="pj-progress-label">{goalsProgress}% complete</p>
+              <p class="pj-progress-label">{phasesProgress}% complete</p>
             </div>
           {/if}
 
@@ -463,7 +662,7 @@
               <h2 class="pj-card-title">Recent Activity</h2>
             </div>
             {#if recentActivity.length === 0}
-              <p class="pj-empty-hint">No recent activity. Create a goal or issue to get started.</p>
+              <p class="pj-empty-hint">No recent activity. Create a phase or task to get started.</p>
             {:else}
               <ul class="pj-activity-list" aria-label="Recent activity">
                 {#each recentActivity as item (item.id)}
@@ -525,31 +724,31 @@
             </dl>
           </div>
 
-        <!-- ── Goals ──────────────────────────────────────────────────────────── -->
-        {:else if activeTab === 'goals'}
+        <!-- ── Phases ─────────────────────────────────────────────────────────── -->
+        {:else if activeTab === 'phases'}
           <div class="pj-tab-toolbar">
-            <h2 class="pj-tab-heading">Goals</h2>
+            <h2 class="pj-tab-heading">Phases</h2>
             <button
               class="pj-btn-primary"
               type="button"
-              onclick={() => void goalsStore.setActiveProject(id)}
-              aria-label="Create goal in this project"
+              onclick={() => void goto(`/app/phases?new=1&project=${id}`)}
+              aria-label="Create phase in this project"
             >
-              + Create Goal
+              + Create Phase
             </button>
           </div>
 
-          {#if goalsStore.loading}
+          {#if phasesStore.loading}
             <div class="pj-loading" role="status" aria-live="polite">
               <div class="pj-spinner" aria-hidden="true"></div>
-              <span>Loading goals…</span>
+              <span>Loading phases…</span>
             </div>
-          {:else if goalsStore.goals.length === 0}
+          {:else if phasesStore.phases.length === 0}
             <div class="pj-empty-tab">
-              <p class="pj-empty-hint">No goals yet for this project.</p>
+              <p class="pj-empty-hint">No phases yet for this project.</p>
             </div>
           {:else}
-            <GoalHierarchy nodes={goalsStore.goals} />
+            <PhaseHierarchy nodes={phasesStore.phases} />
           {/if}
 
         <!-- ── Docs ───────────────────────────────────────────────────────────── -->
@@ -566,19 +765,35 @@
                 <button
                   class="pj-btn-ghost"
                   type="button"
-                  onclick={() => { showGenerateIssuesModal = true; }}
-                  aria-label="Generate issues from documentation"
+                  onclick={() => { showGenerateTasksModal = true; }}
+                  aria-label="Analyze documents and decompose into phases and tasks"
+                  title="Analyze your project documents and break them down into implementation phases and individual tasks"
                 >
-                  Analyze Docs
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                  Decompose Docs
                 </button>
               {/if}
               <button
                 class="pj-btn-ghost"
                 type="button"
                 onclick={() => { showGenerateDocModal = true; }}
-                aria-label="Generate documentation with AI"
+                aria-label="Generate a project document using AI"
+                title="Create a new document (PRD, technical spec, architecture, etc.) generated by AI from your project description"
               >
-                Generate with AI
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M12 18v-6M9 15l3-3 3 3" />
+                </svg>
+                Generate Document
+              </button>
+              <button
+                class="pj-btn-ghost"
+                type="button"
+                onclick={() => { showUploadDialog = true; }}
+                aria-label="Upload document files"
+              >
+                Upload Files
               </button>
               <button
                 class="pj-btn-primary"
@@ -608,8 +823,16 @@
                   class="pj-btn-ghost"
                   type="button"
                   onclick={() => { showGenerateDocModal = true; }}
+                  title="Create a new document (PRD, technical spec, architecture, etc.) generated by AI from your project description"
                 >
-                  Generate with AI
+                  Generate Document
+                </button>
+                <button
+                  class="pj-btn-ghost"
+                  type="button"
+                  onclick={() => { showUploadDialog = true; }}
+                >
+                  Upload Files
                 </button>
                 <button
                   class="pj-btn-primary"
@@ -629,8 +852,7 @@
                     class:pj-doc-row--active={selectedDoc?.id === doc.id}
                     type="button"
                     onclick={() => { selectedDoc = doc; }}
-                    aria-pressed={selectedDoc?.id === doc.id}
-                    role="listitem"
+                    aria-current={selectedDoc?.id === doc.id ? 'true' : undefined}
                   >
                     <div class="pj-doc-info">
                       <span class="pj-doc-title">{doc.title}</span>
@@ -657,47 +879,61 @@
             </div>
           {/if}
 
-        <!-- ── Issues ─────────────────────────────────────────────────────────── -->
-        {:else if activeTab === 'issues'}
+        <!-- ── Tasks ──────────────────────────────────────────────────────────── -->
+        {:else if activeTab === 'tasks'}
           <div class="pj-tab-toolbar">
             <h2 class="pj-tab-heading">
-              Issues
-              {#if openIssueCount > 0}
-                <span class="pj-count-badge">{openIssueCount} open</span>
+              Tasks
+              {#if openTaskCount > 0}
+                <span class="pj-count-badge">{openTaskCount} open</span>
               {/if}
             </h2>
             <div class="pj-tab-toolbar-actions">
+              <button
+                class="pj-btn-accent"
+                type="button"
+                onclick={() => { showPipelineModal = true; }}
+                aria-label="Run automated task generation pipeline"
+                title="Run the full automated pipeline: detect codebase, select stack, and generate tasks with AI"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                Auto-Generate Tasks
+              </button>
               {#if projectDocsCount > 0}
                 <button
                   class="pj-btn-ghost"
                   type="button"
-                  onclick={() => { showGenerateIssuesModal = true; }}
-                  aria-label="Generate issues from project documentation"
+                  onclick={() => { showGenerateTasksModal = true; }}
+                  aria-label="Decompose documents into phases and tasks"
+                  title="Analyze your uploaded documents and decompose them into implementation phases and tasks"
                 >
-                  Generate from Docs
+                  Decompose Docs
                 </button>
               {/if}
               <button
                 class="pj-btn-primary"
                 type="button"
-                aria-label="Create issue in this project"
+                onclick={() => void goto(`/app/tasks?new=1&project=${id}`)}
+                aria-label="Create task in this project"
               >
-                + Create Issue
+                + Create Task
               </button>
             </div>
           </div>
 
-          {#if issuesStore.loading}
+          {#if tasksStore.loading}
             <div class="pj-loading" role="status" aria-live="polite">
               <div class="pj-spinner" aria-hidden="true"></div>
-              <span>Loading issues…</span>
+              <span>Loading tasks…</span>
             </div>
-          {:else if projectIssues.length === 0}
+          {:else if projectTasks.length === 0}
             <div class="pj-empty-tab">
-              <p class="pj-empty-hint">No issues for this project.</p>
+              <p class="pj-empty-hint">No tasks for this project.</p>
             </div>
           {:else}
-            <IssueList issues={projectIssues} />
+            <TaskList tasks={projectTasks} />
           {/if}
 
         <!-- ── Agents ─────────────────────────────────────────────────────────── -->
@@ -900,17 +1136,21 @@
 
 <!-- Create document dialog -->
 {#if showDocForm}
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="pj-overlay"
     role="dialog"
     aria-modal="true"
     aria-label="Create document"
+    tabindex="-1"
     onclick={(e) => { if (e.target === e.currentTarget) cancelDocForm(); }}
+    onkeydown={(e) => { if (e.key === 'Escape') cancelDocForm(); }}
   >
     <div class="pj-dialog">
       <h2 class="pj-dialog-title">New Document</h2>
       <div class="pj-field">
         <label class="pj-field-label" for="pj-doc-path">Path</label>
+        <!-- svelte-ignore a11y_autofocus -->
         <input
           id="pj-doc-path"
           class="pj-field-input"
@@ -944,6 +1184,100 @@
   </div>
 {/if}
 
+<!-- Upload files dialog -->
+{#if showUploadDialog}
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="pj-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Upload documents"
+    tabindex="-1"
+    onclick={(e) => { if (e.target === e.currentTarget) cancelUpload(); }}
+    onkeydown={(e) => { if (e.key === 'Escape') cancelUpload(); }}
+  >
+    <div class="pj-dialog pj-dialog--wide">
+      <h2 class="pj-dialog-title">Upload Documents</h2>
+      <p class="pj-dialog-subtitle">
+        Drag and drop files or use the browse button. Supported formats: .md, .txt, .json, .yaml, .yml, .csv, .sql, .pdf, .doc, .docx, .xls, .xlsx
+      </p>
+
+      <div
+        class="pj-upload-zone"
+        class:pj-upload-zone--active={uploadDragOver}
+        role="region"
+        aria-label="File drop zone"
+        ondragover={(e) => { e.preventDefault(); uploadDragOver = true; }}
+        ondragleave={() => { uploadDragOver = false; }}
+        ondrop={(e) => {
+          e.preventDefault();
+          uploadDragOver = false;
+          void handleUploadFileInput(e.dataTransfer?.files ?? null);
+        }}
+      >
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+        </svg>
+        <span class="pj-upload-hint">
+          {uploadDragOver ? 'Drop files here…' : 'Drag files here or'}
+        </span>
+        {#if !uploadDragOver}
+          <label class="pj-upload-browse">
+            browse
+            <input
+              type="file"
+              accept={UPLOAD_ACCEPT_STRING}
+              multiple
+              hidden
+              onchange={(e) => { void handleUploadFileInput((e.target as HTMLInputElement).files); (e.target as HTMLInputElement).value = ''; }}
+            />
+          </label>
+        {/if}
+      </div>
+
+      {#if uploadFiles.length > 0}
+        <div class="pj-upload-list" role="list" aria-label="Files to upload">
+          {#each uploadFiles as file (file.id)}
+            <div class="pj-upload-item" role="listitem">
+              <div class="pj-upload-item-info">
+                <span class="pj-upload-item-name">{file.name}</span>
+                <span class="pj-upload-item-meta">{file.format} · {uploadFormatSize(file.size)}</span>
+              </div>
+              <button
+                class="pj-upload-item-remove"
+                type="button"
+                onclick={() => removeUploadFile(file.id)}
+                aria-label="Remove {file.name}"
+              >
+                ×
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if uploadError}
+        <div class="pj-upload-error" role="alert">{uploadError}</div>
+      {/if}
+
+      <div class="pj-dialog-footer">
+        <button class="pj-btn-ghost" onclick={cancelUpload} disabled={uploading}>Cancel</button>
+        <button
+          class="pj-btn-primary"
+          onclick={handleUploadSubmit}
+          disabled={uploading || uploadFiles.length === 0}
+        >
+          {#if uploading}
+            Uploading…
+          {:else}
+            Upload {uploadFiles.length} {uploadFiles.length === 1 ? 'File' : 'Files'}
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <!-- AI document generation modal -->
 {#if showGenerateDocModal && project}
   <GenerateDocModal
@@ -956,15 +1290,28 @@
   />
 {/if}
 
-<!-- Generate issues from docs modal -->
-{#if showGenerateIssuesModal && project}
-  <GenerateIssuesModal
+<!-- Generate phases & tasks from docs modal -->
+{#if showGenerateTasksModal && project}
+  <GeneratePhasesTasksModal
     projectId={project.id}
     projectName={project.name}
     outputPath={project.output_path}
     documents={projectDocs}
-    onClose={() => { showGenerateIssuesModal = false; }}
-    onCreated={() => { showGenerateIssuesModal = false; void issuesStore.fetchIssues(workspaceStore.activeWorkspaceId ?? undefined); }}
+    onClose={() => { showGenerateTasksModal = false; }}
+    onCreated={() => { showGenerateTasksModal = false; }}
+  />
+{/if}
+
+<!-- Automated task pipeline modal -->
+{#if showPipelineModal && project}
+  <AutomatedTaskPipeline
+    projectId={project.id}
+    projectName={project.name}
+    outputPath={project.output_path ?? null}
+    workspaceId={workspaceStore.activeWorkspaceId ?? ''}
+    documents={projectDocs}
+    onClose={() => { showPipelineModal = false; }}
+    onCreated={() => { showPipelineModal = false; void tasksStore.fetchTasks(workspaceStore.activeWorkspaceId ?? undefined); }}
   />
 {/if}
 
@@ -1077,7 +1424,7 @@
   .pj-page {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    height: 100%;
   }
 
   .pj-topbar {
@@ -1218,6 +1565,9 @@
 
   /* Buttons */
   .pj-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     height: 30px;
     padding: 0 12px;
     border-radius: var(--radius-sm, 6px);
@@ -1228,6 +1578,7 @@
     font-weight: 500;
     font-family: var(--font-sans);
     cursor: pointer;
+    white-space: nowrap;
     transition: all 120ms ease;
   }
 
@@ -1236,7 +1587,33 @@
     color: var(--text-primary);
   }
 
+  .pj-btn-accent {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    background: rgba(99, 102, 241, 0.1);
+    color: #a5b4fc;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 120ms ease;
+  }
+
+  .pj-btn-accent:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+
   .pj-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     height: 30px;
     padding: 0 12px;
     border-radius: var(--radius-sm, 6px);
@@ -1247,6 +1624,7 @@
     font-weight: 500;
     font-family: var(--font-sans);
     cursor: pointer;
+    white-space: nowrap;
     transition: all 120ms ease;
   }
 
@@ -1262,7 +1640,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    flex: 1;
     min-height: 0;
+    overflow-y: auto;
   }
 
   /* Tab toolbar (heading + action button) */
@@ -1421,8 +1801,8 @@
     text-align: center;
   }
 
-  .pj-activity-kind--issue { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
-  .pj-activity-kind--goal  { background: rgba(249, 115, 22, 0.1); color: #fdba74; }
+  .pj-activity-kind--task { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+  .pj-activity-kind--phase  { background: rgba(249, 115, 22, 0.1); color: #fdba74; }
 
   .pj-activity-title {
     color: var(--text-primary);
@@ -1566,7 +1946,8 @@
   .pj-docs-layout {
     display: flex;
     gap: 0;
-    min-height: 300px;
+    flex: 1;
+    min-height: 250px;
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md, 8px);
     overflow: hidden;
@@ -1765,5 +2146,162 @@
     gap: 8px;
     justify-content: flex-end;
     margin-top: 4px;
+  }
+
+  /* ── Upload dialog ──────────────────────────────────────────────────────── */
+  .pj-dialog--wide {
+    width: 560px;
+  }
+
+  .pj-dialog-subtitle {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin: -8px 0 0 0;
+    line-height: 1.5;
+  }
+
+  .pj-upload-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 32px 16px;
+    border: 2px dashed var(--border-default);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    color: var(--text-tertiary);
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .pj-upload-zone--active {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.06);
+    color: #f97316;
+  }
+
+  .pj-upload-hint {
+    font-size: 13px;
+  }
+
+  .pj-upload-browse {
+    font-size: 13px;
+    font-weight: 500;
+    color: #f97316;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .pj-upload-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .pj-upload-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+  }
+
+  .pj-upload-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .pj-upload-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pj-upload-item-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .pj-upload-item-remove {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .pj-upload-item-remove:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  /* ── CTA card (overview onboarding) ────────────────────────────────────── */
+  .pj-cta-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 32px 24px;
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-hover);
+    border-radius: var(--radius-md, 8px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .pj-cta-icon {
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  .pj-cta-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .pj-cta-desc {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin: 0;
+    max-width: 400px;
+    line-height: 1.5;
+  }
+
+  .pj-cta-btn {
+    margin-top: 6px;
+    height: 34px;
+    padding: 0 16px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .pj-upload-error {
+    font-size: 12px;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
   }
 </style>

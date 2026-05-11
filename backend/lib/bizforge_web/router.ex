@@ -5,11 +5,11 @@ defmodule BizforgeWeb.Router do
     plug :accepts, ["json"]
     plug BizforgeWeb.Plugs.SecurityHeaders
     plug BizforgeWeb.Plugs.CORS
-    plug BizforgeWeb.Plugs.RateLimiter
   end
 
   pipeline :authenticated do
     plug BizforgeWeb.Plugs.Auth
+    plug BizforgeWeb.Plugs.RateLimiter
     plug BizforgeWeb.Plugs.WorkspaceAuth
     plug BizforgeWeb.Plugs.Governance
     plug BizforgeWeb.Plugs.Idempotency
@@ -23,19 +23,23 @@ defmodule BizforgeWeb.Router do
     plug BizforgeWeb.Plugs.CORS
   end
 
+  pipeline :public_rate_limited do
+    plug BizforgeWeb.Plugs.RateLimiter
+  end
+
   pipeline :headless_auth do
     plug BizforgeWeb.Plugs.ApiKeyAuth
   end
 
   # Root-level health check — convenience alias so /health works without /api/v1 prefix
   scope "/", BizforgeWeb do
-    pipe_through :api
+    pipe_through [:api, :public_rate_limited]
     get "/health", HealthController, :show
   end
 
   # Health check — no auth
   scope "/api/v1", BizforgeWeb do
-    pipe_through :api
+    pipe_through [:api, :public_rate_limited]
 
     get "/health", HealthController, :show
     get "/metrics", MetricsController, :show
@@ -94,8 +98,8 @@ defmodule BizforgeWeb.Router do
     resources "/sprints", SprintController, except: [:new, :edit] do
       post "/start", SprintController, :start, as: :start
       post "/complete", SprintController, :complete, as: :complete
-      post "/assign-issues", SprintController, :assign_issues, as: :assign_issues
-      post "/unassign-issues", SprintController, :unassign_issues, as: :unassign_issues
+      post "/assign-tasks", SprintController, :assign_tasks, as: :assign_tasks
+      post "/unassign-tasks", SprintController, :unassign_tasks, as: :unassign_tasks
     end
 
     # Workflows
@@ -144,28 +148,38 @@ defmodule BizforgeWeb.Router do
     get "/dispatch/routes", DelegationController, :routes
     post "/dispatch/preview", DelegationController, :preview
 
-    # Issues
-    resources "/issues", IssueController, except: [:new, :edit] do
-      post "/assign", IssueController, :assign, as: :assign
+    # Tasks
+    resources "/tasks", TaskController, except: [:new, :edit] do
+      post "/assign", TaskController, :assign, as: :assign
       resources "/comments", CommentController, only: [:index, :create]
-      post "/checkout", IssueController, :checkout, as: :checkout
-      post "/dispatch", IssueController, :dispatch, as: :dispatch
-      post "/labels", IssueController, :add_label, as: :add_label
-      delete "/labels/:label_id", IssueController, :remove_label, as: :remove_label
+      post "/checkout", TaskController, :checkout, as: :checkout
+      post "/dispatch", TaskController, :dispatch, as: :dispatch
+      post "/labels", TaskController, :add_label, as: :add_label
+      delete "/labels/:label_id", TaskController, :remove_label, as: :remove_label
     end
 
-    # Goals
-    resources "/goals", GoalController, except: [:new, :edit] do
-      get "/ancestry", GoalController, :ancestry, as: :ancestry
-      post "/decompose", GoalController, :decompose, as: :decompose
+    # Phases
+    resources "/phases", PhaseController, except: [:new, :edit] do
+      get "/ancestry", PhaseController, :ancestry, as: :ancestry
+      post "/decompose", PhaseController, :decompose, as: :decompose
     end
 
     # Projects
     get "/projects/lifecycle-templates", ProjectController, :lifecycle_templates
     resources "/projects", ProjectController, except: [:new, :edit] do
-      get "/goals", ProjectController, :goals, as: :goals
+      get "/phases", ProjectController, :phases, as: :phases
       get "/workspaces", ProjectController, :workspaces, as: :workspaces
+
+      # ForgeMap — codebase scanning & indexing
+      post "/forgemap/detect", ForgeMapController, :detect, as: :forgemap_detect
+      post "/forgemap/scan", ForgeMapController, :scan, as: :forgemap_scan
+      get "/forgemap", ForgeMapController, :index, as: :forgemap_index
+      patch "/forgemap/:file_path", ForgeMapController, :update_entry, as: :forgemap_update
     end
+
+    # Task dependency resolution
+    post "/projects/:project_id/resolve-execution-order", TaskController, :resolve_execution_order
+    get "/projects/:project_id/ready-tasks", TaskController, :ready_tasks
 
     # Documents
     get "/documents", DocumentController, :index
@@ -198,6 +212,9 @@ defmodule BizforgeWeb.Router do
     # Memory
     get "/memory/search", MemoryController, :search
     get "/memory/namespaces", MemoryController, :namespaces
+    get "/memory/company", MemoryController, :company
+    get "/memory/project/:project_id", MemoryController, :by_project
+    get "/memory/resolve/:project_id", MemoryController, :resolve
     resources "/memory", MemoryController, except: [:new, :edit]
 
     # Signals
@@ -337,13 +354,13 @@ defmodule BizforgeWeb.Router do
     # Labels
     resources "/labels", LabelController, only: [:index, :create, :delete]
 
-    # Issue Attachments
-    get "/issues/:issue_id/attachments", AttachmentController, :index
-    post "/issues/:issue_id/attachments", AttachmentController, :create
-    delete "/issues/:issue_id/attachments/:id", AttachmentController, :delete
+    # Task Attachments
+    get "/tasks/:task_id/attachments", AttachmentController, :index
+    post "/tasks/:task_id/attachments", AttachmentController, :create
+    delete "/tasks/:task_id/attachments/:id", AttachmentController, :delete
 
     # Work Products
-    get "/issues/:issue_id/work-products", WorkProductController, :index
+    get "/tasks/:task_id/work-products", WorkProductController, :index
     resources "/work-products", WorkProductController, except: [:new, :edit]
     post "/work-products/:id/archive", WorkProductController, :archive
 

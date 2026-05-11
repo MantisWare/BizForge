@@ -10,7 +10,6 @@
 
   const STATUS_CONFIG = {
     connected:    { label: 'Connected',     cls: 'dot-connected',    icon: 'check' },
-    mock:         { label: 'Offline Mode',  cls: 'dot-mock',         icon: 'mock' },
     connecting:   { label: 'Connecting\u2026', cls: 'dot-connecting', icon: 'loading' },
     reconnecting: { label: 'Reconnecting',  cls: 'dot-reconnecting', icon: 'loading' },
     disconnected: { label: 'Disconnected',  cls: 'dot-disconnected', icon: 'x' },
@@ -52,9 +51,6 @@
       {/if}
       {#if status === 'connected' && healthData?.status === 'degraded'}
         <span class="csb-warn">degraded</span>
-      {/if}
-      {#if status === 'mock'}
-        <span class="csb-detail">no backend</span>
       {/if}
     </div>
 
@@ -125,11 +121,6 @@
 
   .dot-connected {
     background: #22c55e;
-  }
-
-  .dot-mock {
-    background: #f97316;
-    animation: csb-pulse 2s ease-in-out infinite;
   }
 
   .dot-connecting {

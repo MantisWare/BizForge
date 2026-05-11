@@ -14,7 +14,7 @@ defmodule Bizforge.StaleCleanup do
   use GenServer
   require Logger
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Issue, Session}
+  alias Bizforge.Schemas.{Task, Session}
   import Ecto.Query
 
   @default_cleanup_interval :timer.minutes(5)
@@ -92,7 +92,7 @@ defmodule Bizforge.StaleCleanup do
 
     {count, _} =
       Repo.update_all(
-        from(i in Issue,
+        from(i in Task,
           where:
             i.status == "in_progress" and not is_nil(i.checked_out_by) and i.updated_at < ^cutoff
         ),

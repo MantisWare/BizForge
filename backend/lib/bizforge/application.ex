@@ -14,7 +14,7 @@ defmodule Bizforge.Application do
       Bizforge.BudgetEnforcer,
       Bizforge.AdapterCircuitBreaker,
       {Phoenix.PubSub, name: Bizforge.PubSub},
-      Bizforge.IssueDispatcher,
+      Bizforge.TaskDispatcher,
       Bizforge.Scheduler,
       {DynamicSupervisor, name: Bizforge.AdapterSupervisor, strategy: :one_for_one},
       {Task.Supervisor, name: Bizforge.HeartbeatRunner},
@@ -24,7 +24,7 @@ defmodule Bizforge.Application do
       Bizforge.IdempotencyCleanup,
       Bizforge.Workflows.Supervisor,
       Bizforge.Browser.Sidecar,
-      Bizforge.IssueLifecycle
+      Bizforge.TaskLifecycle
     ]
 
     children =

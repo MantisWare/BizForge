@@ -14,8 +14,8 @@ defmodule Bizforge.Schemas.Project do
     field :lifecycle_config, :map, default: %{}
 
     belongs_to :workspace, Bizforge.Schemas.Workspace
-    has_many :goals, Bizforge.Schemas.Goal
-    has_many :issues, Bizforge.Schemas.Issue
+    has_many :phases, Bizforge.Schemas.Phase
+    has_many :tasks, Bizforge.Schemas.Task
     has_many :integration_bindings, Bizforge.Schemas.IntegrationBinding,
       where: [owner_type: "project"], foreign_key: :owner_id
 

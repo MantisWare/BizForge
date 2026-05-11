@@ -11,7 +11,7 @@ defmodule Bizforge.Schemas.Attachment do
     field :size_bytes, :integer
     field :storage_url, :string
 
-    belongs_to :issue, Bizforge.Schemas.Issue
+    belongs_to :task, Bizforge.Schemas.Task, foreign_key: :issue_id
     belongs_to :uploaded_by_user, Bizforge.Schemas.User, foreign_key: :uploaded_by
 
     timestamps()

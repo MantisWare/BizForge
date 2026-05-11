@@ -27,6 +27,16 @@
     : 'ok'
   );
 
+  /** Resolve the actual directory that will be deleted for the current deleteTarget */
+  const deleteTargetDir = $derived.by(() => {
+    if (deleteTarget === null) return '';
+    const p = deleteTarget.path;
+    return p.endsWith('.bizforge') ? p : p + '/.bizforge';
+  });
+  const deleteTargetDirShort = $derived(
+    deleteTargetDir.replace(/^\/Users\/[^/]+/, '~').replace(/\/$/, ''),
+  );
+
   /** Display-friendly name: if the stored name is just a path fragment like "~", derive a better label */
   function displayName(ws: { name: string; path: string }): string {
     const name = ws.name?.trim();
@@ -146,17 +156,16 @@
     isDeleting = true;
     const wsName = displayName(deleteTarget);
 
+    const resolvedDir = deleteTargetDir;
+
     try {
       if (deleteAlsoFiles && isTauri()) {
         const { invoke } = await import('@tauri-apps/api/core');
-        const bizforgePath = deleteTarget.path.endsWith('.bizforge')
-          ? deleteTarget.path
-          : deleteTarget.path + '/.bizforge';
         try {
-          await invoke('remove_dir_recursive', { path: bizforgePath });
+          await invoke('remove_dir_recursive', { path: resolvedDir });
         } catch (fsErr) {
-          console.warn('[bizforge:workspace] Could not delete .bizforge/ directory:', fsErr);
-          toastStore.warning('Files not deleted', `Could not remove .bizforge/ at ${deleteTarget.path}. The workspace was still removed from the list.`);
+          console.warn('[bizforge:workspace] Could not delete directory:', fsErr);
+          toastStore.warning('Files not deleted', `Could not remove ${resolvedDir}. The workspace was still removed from the list.`);
         }
       }
 
@@ -164,7 +173,7 @@
       toastStore.success(
         'Workspace removed',
         deleteAlsoFiles
-          ? `"${wsName}" removed and .bizforge/ files deleted`
+          ? `"${wsName}" removed and ${deleteTargetDirShort}/ files deleted`
           : `"${wsName}" removed from list (files kept on disk)`,
       );
     } catch (err) {
@@ -237,8 +246,9 @@
   </button>
 
   {#if deleteTarget !== null}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div class="ws-modal-backdrop" role="dialog" aria-modal="true" aria-label="Delete workspace confirmation" onkeydown={handleDeleteKeydown}>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div class="ws-modal-backdrop" role="dialog" aria-modal="true" aria-label="Delete workspace confirmation" tabindex="-1" onkeydown={handleDeleteKeydown}>
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <div class="ws-modal" onclick={(e) => e.stopPropagation()}>
         <div class="ws-modal-header">
           <svg class="ws-modal-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -255,13 +265,13 @@
         <label class="ws-modal-checkbox">
           <input type="checkbox" bind:checked={deleteAlsoFiles} />
           <span class="ws-modal-checkbox-label">
-            Also delete <code>.bizforge/</code> files from disk
+            Also delete <code>{deleteTargetDirShort}/</code> files from disk
           </span>
         </label>
 
         {#if deleteAlsoFiles}
           <div class="ws-modal-warning">
-            This will permanently delete the <code>.bizforge/</code> directory including all agent definitions, schedules, skills, and workspace configuration. Your project files outside <code>.bizforge/</code> will not be touched.
+            This will permanently delete the <code>{deleteTargetDirShort}/</code> directory including all agent definitions, schedules, skills, and workspace configuration. Your project files outside this directory will not be touched.
           </div>
         {:else}
           <div class="ws-modal-info">
@@ -345,6 +355,7 @@
       <div class="ws-actions">
         {#if isCreating}
           <div class="ws-create-form">
+            <!-- svelte-ignore a11y_autofocus -->
             <input
               class="ws-create-input"
               type="text"

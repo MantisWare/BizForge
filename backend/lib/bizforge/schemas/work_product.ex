@@ -25,8 +25,7 @@ defmodule Bizforge.Schemas.WorkProduct do
     belongs_to :session, Bizforge.Schemas.Session
     belongs_to :project, Bizforge.Schemas.Project
     belongs_to :workspace, Bizforge.Schemas.Workspace
-    # Legacy association — issue_id still exists in the table
-    belongs_to :issue, Bizforge.Schemas.Issue
+    belongs_to :task, Bizforge.Schemas.Task, foreign_key: :issue_id
 
     timestamps()
   end

@@ -81,8 +81,10 @@ class ProvidersStore {
           });
         }),
       ]);
-      this.providers = result;
-      this.persist();
+      if (result.length > 0 || this.providers.length === 0) {
+        this.providers = result;
+        this.persist();
+      }
       this.error = null;
     } catch (e) {
       const msg = (e as Error).message;

@@ -10,7 +10,7 @@ defmodule Bizforge.Schemas.Comment do
     field :author_id, :binary_id
     field :body, :string
 
-    belongs_to :issue, Bizforge.Schemas.Issue
+    belongs_to :task, Bizforge.Schemas.Task, foreign_key: :issue_id
 
     timestamps(updated_at: false)
   end

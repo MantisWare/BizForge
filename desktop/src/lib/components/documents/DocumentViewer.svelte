@@ -12,9 +12,8 @@
   let { document }: Props = $props();
 
   let editMode = $state(false);
-  let editContent = $state(document.content);
+  let editContent = $state('');
 
-  // Reset edit content when document changes
   $effect(() => {
     editContent = document.content;
     editMode = false;
@@ -61,7 +60,24 @@
     yaml:     'YAML',
     json:     'JSON',
     text:     'Text',
+    pdf:      'PDF',
+    binary:   'Binary',
+    sql:      'SQL',
+    dbml:     'DBML',
   };
+
+  const EDITABLE_FORMATS = new Set(['markdown', 'text', 'yaml', 'json', 'sql', 'dbml']);
+  const BINARY_FORMATS = new Set(['pdf', 'binary']);
+
+  const canEdit = $derived(EDITABLE_FORMATS.has(document.format));
+  const isBinary = $derived(BINARY_FORMATS.has(document.format));
+
+  const binaryMeta = $derived.by(() => {
+    if (!isBinary) return null;
+    const match = document.content.match(/^\[(\w+) Document: (.+?)\]\s*—\s*(.+)$/);
+    if (match !== null) return { type: match[1], name: match[2], size: match[3] };
+    return { type: FORMAT_LABELS[document.format] ?? document.format, name: document.title, size: '' };
+  });
 </script>
 
 <div class="dv-viewer" aria-label="Document viewer: {document.title}">
@@ -81,38 +97,63 @@
       {#if document.updated_at}
         <TimeAgo date={document.updated_at} />
       {/if}
-      <button
-        class="dv-edit-btn"
-        class:dv-edit-btn--active={editMode}
-        onclick={() => editMode = !editMode}
-        aria-label={editMode ? 'Switch to preview mode' : 'Switch to edit mode'}
-        aria-pressed={editMode}
-        type="button"
-      >
-        {#if editMode}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-          </svg>
-          Preview
-        {:else}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
-          </svg>
-          Edit
-        {/if}
-      </button>
+      {#if canEdit}
+        <button
+          class="dv-edit-btn"
+          class:dv-edit-btn--active={editMode}
+          onclick={() => editMode = !editMode}
+          aria-label={editMode ? 'Switch to preview mode' : 'Switch to edit mode'}
+          aria-pressed={editMode}
+          type="button"
+        >
+          {#if editMode}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            Preview
+          {:else}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
+            </svg>
+            Edit
+          {/if}
+        </button>
+      {/if}
     </div>
   </header>
 
   <!-- Content area -->
   <div class="dv-body">
-    {#if editMode}
+    {#if editMode && canEdit}
       <textarea
         class="dv-editor"
         bind:value={editContent}
         aria-label="Edit document content"
         spellcheck="true"
       ></textarea>
+    {:else if isBinary}
+      <div class="dv-binary" aria-label="Binary document">
+        <div class="dv-binary-icon" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            {#if document.format === 'pdf'}
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M9 15v-2h1.5a1.5 1.5 0 0 1 0 3H9zm5-2v4m0-4h2m-2 2h1.5m2-2v4l2-4v4" />
+            {:else}
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            {/if}
+          </svg>
+        </div>
+        <span class="dv-binary-name">{binaryMeta?.name ?? document.title}</span>
+        <span class="dv-binary-type">{binaryMeta?.type ?? 'Document'} Document</span>
+        {#if binaryMeta?.size}
+          <span class="dv-binary-size">{binaryMeta.size}</span>
+        {/if}
+        <p class="dv-binary-hint">Binary file preview is not available. Download or open externally to view.</p>
+      </div>
     {:else if document.format === 'markdown'}
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       <div class="dv-markdown" aria-label="Document content">{@html rendered}</div>
@@ -267,4 +308,22 @@
     overflow-x: auto;
     white-space: pre;
   }
+
+  .dv-binary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 100%;
+    min-height: 200px;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+
+  .dv-binary-icon { color: var(--text-muted); opacity: 0.5; margin-bottom: 4px; }
+  .dv-binary-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+  .dv-binary-type { font-size: 12px; color: var(--text-tertiary); }
+  .dv-binary-size { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono, monospace); }
+  .dv-binary-hint { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic; max-width: 280px; }
 </style>

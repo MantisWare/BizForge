@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { onboardingStore } from '$lib/stores/onboarding.svelte';
   import type { AdapterType, TeamTemplate, AgentTemplateData } from '$lib/stores/onboarding.svelte';
-  import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
+  import { initializeAuth, getToken, saveSessionToStore } from '$api/client';
   import { isTauri } from '$lib/utils/platform';
   import { workspaceStore, type LocalWorkspace } from '$lib/stores/workspace.svelte';
   import { connectionStore } from '$lib/stores/connection.svelte';
@@ -19,7 +19,7 @@
   onMount(() => {
     console.log('[bizforge:onboarding] Mounted — initializing auth and connection check');
     initializeAuth().then(() => {
-      console.log(`[bizforge:onboarding] Auth initialized — mock=${isMockEnabled()}, token=${getToken() !== null}`);
+      console.log(`[bizforge:onboarding] Auth initialized — token=${getToken() !== null}`);
       void connectionStore.check();
     });
     const stopPolling = connectionStore.startPolling(30_000);
@@ -234,7 +234,7 @@
     }
     await saveSessionToStore();
 
-    const needsLogin = !isMockEnabled() && getToken() === null;
+    const needsLogin = getToken() === null;
     goto(needsLogin ? '/auth' : '/app');
   }
 
@@ -263,7 +263,7 @@
 
     try {
       const { workspaceStore } = await import('$lib/stores/workspace.svelte');
-      const hasAuth = getToken() !== null || isMockEnabled();
+      const hasAuth = getToken() !== null;
 
       if (existingWorkspaceId) {
         // Backend knows this workspace — scaffold the directory if it's missing on disk
@@ -493,7 +493,7 @@
 
       await saveSessionToStore();
 
-      const needsLogin = !isMockEnabled() && getToken() === null;
+      const needsLogin = getToken() === null;
       goto(needsLogin ? '/auth' : '/app');
     } catch (e) {
       console.error('Launch failed:', e);
@@ -507,7 +507,7 @@
 
     // Persist providers via API (same as launch)
     if (selectedProviders.length > 0) {
-      const hasAuth = getToken() !== null || isMockEnabled();
+      const hasAuth = getToken() !== null;
       if (hasAuth) {
         try {
           const { providers: providersApi } = await import('$api/client');
@@ -578,7 +578,7 @@
 
     await saveSessionToStore();
 
-    const needsLogin = !isMockEnabled() && getToken() === null;
+    const needsLogin = getToken() === null;
     goto(needsLogin ? '/auth' : '/app');
   }
 </script>

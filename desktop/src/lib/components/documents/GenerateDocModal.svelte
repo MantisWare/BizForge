@@ -2,12 +2,11 @@
 <!-- AI-powered document generation modal with streaming preview -->
 <script lang="ts">
   import { sessions, messages } from '$api/client';
-  import { isMockEnabled } from '$api/client';
   import { connectSSE } from '$api/sse';
   import type { StreamEvent } from '$api/types';
   import { documentsStore } from '$lib/stores/documents.svelte';
-  import { goalsStore } from '$lib/stores/goals.svelte';
-  import { issuesStore } from '$lib/stores/issues.svelte';
+  import { phasesStore } from '$lib/stores/phases.svelte';
+  import { tasksStore } from '$lib/stores/tasks.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
@@ -51,8 +50,8 @@
   let customType = $state('');
   let context = $state('');
   let includeDescription = $state(true);
-  let includeGoals = $state(false);
-  let includeIssues = $state(false);
+  let includePhases = $state(false);
+  let includeTasks = $state(false);
   let selectedAgentId = $state('');
 
   let generatedContent = $state('');
@@ -100,18 +99,18 @@
       parts.push(projectDescription);
     }
 
-    if (includeGoals && goalsStore.flatGoals.length > 0) {
+    if (includePhases && phasesStore.flatPhases.length > 0) {
       parts.push('');
-      parts.push('--- Project Goals ---');
-      for (const g of goalsStore.flatGoals) {
+      parts.push('--- Project Phases ---');
+      for (const g of phasesStore.flatPhases) {
         parts.push(`- [${g.status}] ${g.title}${g.description ? `: ${g.description}` : ''}`);
       }
     }
 
-    if (includeIssues && issuesStore.issues.length > 0) {
+    if (includeTasks && tasksStore.tasks.length > 0) {
       parts.push('');
-      parts.push('--- Existing Issues ---');
-      for (const i of issuesStore.issues.filter((iss) => iss.project_id === projectId)) {
+      parts.push('--- Existing Tasks ---');
+      for (const i of tasksStore.tasks.filter((iss) => iss.project_id === projectId)) {
         parts.push(`- [${i.status}/${i.priority}] ${i.title}${i.description ? `: ${i.description}` : ''}`);
       }
     }
@@ -126,11 +125,6 @@
     error = null;
     generatedContent = '';
     phase = 'generating';
-
-    if (isMockEnabled()) {
-      await mockGenerate();
-      return;
-    }
 
     try {
       const agentId = (selectedAgentId !== '' ? selectedAgentId : undefined) ?? agents[0]?.id;
@@ -346,12 +340,15 @@
   const rendered = $derived(renderMarkdown(generatedContent));
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="gdm-overlay"
   role="dialog"
   aria-modal="true"
   aria-label="Generate documentation with AI"
+  tabindex="-1"
   onclick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+  onkeydown={(e) => { if (e.key === 'Escape') handleClose(); }}
 >
   <div class="gdm-modal">
     <!-- Header -->
@@ -378,8 +375,8 @@
       {#if phase === 'configure'}
         <!-- Document type -->
         <div class="gdm-section">
-          <label class="gdm-label">Document Type</label>
-          <div class="gdm-chips" role="radiogroup" aria-label="Document type">
+          <span class="gdm-label" id="gdm-doctype-label">Document Type</span>
+          <div class="gdm-chips" role="radiogroup" aria-labelledby="gdm-doctype-label">
             {#each DOC_TYPES as dt (dt.id)}
               <button
                 class="gdm-chip"
@@ -428,12 +425,12 @@
               {/if}
             </label>
             <label class="gdm-toggle">
-              <input type="checkbox" bind:checked={includeGoals} />
-              <span>Existing goals ({goalsStore.flatGoals.length})</span>
+              <input type="checkbox" bind:checked={includePhases} />
+              <span>Existing phases ({phasesStore.flatPhases.length})</span>
             </label>
             <label class="gdm-toggle">
-              <input type="checkbox" bind:checked={includeIssues} />
-              <span>Existing issues ({issuesStore.issues.filter((i) => i.project_id === projectId).length})</span>
+              <input type="checkbox" bind:checked={includeTasks} />
+              <span>Existing tasks ({tasksStore.tasks.filter((i) => i.project_id === projectId).length})</span>
             </label>
           </div>
         </div>

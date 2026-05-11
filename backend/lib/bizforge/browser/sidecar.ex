@@ -8,10 +8,9 @@ defmodule Bizforge.Browser.Sidecar do
   use GenServer
   require Logger
 
-  @sidecar_startup_timeout 15_000
   @call_timeout 60_000
 
-  defstruct [:port, :pending, :buffer, :ready]
+  defstruct [:port, :pending, :buffer, :ready, :gave_up]
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: opts[:name] || __MODULE__)
@@ -39,7 +38,8 @@ defmodule Bizforge.Browser.Sidecar do
       port: nil,
       pending: %{},
       buffer: "",
-      ready: false
+      ready: false,
+      gave_up: false
     }
 
     {:ok, state, {:continue, :start_sidecar}}
@@ -50,10 +50,17 @@ defmodule Bizforge.Browser.Sidecar do
     case start_sidecar_process() do
       {:ok, port} ->
         Logger.info("[Browser.Sidecar] Playwright sidecar started")
-        {:noreply, %{state | port: port, ready: true}}
+        {:noreply, %{state | port: port, ready: true, gave_up: false}}
+
+      {:error, :sidecar_not_found} ->
+        unless state.gave_up do
+          Logger.warning("[Browser.Sidecar] Sidecar not found — browser features disabled. Build the playwright-sidecar package to enable.")
+        end
+
+        {:noreply, %{state | gave_up: true}}
 
       {:error, reason} ->
-        Logger.error("[Browser.Sidecar] Failed to start sidecar: #{inspect(reason)}")
+        Logger.warning("[Browser.Sidecar] Sidecar failed to start: #{inspect(reason)} — retrying in 5s")
         Process.send_after(self(), :retry_start, 5_000)
         {:noreply, state}
     end

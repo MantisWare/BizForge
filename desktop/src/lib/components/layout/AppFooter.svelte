@@ -75,14 +75,13 @@
   const ZOOM_PRESETS = [75, 90, 100, 110, 125] as const;
   const ZOOM_KEY = 'bizforge-ui-zoom';
 
-  let zoomPct = $state(
-    typeof localStorage !== 'undefined'
-      ? parseInt(localStorage.getItem(ZOOM_KEY) ?? '100', 10)
-      : 100
-  );
+  const initialZoom = typeof localStorage !== 'undefined'
+    ? parseInt(localStorage.getItem(ZOOM_KEY) ?? '100', 10)
+    : 100;
+  let zoomPct = $state(initialZoom);
   let zoomOpen = $state(false);
   let zoomDropdownEl = $state<HTMLElement | null>(null);
-  let zoomInputValue = $state(String(zoomPct));
+  let zoomInputValue = $state(String(initialZoom));
 
   function clampZoom(v: number): number {
     return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(v)));

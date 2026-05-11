@@ -150,10 +150,9 @@ export class BrowserManager {
 
   async snapshot(takeScreenshot?: boolean): Promise<SnapshotResult> {
     const page = await this.getActivePage();
-    const accessibility = await page.accessibility.snapshot();
-    const snapshotYaml = JSON.stringify(accessibility, null, 2);
+    const ariaSnapshot = await page.locator(":root").ariaSnapshot();
     const result: SnapshotResult = {
-      snapshot: snapshotYaml,
+      snapshot: ariaSnapshot,
       url: page.url(),
       title: await page.title(),
     };

@@ -138,6 +138,7 @@
   aria-label="System Logs"
 >
   <!-- Resize handle -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="log-resize-handle"
     class:log-resize-handle--active={resizing}
@@ -145,6 +146,7 @@
     role="separator"
     aria-orientation="horizontal"
     aria-label="Resize log panel"
+    tabindex="0"
   ></div>
 
   <!-- Header -->

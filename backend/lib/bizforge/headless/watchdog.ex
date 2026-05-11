@@ -11,7 +11,7 @@ defmodule Bizforge.Headless.Watchdog do
   require Logger
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Agent, Session, Issue}
+  alias Bizforge.Schemas.{Agent, Session, Task}
   import Ecto.Query
   import Ecto.Changeset, only: [change: 2]
 
@@ -164,7 +164,7 @@ defmodule Bizforge.Headless.Watchdog do
 
     {issue_count, _} =
       Repo.update_all(
-        from(i in Issue,
+        from(i in Task,
           where: i.checked_out_by == ^agent.id and i.status == "in_progress"
         ),
         set: [checked_out_by: nil, status: "backlog", updated_at: now]

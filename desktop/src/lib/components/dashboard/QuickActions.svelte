@@ -17,10 +17,10 @@
 
   const actions: Action[] = [
     {
-      label: 'New Issue',
-      ariaLabel: 'Create new issue',
+      label: 'New Task',
+      ariaLabel: 'Create new task',
       iconPath: 'M12 5v14M5 12h14',
-      onclick: () => goto('/app/issues?new=1'),
+      onclick: () => goto('/app/tasks?new=1'),
     },
     {
       label: 'Wake All',

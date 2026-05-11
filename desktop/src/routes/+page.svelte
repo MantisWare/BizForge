@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
-  import { initializeAuth, getToken, isMockEnabled, isFirstRun } from '$api/client';
+  import { initializeAuth, getToken, isFirstRun } from '$api/client';
 
   /**
    * Determine where to send the user after auth initializes.
@@ -12,8 +12,8 @@
    *  1. initializeAuth() — probes /health, reads /auth/status (_firstRun),
    *     restores saved token, attempts dev auto-login if VITE_DEV_EMAIL set.
    *
-   *  2. Backend unreachable (isMockEnabled):
-   *       → /onboarding   (offline / mock setup flow)
+   *  2. Backend unreachable, no token:
+   *       → /auth         (show login, disconnected banner visible)
    *
    *  3. Backend reachable, no users yet (_firstRun = true):
    *       → /auth         (show registration form)
@@ -30,18 +30,13 @@
   async function resolveDestination(): Promise<'/app' | '/onboarding' | '/auth'> {
     await initializeAuth();
 
-    // Case 2 — offline / backend down
-    if (isMockEnabled()) {
-      return '/onboarding';
-    }
-
     // Case 3 — first install, no users in DB yet
     if (isFirstRun()) {
       return '/auth';
     }
 
-    // Case 4 — users exist but no valid session token
-    if (!getToken()) {
+    // Cases 2 & 4 — backend down or no valid token
+    if (getToken() === null) {
       return '/auth';
     }
 

@@ -1,6 +1,6 @@
 // src/lib/stores/projects.svelte.ts
 import type { Project, ProjectStatus } from "$api/types";
-import { projects as projectsApi } from "$api/client";
+import { projects as projectsApi, ApiError } from "$api/client";
 import { isTauri } from "$lib/utils/platform";
 import { toastStore } from "./toasts.svelte";
 
@@ -49,8 +49,10 @@ class ProjectsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+      if (!msg.includes("not_found") && !msg.includes("unauthorized") && !msg.includes("rate_limited")) {
         toastStore.error("Failed to load projects", msg);
+      } else if (msg.includes("rate_limited")) {
+        toastStore.warning("Projects loading slowly", "Server is busy — retrying automatically.");
       }
     } finally {
       this.loading = false;
@@ -73,8 +75,10 @@ class ProjectsStore {
     } catch (e) {
       const msg = (e as Error).message;
       this.error = msg;
-      if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
+      if (!msg.includes("not_found") && !msg.includes("unauthorized") && !msg.includes("rate_limited")) {
         toastStore.error("Failed to load project", msg);
+      } else if (msg.includes("rate_limited")) {
+        toastStore.warning("Project loading slowly", "Server is busy — retrying automatically.");
       }
       return null;
     } finally {
@@ -108,7 +112,17 @@ class ProjectsStore {
       toastStore.success("Project created", created.name);
       return created;
     } catch (e) {
-      const msg = (e as Error).message;
+      let msg = (e as Error).message;
+      if (e instanceof ApiError && typeof e.body === "object" && e.body !== null) {
+        const body = e.body as Record<string, unknown>;
+        if (typeof body.details === "object" && body.details !== null) {
+          const details = body.details as Record<string, string[]>;
+          const parts = Object.entries(details)
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(", ") : String(errors)}`)
+            .join("; ");
+          if (parts) msg = parts;
+        }
+      }
       this.error = msg;
       toastStore.error("Failed to create project", msg);
       return null;

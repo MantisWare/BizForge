@@ -9,6 +9,9 @@ defmodule BizforgeWeb.MemoryController do
     workspace_id = params["workspace_id"]
     agent_id = params["agent_id"]
     category = params["category"]
+    project_id = params["project_id"]
+    scope = params["scope"]
+    source = params["source"]
     limit = min(String.to_integer(params["limit"] || "50"), 200)
     offset = String.to_integer(params["offset"] || "0")
 
@@ -21,7 +24,55 @@ defmodule BizforgeWeb.MemoryController do
     query = if workspace_id, do: where(query, [e], e.workspace_id == ^workspace_id), else: query
     query = if agent_id, do: where(query, [e], e.agent_id == ^agent_id), else: query
     query = if category, do: where(query, [e], e.category == ^category), else: query
+    query = if project_id, do: where(query, [e], e.project_id == ^project_id), else: query
+    query = if scope, do: where(query, [e], e.scope == ^scope), else: query
+    query = if source, do: where(query, [e], e.source == ^source), else: query
 
+    entries = Repo.all(query)
+    json(conn, %{entries: Enum.map(entries, &serialize/1)})
+  end
+
+  def by_project(conn, %{"project_id" => project_id} = params) do
+    workspace_id = params["workspace_id"]
+    limit = min(String.to_integer(params["limit"] || "100"), 500)
+
+    query =
+      from e in MemoryEntry,
+        where: e.project_id == ^project_id,
+        order_by: [desc: e.inserted_at],
+        limit: ^limit
+
+    query = if workspace_id, do: where(query, [e], e.workspace_id == ^workspace_id), else: query
+    entries = Repo.all(query)
+    json(conn, %{entries: Enum.map(entries, &serialize/1)})
+  end
+
+  def company(conn, params) do
+    workspace_id = params["workspace_id"]
+    limit = min(String.to_integer(params["limit"] || "100"), 500)
+
+    query =
+      from e in MemoryEntry,
+        where: e.scope == "company",
+        order_by: [desc: e.inserted_at],
+        limit: ^limit
+
+    query = if workspace_id, do: where(query, [e], e.workspace_id == ^workspace_id), else: query
+    entries = Repo.all(query)
+    json(conn, %{entries: Enum.map(entries, &serialize/1)})
+  end
+
+  def resolve(conn, %{"project_id" => project_id} = params) do
+    workspace_id = params["workspace_id"]
+    limit = min(String.to_integer(params["limit"] || "200"), 500)
+
+    query =
+      from e in MemoryEntry,
+        where: e.scope == "company" or e.project_id == ^project_id,
+        order_by: [asc: e.scope, desc: e.inserted_at],
+        limit: ^limit
+
+    query = if workspace_id, do: where(query, [e], e.workspace_id == ^workspace_id), else: query
     entries = Repo.all(query)
     json(conn, %{entries: Enum.map(entries, &serialize/1)})
   end
@@ -113,6 +164,8 @@ defmodule BizforgeWeb.MemoryController do
   def search(conn, params) do
     q = params["q"] || ""
     workspace_id = params["workspace_id"]
+    project_id = params["project_id"]
+    scope = params["scope"]
     pattern = "%#{q}%"
 
     query =
@@ -125,6 +178,8 @@ defmodule BizforgeWeb.MemoryController do
         limit: 50
 
     query = if workspace_id, do: where(query, [e], e.workspace_id == ^workspace_id), else: query
+    query = if project_id, do: where(query, [e], e.project_id == ^project_id), else: query
+    query = if scope, do: where(query, [e], e.scope == ^scope), else: query
 
     entries = Repo.all(query)
     json(conn, %{entries: Enum.map(entries, &serialize/1), query: q})
@@ -139,7 +194,10 @@ defmodule BizforgeWeb.MemoryController do
       type: e.category,
       category: e.category,
       tags: e.tags || [],
+      scope: e.scope,
+      source: e.source,
       workspace_id: e.workspace_id,
+      project_id: e.project_id,
       agent_id: e.agent_id,
       agent_name: nil,
       created_at: e.inserted_at,

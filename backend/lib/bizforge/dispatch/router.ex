@@ -19,7 +19,7 @@ defmodule Bizforge.Dispatch.Router do
   @doc """
   Resolve the best adapter module for a given task and agent.
 
-  `task` is an Issue struct (or any map with `:adapter_override`, `:title`,
+  `task` is a Task struct (or any map with `:adapter_override`, `:title`,
   `:description`, `:labels`). `agent` is an Agent struct with an `:adapter` field.
 
   Returns `{:ok, adapter_module}` on success, `{:error, reason}` if even the

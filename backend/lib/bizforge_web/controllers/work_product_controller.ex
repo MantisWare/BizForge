@@ -2,7 +2,7 @@ defmodule BizforgeWeb.WorkProductController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{WorkProduct, Issue}
+  alias Bizforge.Schemas.{WorkProduct, Task}
   import Ecto.Query
 
   # GET /work-products?workspace_id=&agent_id=&type=&status=
@@ -17,9 +17,9 @@ defmodule BizforgeWeb.WorkProductController do
     query =
       cond do
         issue_id = params["issue_id"] ->
-          case Repo.get(Issue, issue_id) do
+          case Repo.get(Task, issue_id) do
             nil -> :not_found
-            _issue -> where(query, [w], w.issue_id == ^issue_id)
+            _task -> where(query, [w], w.issue_id == ^issue_id)
           end
 
         workspace_id = params["workspace_id"] ->

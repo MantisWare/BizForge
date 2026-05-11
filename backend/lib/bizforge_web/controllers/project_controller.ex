@@ -2,7 +2,7 @@ defmodule BizforgeWeb.ProjectController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Project, Goal, Workspace}
+  alias Bizforge.Schemas.{Project, Phase, Workspace}
   import Ecto.Query
 
   def index(conn, params) do
@@ -44,17 +44,17 @@ defmodule BizforgeWeb.ProjectController do
   end
 
   def show(conn, %{"id" => id}) do
-    case Repo.get(Project, id) |> Repo.preload(:goals) do
+    case Repo.get(Project, id) |> Repo.preload(:phases) do
       nil ->
         conn |> put_status(404) |> json(%{error: "not_found"})
 
       project ->
-        goal_count = length(project.goals)
+        phase_count = length(project.phases)
 
         json(conn, %{
           project:
             serialize(project)
-            |> Map.put(:goal_count, goal_count)
+            |> Map.put(:phase_count, phase_count)
         })
     end
   end
@@ -90,15 +90,15 @@ defmodule BizforgeWeb.ProjectController do
     end
   end
 
-  def goals(conn, %{"project_id" => project_id}) do
-    goals =
+  def phases(conn, %{"project_id" => project_id}) do
+    phases =
       Repo.all(
-        from g in Goal,
-          where: g.project_id == ^project_id,
-          order_by: [asc: g.title]
+        from p in Phase,
+          where: p.project_id == ^project_id,
+          order_by: [asc: p.title]
       )
 
-    json(conn, %{goals: Enum.map(goals, &serialize_goal/1)})
+    json(conn, %{phases: Enum.map(phases, &serialize_phase/1)})
   end
 
   def workspaces(conn, %{"project_id" => _project_id}) do
@@ -108,8 +108,6 @@ defmodule BizforgeWeb.ProjectController do
   def lifecycle_templates(conn, _params) do
     json(conn, %{templates: Bizforge.LifecycleConfigs.all()})
   end
-
-  # --- Private helpers ---
 
   defp resolve_workspace_id(params, user) do
     workspace_id = params["workspace_id"]
@@ -125,7 +123,7 @@ defmodule BizforgeWeb.ProjectController do
     if valid_workspace do
       params
     else
-      fallback =
+      fallback_id =
         Repo.one(
           from w in Workspace,
             where: w.owner_id == ^user.id,
@@ -134,7 +132,27 @@ defmodule BizforgeWeb.ProjectController do
             select: w.id
         )
 
-      Map.put(params, "workspace_id", fallback)
+      resolved_id =
+        if fallback_id do
+          fallback_id
+        else
+          home = System.user_home!()
+          default_path = Path.join([home, ".bizforge", "default"])
+
+          {:ok, ws} =
+            %Workspace{}
+            |> Workspace.changeset(%{
+              name: "Default",
+              path: default_path,
+              status: "active",
+              owner_id: user.id
+            })
+            |> Repo.insert()
+
+          ws.id
+        end
+
+      Map.put(params, "workspace_id", resolved_id)
     end
   end
 
@@ -153,16 +171,16 @@ defmodule BizforgeWeb.ProjectController do
     }
   end
 
-  defp serialize_goal(%Goal{} = g) do
+  defp serialize_phase(%Phase{} = p) do
     %{
-      id: g.id,
-      title: g.title,
-      description: g.description,
-      status: g.status,
-      project_id: g.project_id,
-      parent_id: g.parent_id,
-      inserted_at: g.inserted_at,
-      updated_at: g.updated_at
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      status: p.status,
+      project_id: p.project_id,
+      parent_id: p.parent_id,
+      inserted_at: p.inserted_at,
+      updated_at: p.updated_at
     }
   end
 

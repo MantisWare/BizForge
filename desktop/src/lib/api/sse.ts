@@ -2,7 +2,7 @@
 // fetch-based SSE client with authorization support and auto-reconnect
 
 import type { StreamEvent } from "./types";
-import { getToken, isMockEnabled } from "./client";
+import { getToken } from "./client";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:9089";
 const API_PREFIX = "/api/v1";
@@ -165,10 +165,9 @@ export function subscribeToActivityStream(
   callbacks: SSECallbacks,
   signal: AbortSignal,
 ): void {
-  if (isMockEnabled()) return;
   let delayMs = INITIAL_DELAY_MS;
   const connect = async (): Promise<void> => {
-    if (signal.aborted || isMockEnabled()) return;
+    if (signal.aborted) return;
     const token = getToken();
     const headers: Record<string, string> = {
       Accept: "text/event-stream",
@@ -215,11 +214,10 @@ export function connectSSE(
 ): StreamController {
   const outer = new AbortController();
   const { signal } = outer;
-  if (isMockEnabled()) return { abort: () => outer.abort() };
   let attempt = 0;
   let delayMs = INITIAL_DELAY_MS;
   const connect = async (): Promise<void> => {
-    if (signal.aborted || isMockEnabled()) return;
+    if (signal.aborted) return;
     const token = getToken();
     const headers: Record<string, string> = {
       Accept: "text/event-stream",

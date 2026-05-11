@@ -6,7 +6,7 @@ defmodule Bizforge.Schemas.IssueLabel do
   @foreign_key_type :binary_id
 
   schema "issue_labels" do
-    belongs_to :issue, Bizforge.Schemas.Issue
+    belongs_to :task, Bizforge.Schemas.Task, foreign_key: :issue_id
     belongs_to :label, Bizforge.Schemas.Label
 
     timestamps(updated_at: false)

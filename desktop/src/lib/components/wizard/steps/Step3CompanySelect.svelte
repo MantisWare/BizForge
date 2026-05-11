@@ -4,7 +4,7 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
-  import { agents as agentsApi, sessions, isMockEnabled } from '$api/client';
+  import { agents as agentsApi, sessions } from '$api/client';
   import { streamMessage } from '$api/sse';
   import { HIREABLE_TEAM_TEMPLATES, TEMPLATE_AGENTS } from '$lib/data/team-templates';
   import type { TeamTemplateId } from '$lib/data/team-templates';
@@ -135,11 +135,6 @@ Respond with ONLY valid JSON in this exact format (no markdown fences, no explan
 }
 
 Pick 1 primary recommendation and 2-3 alternatives. teamIds should list the team template IDs to deploy. For a company-like setup, recommend multiple teamIds working together.`;
-
-    if (isMockEnabled()) {
-      await mockRecommend();
-      return;
-    }
 
     try {
       const agent = await getOrCreateAgent();

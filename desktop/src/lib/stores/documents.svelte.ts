@@ -47,7 +47,8 @@ class DocumentsStore {
     this.projectDocsLoading = true;
     this.projectDocsError = null;
     try {
-      const data = await documentsApi.listByProject(projectId);
+      const workspaceId = workspaceStore.activeWorkspaceId ?? undefined;
+      const data = await documentsApi.listByProject(projectId, workspaceId);
       this.projectDocuments = data.documents;
     } catch (err) {
       this.projectDocuments = [];
@@ -66,7 +67,8 @@ class DocumentsStore {
     output_path?: string | null;
     disk_subdir?: string;
   }): Promise<Document> {
-    const created = await documentsApi.create(doc);
+    const workspaceId = workspaceStore.activeWorkspaceId ?? undefined;
+    const created = await documentsApi.create({ ...doc, workspace_id: workspaceId });
     this.documents = [...this.documents, created];
     if (created.project_id !== null) {
       this.projectDocuments = [...this.projectDocuments, created];

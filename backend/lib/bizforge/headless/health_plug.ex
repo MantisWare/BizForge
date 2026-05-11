@@ -70,13 +70,13 @@ defmodule Bizforge.Headless.HealthPlug do
 
     active_tasks =
       Bizforge.Repo.aggregate(
-        from(i in Bizforge.Schemas.Issue, where: i.status in ["in_progress", "assigned"]),
+        from(i in Bizforge.Schemas.Task, where: i.status in ["in_progress", "in_review"]),
         :count
       )
 
     completed_tasks =
       Bizforge.Repo.aggregate(
-        from(i in Bizforge.Schemas.Issue, where: i.status == "done"),
+        from(i in Bizforge.Schemas.Task, where: i.status == "done"),
         :count
       )
 

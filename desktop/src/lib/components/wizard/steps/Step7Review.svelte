@@ -7,14 +7,13 @@
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { projectsStore } from '$lib/stores/projects.svelte';
-  import { issuesStore } from '$lib/stores/issues.svelte';
+  import { tasksStore } from '$lib/stores/tasks.svelte';
   import { skillsStore } from '$lib/stores/skills.svelte';
   import { toastStore } from '$lib/stores/toasts.svelte';
   import {
     workspaces as workspacesApi,
     sprints as sprintsApi,
     documents as documentsApi,
-    isMockEnabled,
   } from '$api/client';
   import { resolveSkillsForTeam, lookupLibrarySkills } from '$lib/data/skill-dependencies';
 
@@ -181,7 +180,7 @@
           try {
             await sprintsApi.create({
               name: group.name,
-              goal: group.goal,
+              objective: group.objective,
               project_id: projectId ?? undefined,
               workspace_id: workspaceId ?? undefined,
             } as any);
@@ -195,22 +194,43 @@
       }
     }
 
-    // 9. Create issues
+    // 9. Create issues (with dependency data)
     const issueStep = wizardStore.launchSteps.find((s) => s.id === 'issues');
     if (issueStep !== undefined && issueStep.status !== 'skipped') {
       try {
         wizardStore.updateLaunchStep('issues', 'running');
         const selectedTasks = wizardStore.allTasks.filter((t) => t.selected);
         if (selectedTasks.length > 0) {
-          const issues = selectedTasks.map((t) => ({
-            title: t.title,
-            description: t.description,
-            priority: t.priority,
-            status: 'backlog' as const,
-            workspace_id: workspaceId,
-            project_id: projectId,
-          }));
-          await issuesStore.batchCreateIssues(issues);
+          const { tasks: tasksApi } = await import('$api/client');
+          const idMap = new Map<string, string>();
+          const sorted = topoSort(selectedTasks);
+          const created: import('$api/types').Task[] = [];
+
+          for (const t of sorted) {
+            const resolvedDeps = (t.dependsOn ?? [])
+              .map((depId) => idMap.get(depId))
+              .filter((id): id is string => id !== undefined);
+            try {
+              const task = await tasksApi.create({
+                title: t.title,
+                description: t.description,
+                priority: t.priority,
+                status: 'backlog',
+                workspace_id: workspaceId,
+                project_id: projectId,
+                task_type: t.taskType ?? undefined,
+                depends_on_ids: resolvedDeps,
+              });
+              idMap.set(t.id, task.id);
+              created.push(task);
+            } catch {
+              // skip failed task
+            }
+          }
+
+          if (created.length > 0) {
+            tasksStore.tasks = [...created, ...tasksStore.tasks];
+          }
         }
         wizardStore.updateLaunchStep('issues', 'done');
       } catch (e) {
@@ -244,6 +264,30 @@
     error: '✗',
     skipped: '–',
   };
+
+  function topoSort(tasks: import('$api/types').WizardTask[]): import('$api/types').WizardTask[] {
+    const idSet = new Set(tasks.map((t) => t.id));
+    const visited = new Set<string>();
+    const result: import('$api/types').WizardTask[] = [];
+    const taskMap = new Map(tasks.map((t) => [t.id, t]));
+
+    function visit(id: string, inStack: Set<string>) {
+      if (visited.has(id) || inStack.has(id)) return;
+      inStack.add(id);
+      const task = taskMap.get(id);
+      if (task === undefined) return;
+      for (const dep of task.dependsOn ?? []) {
+        if (idSet.has(dep)) visit(dep, inStack);
+      }
+      visited.add(id);
+      result.push(task);
+    }
+
+    for (const t of tasks) {
+      visit(t.id, new Set());
+    }
+    return result;
+  }
 </script>
 
 <div class="s7-container">

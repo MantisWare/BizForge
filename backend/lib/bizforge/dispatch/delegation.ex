@@ -3,14 +3,14 @@ defmodule Bizforge.Dispatch.Delegation do
   Handles task delegation between agents with adapter-aware routing.
 
   When an agent delegates a subtask, the delegation module:
-    1. Creates the child issue
+    1. Creates the child task
     2. Routes to the optimal adapter via Dispatch.Router
     3. Assigns to the best available agent for that adapter (optional)
     4. Tracks the delegation chain via delegation_chain metadata
 
   ## Example
 
-      parent = Repo.get!(Issue, parent_id)
+      parent = Repo.get!(Task, parent_id)
       {:ok, child} = Delegation.delegate(parent, "Analyze screenshots for layout issues")
       # child.adapter_override == "gemini"
   """
@@ -18,11 +18,11 @@ defmodule Bizforge.Dispatch.Delegation do
   require Logger
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Issue, Agent}
+  alias Bizforge.Schemas.{Task, Agent}
   import Ecto.Query, only: [from: 2]
 
   @doc """
-  Delegate a subtask from a parent issue.
+  Delegate a subtask from a parent task.
 
   ## Options
     - `:adapter`    — explicit adapter type string (skips inference)
@@ -61,24 +61,24 @@ defmodule Bizforge.Dispatch.Delegation do
       }
       |> maybe_put(:assignee_id, assignee_id)
       |> maybe_put(:project_id, Map.get(parent_task, :project_id))
-      |> maybe_put(:goal_id, Map.get(parent_task, :goal_id))
+      |> maybe_put(:phase_id, Map.get(parent_task, :phase_id))
 
-    result = %Issue{} |> Issue.changeset(attrs) |> Repo.insert()
+    result = %Task{} |> Task.changeset(attrs) |> Repo.insert()
 
     case result do
-      {:ok, issue} ->
+      {:ok, task} ->
         Logger.info(
-          "[Delegation] Created subtask #{issue.id} (#{adapter_type}) from parent #{parent_task.id}"
+          "[Delegation] Created subtask #{task.id} (#{adapter_type}) from parent #{parent_task.id}"
         )
 
-        if issue.assignee_id do
+        if task.assignee_id do
           Bizforge.EventBus.broadcast(
-            Bizforge.EventBus.workspace_topic(issue.workspace_id),
-            %{event: "issue.assigned", issue_id: issue.id, agent_id: issue.assignee_id}
+            Bizforge.EventBus.workspace_topic(task.workspace_id),
+            %{event: "task.assigned", task_id: task.id, agent_id: task.assignee_id}
           )
         end
 
-        {:ok, issue}
+        {:ok, task}
 
       {:error, changeset} ->
         Logger.warning("[Delegation] Failed to create subtask: #{inspect(changeset.errors)}")

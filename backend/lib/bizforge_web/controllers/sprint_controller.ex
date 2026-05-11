@@ -3,7 +3,7 @@ defmodule BizforgeWeb.SprintController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Sprint, Issue}
+  alias Bizforge.Schemas.{Sprint, Task}
   import Ecto.Query
 
   def index(conn, params) do
@@ -18,11 +18,11 @@ defmodule BizforgeWeb.SprintController do
 
     sprints_with_counts =
       Enum.map(sprints, fn sprint ->
-        issue_count = Repo.aggregate(from(i in Issue, where: i.sprint_id == ^sprint.id), :count)
-        done_count = Repo.aggregate(from(i in Issue, where: i.sprint_id == ^sprint.id and i.status == "done"), :count)
+        task_count = Repo.aggregate(from(t in Task, where: t.sprint_id == ^sprint.id), :count)
+        done_count = Repo.aggregate(from(t in Task, where: t.sprint_id == ^sprint.id and t.status == "done"), :count)
 
         serialize(sprint)
-        |> Map.put(:issue_count, issue_count)
+        |> Map.put(:task_count, task_count)
         |> Map.put(:done_count, done_count)
       end)
 
@@ -41,7 +41,7 @@ defmodule BizforgeWeb.SprintController do
 
     attrs =
       params
-      |> Map.take(~w(name goal start_date end_date velocity_target project_id config))
+      |> Map.take(~w(name objective start_date end_date velocity_target project_id config))
       |> Map.put("workspace_id", workspace_id)
 
     case %Sprint{} |> Sprint.changeset(attrs) |> Repo.insert() do
@@ -59,7 +59,7 @@ defmodule BizforgeWeb.SprintController do
         conn |> put_status(404) |> json(%{error: "not_found"})
 
       sprint ->
-        attrs = Map.take(params, ~w(name goal start_date end_date status velocity_target velocity_actual config))
+        attrs = Map.take(params, ~w(name objective start_date end_date status velocity_target velocity_actual config))
 
         case sprint |> Sprint.changeset(attrs) |> Repo.update() do
           {:ok, updated} ->
@@ -102,7 +102,7 @@ defmodule BizforgeWeb.SprintController do
         conn |> put_status(404) |> json(%{error: "not_found"})
 
       %Sprint{status: "active"} = sprint ->
-        done_count = Repo.aggregate(from(i in Issue, where: i.sprint_id == ^sprint.id and i.status == "done"), :count)
+        done_count = Repo.aggregate(from(t in Task, where: t.sprint_id == ^sprint.id and t.status == "done"), :count)
 
         {:ok, updated} =
           sprint
@@ -120,9 +120,9 @@ defmodule BizforgeWeb.SprintController do
     end
   end
 
-  @doc "Assign issues to a sprint."
-  def assign_issues(conn, %{"sprint_id" => sprint_id} = params) do
-    issue_ids = params["issue_ids"] || []
+  @doc "Assign tasks to a sprint."
+  def assign_tasks(conn, %{"sprint_id" => sprint_id} = params) do
+    task_ids = params["task_ids"] || []
 
     case Repo.get(Sprint, sprint_id) do
       nil ->
@@ -131,7 +131,7 @@ defmodule BizforgeWeb.SprintController do
       _sprint ->
         {count, _} =
           Repo.update_all(
-            from(i in Issue, where: i.id in ^issue_ids),
+            from(t in Task, where: t.id in ^task_ids),
             set: [sprint_id: sprint_id]
           )
 
@@ -139,13 +139,13 @@ defmodule BizforgeWeb.SprintController do
     end
   end
 
-  @doc "Remove issues from a sprint."
-  def unassign_issues(conn, %{"sprint_id" => sprint_id} = params) do
-    issue_ids = params["issue_ids"] || []
+  @doc "Remove tasks from a sprint."
+  def unassign_tasks(conn, %{"sprint_id" => sprint_id} = params) do
+    task_ids = params["task_ids"] || []
 
     {count, _} =
       Repo.update_all(
-        from(i in Issue, where: i.id in ^issue_ids and i.sprint_id == ^sprint_id),
+        from(t in Task, where: t.id in ^task_ids and t.sprint_id == ^sprint_id),
         set: [sprint_id: nil]
       )
 
@@ -156,7 +156,7 @@ defmodule BizforgeWeb.SprintController do
     %{
       id: s.id,
       name: s.name,
-      goal: s.goal,
+      objective: s.objective,
       start_date: s.start_date,
       end_date: s.end_date,
       status: s.status,

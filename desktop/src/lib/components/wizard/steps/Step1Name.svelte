@@ -50,6 +50,7 @@
   <div class="s1-form">
     <label class="s1-label">
       <span class="s1-label-text">Workspace Name <span class="s1-required">*</span></span>
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         type="text"
         class="s1-input"

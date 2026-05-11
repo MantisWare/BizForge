@@ -87,7 +87,7 @@ defmodule BizforgeWeb.QaReportController do
     )
 
     if issue_id do
-      Bizforge.IssueLifecycle.notify_qa_report(issue_id, report_payload)
+      Bizforge.TaskLifecycle.notify_qa_report(issue_id, report_payload)
     end
   end
 end

@@ -6,7 +6,7 @@ export function mockDashboard(): DashboardData {
       active_agents: 0,
       total_agents: 0,
       live_runs: 0,
-      open_issues: 0,
+      open_tasks: 0,
       budget_remaining_pct: 0,
     },
     live_runs: [],

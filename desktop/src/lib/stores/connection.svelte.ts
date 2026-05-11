@@ -1,5 +1,5 @@
 // src/lib/stores/connection.svelte.ts
-import { health, isMockEnabled } from "$api/client";
+import { health } from "$api/client";
 import type { HealthResponse } from "$api/types";
 
 const LOG = "[bizforge:connection]";
@@ -8,8 +8,7 @@ export type ConnectionStatus =
   | "connecting"
   | "connected"
   | "reconnecting"
-  | "disconnected"
-  | "mock";
+  | "disconnected";
 
 class ConnectionStore {
   status = $state<ConnectionStatus>("connecting");
@@ -27,11 +26,11 @@ class ConnectionStore {
   #maxReconnectAttempts = 5;
 
   get isConnected(): boolean {
-    return this.status === "connected" || this.status === "mock";
+    return this.status === "connected";
   }
 
   get isReady(): boolean {
-    return this.status === "connected" || this.status === "mock";
+    return this.status === "connected";
   }
 
   async check(): Promise<void> {
@@ -41,42 +40,27 @@ class ConnectionStore {
     try {
       const data = await health.get();
       this.health = data;
-      if (isMockEnabled()) {
-        if (this.status !== "mock") {
-          console.log(`${LOG} Status: ${prevStatus} → mock`);
-          this.status = "mock";
+      if (this.status !== "connected") {
+        console.log(`${LOG} Status: ${prevStatus} → connected`);
+        this.lastConnectedAt = new Date();
+        if (prevStatus === "reconnecting") {
+          console.log(`${LOG} Reconnected after ${this.reconnectAttempts} attempts — syncing offline queue`);
+          this.reconnectAttempts = 0;
+          await this.#syncOnReconnect();
         }
-      } else {
-        if (this.status !== "connected") {
-          console.log(`${LOG} Status: ${prevStatus} → connected`);
-          this.lastConnectedAt = new Date();
-          if (prevStatus === "reconnecting") {
-            console.log(`${LOG} Reconnected after ${this.reconnectAttempts} attempts — syncing offline queue`);
-            this.reconnectAttempts = 0;
-            await this.#syncOnReconnect();
-          }
-        }
-        this.status = "connected";
       }
+      this.status = "connected";
       this.error = null;
     } catch (e) {
-      if (isMockEnabled()) {
-        if (this.status !== "mock") {
-          console.log(`${LOG} Status: ${prevStatus} → mock (health check errored but mock active)`);
-          this.status = "mock";
-        }
-        this.error = null;
-      } else {
-        this.health = null;
-        if (prevStatus === "connected") {
-          console.warn(`${LOG} Lost connection — starting reconnect cycle`);
-          this.#startReconnecting();
-        } else if (this.status !== "reconnecting") {
-          console.warn(`${LOG} Status: ${prevStatus} → disconnected — ${(e as Error).message}`);
-          this.status = "disconnected";
-        }
-        this.error = (e as Error).message;
+      this.health = null;
+      if (prevStatus === "connected") {
+        console.warn(`${LOG} Lost connection — starting reconnect cycle`);
+        this.#startReconnecting();
+      } else if (this.status !== "reconnecting") {
+        console.warn(`${LOG} Status: ${prevStatus} → disconnected — ${(e as Error).message}`);
+        this.status = "disconnected";
       }
+      this.error = (e as Error).message;
     } finally {
       this.isChecking = false;
       this.lastChecked = new Date();
@@ -149,9 +133,8 @@ class ConnectionStore {
   }
 
   async #syncOnReconnect(): Promise<void> {
-    const { flushOfflineQueue, clearCache, disableMock } =
+    const { flushOfflineQueue, clearCache } =
       await import("$api/client");
-    await disableMock();
     clearCache();
     const result = await flushOfflineQueue();
     this.offlineQueueSize = 0;

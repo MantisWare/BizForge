@@ -2,15 +2,15 @@ defmodule BizforgeWeb.AttachmentController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Attachment, Issue}
+  alias Bizforge.Schemas.{Attachment, Task}
   import Ecto.Query
 
   def index(conn, %{"issue_id" => issue_id}) do
-    case Repo.get(Issue, issue_id) do
+    case Repo.get(Task, issue_id) do
       nil ->
         conn |> put_status(404) |> json(%{error: "not_found"})
 
-      _issue ->
+      _task ->
         attachments =
           Repo.all(
             from a in Attachment,
@@ -23,11 +23,11 @@ defmodule BizforgeWeb.AttachmentController do
   end
 
   def create(conn, %{"issue_id" => issue_id} = params) do
-    case Repo.get(Issue, issue_id) do
+    case Repo.get(Task, issue_id) do
       nil ->
         conn |> put_status(404) |> json(%{error: "not_found"})
 
-      _issue ->
+      _task ->
         attrs = Map.put(params, "issue_id", issue_id)
         changeset = Attachment.changeset(%Attachment{}, attrs)
 

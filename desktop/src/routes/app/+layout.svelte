@@ -25,7 +25,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
-  import { initializeAuth, getToken, isMockEnabled, saveSessionToStore } from '$api/client';
+  import { initializeAuth, getToken, saveSessionToStore } from '$api/client';
   import { wizardStore } from '$lib/stores/wizard.svelte';
 
   let { children } = $props();
@@ -71,33 +71,17 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     // Capture stopPolling in outer scope so the cleanup return can call it.
     let stopPolling: (() => void) | null = null;
 
-    // 1. Run auth initialization first: probes backend, disables mock if reachable,
-    //    auto-logs in with dev credentials if set, then loads everything else.
-    //
-    //    IMPORTANT: connection polling and all data fetching must start AFTER
-    //    initializeAuth() resolves. Starting polling before auth completes causes
-    //    connectionStore.check() → health.get() to set useMock=false while _token
-    //    is still null, so every subsequent API request fires without an
-    //    Authorization header and receives 401 "unauthorized".
+    // Load workspace context from localStorage immediately so child pages
+    // have activeWorkspaceId available for their own $effect fetches.
+    workspaceStore.fetchWorkspaces();
+
     initializeAuth().then(async () => {
-      // ── Onboarding guard (runs after auth resolves) ───────────────────────
-      // If the backend is reachable and the user has a valid token, they
-      // already have a running setup — skip onboarding entirely.
-      let onboardingDone = false;
-
-      if (!isMockEnabled() && getToken()) {
-        // Valid authenticated session → treat as fully onboarded.
+      // ── Onboarding guard ───────────────────────────────────────────────
+      if (getToken()) {
         localStorage.setItem('bizforge-onboarding-complete', 'true');
-        localStorage.setItem(
-          'bizforge-onboarding',
-          JSON.stringify({ completed: true }),
-        );
-        onboardingDone = true;
+        localStorage.setItem('bizforge-onboarding', JSON.stringify({ completed: true }));
         void saveSessionToStore();
-      }
-
-      if (!onboardingDone) {
-        // Offline / mock mode — honour localStorage flags.
+      } else {
         const raw = localStorage.getItem('bizforge-onboarding');
         const completed = raw
           ? (JSON.parse(raw) as { completed?: boolean }).completed
@@ -110,59 +94,40 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
           }
         }
       }
-      // ─────────────────────────────────────────────────────────────────────
 
-      const canFetch = isMockEnabled() || getToken() !== null;
-
-      // 2. Start connection polling now that _token is set (or mock is active).
-      //    Do NOT start polling before auth resolves: health.get() bypasses
-      //    request() and can flip useMock=false while _token is still null.
+      const canFetch = getToken() !== null;
       stopPolling = connectionStore.startPolling(30_000);
 
-      // 3. Load workspaces from localStorage (always safe — no network)
-      workspaceStore.fetchWorkspaces();
-
       if (!canFetch) {
-        // Backend reachable but no auth token — redirect to login.
-        // The user completed onboarding but hasn't authenticated against
-        // the live backend yet. Send them to /auth so they can log in.
-        if (!isMockEnabled()) {
-          goto('/auth', { replaceState: true });
-          return;
-        }
+        goto('/auth', { replaceState: true });
         return;
       }
 
-      // 4. Subscribe to the activity SSE stream after auth so the token is
-      //    available when the Authorization header is attached.
       activityStore.subscribe();
 
-      // 5. Sync workspace list from backend (sets activeWorkspaceId to backend's active workspace)
-      await workspaceStore.syncFromBackend();
-
-      // 6. Initialize organizations — ensure at least one exists, auto-select
-      await organizationsStore.ensureDefault();
-
-      // 7. Pre-fetch full hierarchy tree + approvals for sidebar
-      if (organizationsStore.current) {
-        void hierarchyStore.fetchTree(organizationsStore.current.id);
-        void hierarchyStore.fetchDivisions(organizationsStore.current.id);
-        void hierarchyStore.fetchDepartments();
-        void hierarchyStore.fetchTeams();
-      }
-      // 8. Load agents, projects, providers: resolve workspace context first
-      const ws = workspaceStore.activeWorkspace;
+      // Read workspace context from localStorage (already loaded above).
+      // syncFromBackend will update reactively if backend disagrees.
       const wsId = workspaceStore.activeWorkspaceId ?? undefined;
+      const ws = workspaceStore.activeWorkspace;
+
+      // Fire ALL data fetches concurrently — no sequential awaits.
+      void workspaceStore.syncFromBackend().catch(() => {});
+      void organizationsStore.ensureDefault().then(() => {
+        if (organizationsStore.current) {
+          void hierarchyStore.fetchTree(organizationsStore.current.id);
+          void hierarchyStore.fetchDivisions(organizationsStore.current.id);
+          void hierarchyStore.fetchDepartments();
+          void hierarchyStore.fetchTeams();
+        }
+      });
 
       void approvalsStore.fetchApprovals(wsId);
-      void providersStore.fetch(wsId);
-
-      // 9. Pre-fetch projects so goals and other project-dependent pages work
+      void providersStore.fetch();
       void projectsStore.fetchProjects(wsId);
+
       if (ws) {
         workspaceStore.scanAndLoadAgents(ws.path).then(() => {
           workspaceStore.watchActive();
-          // If scan didn't load any agents (browser mode / empty scan), fall back to API
           if (agentsStore.agents.length === 0) {
             void agentsStore.fetchAgents(wsId);
           }
@@ -170,6 +135,8 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       } else {
         void agentsStore.fetchAgents(wsId);
       }
+    }).catch((err) => {
+      console.error('[bizforge:layout] Boot sequence failed:', err);
     });
 
     // Load adapter choice and miosaCloud setting from Tauri secure store
@@ -216,10 +183,64 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     if (name) userName = name;
   });
   const user = $derived(userName ? { name: userName, email: '' } : null);
+
+  // Backend disconnection banner
+  const connStatus = $derived(connectionStore.status);
+  const showDisconnectedBanner = $derived(
+    connStatus === 'disconnected' || connStatus === 'reconnecting'
+  );
+  const bannerConfig = $derived.by(() => {
+    if (connStatus === 'reconnecting') return {
+      cls: 'disc-banner--reconnecting',
+      icon: 'reconnecting',
+      title: 'Reconnecting to Backend…',
+      desc: `Attempt ${connectionStore.reconnectAttempts} — your data will refresh automatically when the connection is restored.`,
+    };
+    return {
+      cls: 'disc-banner--disconnected',
+      icon: 'disconnected',
+      title: 'Backend Disconnected',
+      desc: 'Cannot reach the server. Check that the backend is running and try again.',
+    };
+  });
+  let bannerDismissed = $state(false);
+  $effect(() => { if (connStatus === 'connected') bannerDismissed = false; });
 </script>
 
 <!-- App shell with sidebar + main content -->
 <div class="app-shell" class:has-titlebar={isTauri() && isMacOS()}>
+  {#if showDisconnectedBanner && !bannerDismissed}
+    <div class="disc-banner {bannerConfig.cls}" role="alert">
+      <div class="disc-banner-content">
+        <div class="disc-banner-icon">
+          {#if bannerConfig.icon === 'reconnecting'}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="disc-spin">
+              <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+          {:else}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728"/>
+              <line x1="2" y1="2" x2="22" y2="22"/>
+            </svg>
+          {/if}
+        </div>
+        <div class="disc-banner-text">
+          <strong>{bannerConfig.title}</strong>
+          <span class="disc-banner-desc">{bannerConfig.desc}</span>
+        </div>
+      </div>
+      <div class="disc-banner-actions">
+        {#if connStatus === 'disconnected' || connStatus === 'mock'}
+          <button class="disc-banner-btn" onclick={() => void connectionStore.check()}>Retry Now</button>
+        {/if}
+        <button class="disc-banner-dismiss" onclick={() => { bannerDismissed = true; }} aria-label="Dismiss">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  {/if}
   <div class="app-body">
     <Sidebar bind:isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} {user} />
     <main class="main-content" id="main-content">
@@ -258,4 +279,55 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
     min-width: 0; overflow: hidden; background: var(--bg-secondary);
     box-shadow: inset 1px 0 0 rgba(255,255,255,0.04); position: relative;
   }
+
+  /* ── Backend disconnected banner ───────────────────────────────────── */
+  .disc-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 20px; flex-shrink: 0;
+    animation: disc-slide-down 0.25s ease-out;
+  }
+  @keyframes disc-slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  .disc-banner--reconnecting {
+    background: linear-gradient(90deg, rgba(234,179,8,0.15), rgba(234,179,8,0.08));
+    border-bottom: 1px solid rgba(234,179,8,0.25);
+    color: #fde047;
+  }
+  .disc-banner--disconnected {
+    background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08));
+    border-bottom: 1px solid rgba(239,68,68,0.25);
+    color: #fca5a5;
+  }
+  .disc-banner-content {
+    display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+  }
+  .disc-banner-icon { flex-shrink: 0; display: flex; }
+  .disc-banner-text {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-size: 13px; line-height: 1.4;
+  }
+  .disc-banner-text strong { font-weight: 600; }
+  .disc-banner-desc {
+    font-weight: 400; opacity: 0.75; font-size: 12px;
+  }
+  .disc-banner-actions {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .disc-banner-btn {
+    padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);
+    color: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .disc-banner-btn:hover {
+    background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.25);
+  }
+  .disc-banner-dismiss {
+    background: none; border: none; color: inherit; cursor: pointer;
+    padding: 2px; border-radius: 4px; opacity: 0.5; transition: opacity 0.15s;
+  }
+  .disc-banner-dismiss:hover { opacity: 1; }
+  .disc-spin { animation: disc-spin-anim 1s linear infinite; }
+  @keyframes disc-spin-anim { to { transform: rotate(360deg); } }
 </style>

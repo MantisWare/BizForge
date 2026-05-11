@@ -8,21 +8,25 @@ set dotenv-load := true
 set positional-arguments := true
 
 # Directories
-root    := justfile_directory()
-backend := root / "backend"
-desktop := root / "desktop"
-pid_dir := root / ".bizforge" / "pids"
-log_dir := root / ".bizforge" / "logs"
+root     := justfile_directory()
+backend  := root / "backend"
+desktop  := root / "desktop"
+sidecar  := desktop / "playwright-sidecar"
+pid_dir  := root / ".bizforge" / "pids"
+log_dir  := root / ".bizforge" / "logs"
 
 # ── Setup ────────────────────────────────────────────────────────────────────
 
-# Install all dependencies (backend + desktop)
+# Install all dependencies (backend + desktop + sidecar)
 setup:
     @echo "Installing backend dependencies..."
     cd {{backend}} && mix deps.get
     @echo ""
     @echo "Installing desktop dependencies..."
     cd {{desktop}} && npm install
+    @echo ""
+    @echo "Building playwright sidecar..."
+    just _build-sidecar
     @echo ""
     @echo "Ready. Run 'just dev' to launch."
 
@@ -46,7 +50,7 @@ doctor:
 # ── Development ──────────────────────────────────────────────────────────────
 
 # Start full stack (backend :9089 + desktop :5200)
-dev: _ensure-dirs _ensure-postgres _ensure-migrations
+dev: _ensure-dirs _ensure-postgres _ensure-migrations _ensure-sidecar
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -92,7 +96,7 @@ dev: _ensure-dirs _ensure-postgres _ensure-migrations
     printf "\nUse 'just status' to check, 'just logs backend' to tail, 'just stop' to shut down.\n"
 
 # Start full stack with native Tauri app
-app: _ensure-dirs _ensure-postgres _ensure-migrations
+app: _ensure-dirs _ensure-postgres _ensure-migrations _ensure-sidecar
     #!/usr/bin/env bash
     set -euo pipefail
     just stop 2>/dev/null || true
@@ -175,6 +179,9 @@ stop:
             rm -f "$pidfile"
         fi
     done
+    # Kill any Bizforge Tauri UI processes (the compiled binary in target/debug or target/release)
+    pkill -x "bizforge" 2>/dev/null && printf "  Stopped Bizforge UI process\n" && stopped=1 || true
+    pkill -x "Bizforge" 2>/dev/null && printf "  Stopped Bizforge UI process\n" || true
     # Also kill any strays on our ports
     lsof -ti:9089 2>/dev/null | xargs kill 2>/dev/null || true
     lsof -ti:5200 2>/dev/null | xargs kill 2>/dev/null || true
@@ -206,6 +213,8 @@ stop-desktop:
             rm -f "$pidfile"
         fi
     done
+    pkill -x "bizforge" 2>/dev/null && printf "  Stopped Bizforge UI process\n" || true
+    pkill -x "Bizforge" 2>/dev/null && printf "  Stopped Bizforge UI process\n" || true
     lsof -ti:5200 2>/dev/null | xargs kill 2>/dev/null || true
 
 # Restart backend (stop + start)
@@ -421,6 +430,26 @@ clean: stop
 [private]
 _ensure-dirs:
     @mkdir -p {{pid_dir}} {{log_dir}}
+
+# Build the playwright sidecar (npm install + tsc + browser install)
+[private]
+_build-sidecar:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{sidecar}}"
+    npm install --silent
+    npx tsc
+    npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+    printf "  Sidecar built → %s/dist/index.js\n" "{{sidecar}}"
+
+# Ensure sidecar dist exists; build if missing
+[private]
+_ensure-sidecar:
+    #!/usr/bin/env bash
+    if [ ! -f "{{sidecar}}/dist/index.js" ]; then
+        printf "Playwright sidecar not built — building now...\n"
+        just _build-sidecar
+    fi
 
 [private]
 _ensure-postgres:

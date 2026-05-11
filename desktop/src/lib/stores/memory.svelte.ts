@@ -23,10 +23,9 @@ export interface KnowledgeEntry extends MemoryEntry {
   agent_name: string;
   category: KnowledgeCategory;
   confidence: number;
-  source: string;
+  source: import('$api/types').MemorySource;
   related_entries: string[];
   tags: string[];
-  // metadata fields promoted for convenience
   created_at: string;
   updated_at: string;
   access_count: number;
@@ -103,7 +102,7 @@ function toKnowledgeEntry(raw: MemoryEntry): KnowledgeEntry {
     category,
     confidence:
       typeof r["confidence"] === "number" ? (r["confidence"] as number) : 0.8,
-    source: (r["source"] as string) ?? "unknown",
+    source: ((r["source"] as string) ?? "manual") as import('$api/types').MemorySource,
     related_entries: Array.isArray(r["related_entries"])
       ? (r["related_entries"] as string[])
       : [],
@@ -496,6 +495,54 @@ class MemoryStore {
 
   setAgentFilter(agentId: string | null): void {
     this.filterAgentId = agentId;
+  }
+
+  // ── Project / company scoped queries ──────────────────────────────────────
+  projectEntries = $state<MemoryEntry[]>([]);
+  companyEntries = $state<MemoryEntry[]>([]);
+
+  async fetchByProject(projectId: string): Promise<MemoryEntry[]> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const entries = await memoryApi.byProject(projectId);
+      this.projectEntries = entries;
+      return entries;
+    } catch (err) {
+      this.error = (err as Error).message;
+      return [];
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async fetchCompanyMemory(): Promise<MemoryEntry[]> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const entries = await memoryApi.company();
+      this.companyEntries = entries;
+      return entries;
+    } catch (err) {
+      this.error = (err as Error).message;
+      return [];
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async resolveMemory(projectId: string): Promise<MemoryEntry[]> {
+    this.loading = true;
+    this.error = null;
+    try {
+      const entries = await memoryApi.resolve(projectId);
+      return entries;
+    } catch (err) {
+      this.error = (err as Error).message;
+      return [];
+    } finally {
+      this.loading = false;
+    }
   }
 }
 

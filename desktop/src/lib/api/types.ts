@@ -456,35 +456,41 @@ export interface WorkflowCreateRequest {
   }>;
 }
 
-// ── Issues ────────────────────────────────────────────────────────────────────
+// ── Tasks (formerly Issues) ───────────────────────────────────────────────────
 
-export type IssueStatus =
+export type TaskStatus =
   | "backlog"
   | "todo"
   | "in_progress"
   | "in_review"
   | "done";
-export type IssuePriority = "low" | "medium" | "high" | "critical";
+export type TaskPriority = "low" | "medium" | "high" | "critical";
 
-export interface Issue {
+export type TaskType = 'prerequisite' | 'feature' | 'subtask' | 'validation' | 'scaffold';
+
+export interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: IssueStatus;
-  priority: IssuePriority;
+  status: TaskStatus;
+  priority: TaskPriority;
   assignee_id: string | null;
   assignee_name: string | null;
   project_id: string | null;
-  goal_id: string | null;
+  phase_id: string | null;
   sprint_id: string | null;
   labels: string[];
   comments_count: number;
   created_by: string;
+  parent_id: string | null;
+  depends_on_ids: string[];
+  task_type: TaskType | null;
+  execution_order: number | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface IssueComment {
+export interface TaskComment {
   id: string;
   issue_id: string;
   author: string;
@@ -493,29 +499,49 @@ export interface IssueComment {
   created_at: string;
 }
 
-// ── Goals ─────────────────────────────────────────────────────────────────────
+/** @deprecated Use Task instead */
+export type Issue = Task;
+/** @deprecated Use TaskStatus instead */
+export type IssueStatus = TaskStatus;
+/** @deprecated Use TaskPriority instead */
+export type IssuePriority = TaskPriority;
+/** @deprecated Use TaskType instead */
+export type IssueTaskType = TaskType;
+/** @deprecated Use TaskComment instead */
+export type IssueComment = TaskComment;
 
-export type GoalStatus = "active" | "in_progress" | "completed" | "blocked";
-export type GoalPriority = "low" | "medium" | "high";
+// ── Phases (formerly Goals) ──────────────────────────────────────────────────
 
-export interface Goal {
+export type PhaseStatus = "active" | "in_progress" | "completed" | "blocked";
+export type PhasePriority = "low" | "medium" | "high";
+
+export interface Phase {
   id: string;
   title: string;
   description: string | null;
   parent_id: string | null;
   project_id: string;
-  status: GoalStatus;
-  priority: GoalPriority;
+  status: PhaseStatus;
+  priority: PhasePriority;
   progress: number;
   assignee_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface GoalTreeNode extends Goal {
-  children: GoalTreeNode[];
-  issue_count: number;
+export interface PhaseTreeNode extends Phase {
+  children: PhaseTreeNode[];
+  task_count: number;
 }
+
+/** @deprecated Use Phase instead */
+export type Goal = Phase;
+/** @deprecated Use PhaseStatus instead */
+export type GoalStatus = PhaseStatus;
+/** @deprecated Use PhasePriority instead */
+export type GoalPriority = PhasePriority;
+/** @deprecated Use PhaseTreeNode instead */
+export type GoalTreeNode = PhaseTreeNode;
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
@@ -544,8 +570,8 @@ export interface Project {
   output_path: string | null;
   config: ProjectConfig;
   lifecycle_config: LifecycleConfig;
-  goal_count: number;
-  issue_count: number;
+  phase_count: number;
+  task_count: number;
   agent_count: number;
   created_at: string;
   updated_at: string;
@@ -558,7 +584,7 @@ export type SprintStatus = "planned" | "active" | "complete" | "cancelled";
 export interface Sprint {
   id: string;
   name: string;
-  goal: string | null;
+  objective: string | null;
   start_date: string | null;
   end_date: string | null;
   status: SprintStatus;
@@ -567,7 +593,7 @@ export interface Sprint {
   config: Record<string, unknown>;
   project_id: string;
   workspace_id: string;
-  issue_count?: number;
+  task_count?: number;
   done_count?: number;
   created_at: string;
   updated_at: string;
@@ -580,6 +606,8 @@ export type DocumentFormat =
   | "yaml"
   | "json"
   | "text"
+  | "pdf"
+  | "binary"
   | "erd-graph"
   | "erd-source"
   | "dbml"
@@ -648,9 +676,9 @@ export type ActivityEventType =
   | "heartbeat_started"
   | "heartbeat_completed"
   | "heartbeat_failed"
-  | "issue_created"
-  | "issue_updated"
-  | "goal_completed"
+  | "task_created"
+  | "task_updated"
+  | "phase_completed"
   | "budget_warning"
   | "budget_exceeded"
   | "session_started"
@@ -1031,7 +1059,7 @@ export interface DashboardKpis {
   active_agents: number;
   total_agents: number;
   live_runs: number;
-  open_issues: number;
+  open_tasks: number;
   budget_remaining_pct: number;
 }
 
@@ -1183,6 +1211,9 @@ export interface MemoryEntryMetadata {
   ttl_seconds: number | null;
 }
 
+export type MemoryScope = 'company' | 'project' | 'agent';
+export type MemorySource = 'manual' | 'forgemap' | 'ai_generated' | 'system';
+
 export interface MemoryEntry {
   id: string;
   namespace: string;
@@ -1190,6 +1221,9 @@ export interface MemoryEntry {
   value: string;
   value_type: "string" | "json";
   metadata: MemoryEntryMetadata;
+  scope?: MemoryScope;
+  source?: MemorySource;
+  project_id?: string;
   // Legacy fields kept for backward compat
   agent_id?: string;
   agent_name?: string;
@@ -1571,7 +1605,7 @@ export interface RoleAssignment {
 export interface SidebarBadges {
   inbox_unread: number;
   approvals_pending: number;
-  issues_open: number;
+  tasks_open: number;
   agents_error: number;
   budget_warnings: number;
 }
@@ -1860,12 +1894,13 @@ export interface WizardTask {
   labels: string[];
   sprintName: string | null;
   dependsOn: string[];
+  taskType: TaskType | null;
   selected: boolean;
 }
 
 export interface WizardSprintGroup {
   name: string;
-  goal: string;
+  objective: string;
   tasks: WizardTask[];
 }
 
@@ -1884,6 +1919,53 @@ export interface CompanyRecommendation {
     fitScore: number;
     teamIds: string[];
   }>;
+}
+
+// ── ForgeMap ──────────────────────────────────────────────────────────────────
+
+export interface ForgeMapDetection {
+  has_codebase: boolean;
+  file_count: number;
+  languages: string[];
+  detected_stack: string[];
+  manifests: string[];
+  output_path: string;
+}
+
+export interface ForgeMapFileUsage {
+  file: string;
+  symbols: string[];
+}
+
+export interface ForgeMapFile {
+  path: string;
+  name: string;
+  language: string;
+  exports: string[];
+  line_count: number;
+  size: number;
+  used_by: ForgeMapFileUsage[];
+}
+
+export interface ForgeMapScanResult {
+  file_count: number;
+  indexed_count: number;
+  languages: string[];
+  total_exports: number;
+  headers_written: boolean;
+  files: ForgeMapFile[];
+}
+
+export interface ForgeMapEntry {
+  id: string;
+  key: string;
+  content: string;
+  category: string;
+  tags: string[];
+  scope: string;
+  source: string;
+  inserted_at: string;
+  updated_at: string;
 }
 
 // ── LLM Inspector ─────────────────────────────────────────────────────────────

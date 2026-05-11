@@ -23,7 +23,6 @@ defmodule Bizforge.Adapters.CursorCli do
   require Logger
 
   @default_timeout_ms 300_000
-  @model_list_timeout_ms 15_000
 
   @anthropic_to_cursor %{
     "claude-opus-4-6" => "claude-4.6-opus-high",
@@ -370,11 +369,11 @@ defmodule Bizforge.Adapters.CursorCli do
       {:ok, %{"type" => "assistant", "message" => %{"content" => content}}}
       when is_list(content) ->
         content
-        |> Enum.filter(fn part ->
-          is_map(part) and part["type"] === "text" and
-            is_binary(part["text"]) and part["text"] !== ""
+        |> Enum.filter(fn p ->
+          is_map(p) and p["type"] === "text" and
+            is_binary(p["text"]) and p["text"] !== ""
         end)
-        |> Enum.map(fn part ->
+        |> Enum.map(fn _p ->
           %{
             event_type: "run.output",
             data: %{"type" => "assistant", "message" => %{"content" => content}},

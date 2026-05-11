@@ -26,7 +26,7 @@ defmodule Bizforge.Schemas.Session do
 
     belongs_to :agent, Bizforge.Schemas.Agent
     belongs_to :schedule, Bizforge.Schemas.Schedule
-    belongs_to :issue, Bizforge.Schemas.Issue
+    belongs_to :task, Bizforge.Schemas.Task, foreign_key: :issue_id
     belongs_to :workspace, Bizforge.Schemas.Workspace
     belongs_to :parent_session, Bizforge.Schemas.Session
     has_one :child_session, Bizforge.Schemas.Session, foreign_key: :parent_session_id

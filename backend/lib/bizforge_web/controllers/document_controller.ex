@@ -7,30 +7,17 @@ defmodule BizforgeWeb.DocumentController do
 
   def index(conn, params) do
     with {:ok, ref_dir} <- resolve_reference_dir(params) do
-      files =
-        case File.ls(ref_dir) do
-          {:ok, names} ->
-            names
-            |> Enum.filter(&(not String.starts_with?(&1, ".")))
-            |> Enum.map(fn name ->
-              path = Path.join(ref_dir, name)
-              stat = File.stat!(path)
-
-              %{
-                name: name,
-                path: name,
-                size: stat.size,
-                type: if(stat.type == :directory, do: "directory", else: "file"),
-                modified_at: stat.mtime
-              }
-            end)
-            |> Enum.sort_by(& &1.name)
-
-          {:error, _} ->
-            []
+      scan_dir =
+        case params["project_id"] do
+          nil -> ref_dir
+          pid -> Path.join([ref_dir, "projects", pid])
         end
 
-      json(conn, %{files: files, directory: ref_dir})
+      files = scan_directory(scan_dir)
+      documents = files_to_documents(files, ref_dir)
+      tree = build_tree(files, ref_dir)
+
+      json(conn, %{files: files, documents: documents, tree: tree, directory: scan_dir})
     else
       {:error, reason} ->
         conn |> put_status(404) |> json(%{error: reason})
@@ -64,23 +51,65 @@ defmodule BizforgeWeb.DocumentController do
     end
   end
 
-  def create(conn, %{"path" => relative_path, "content" => content} = params) do
-    with {:ok, ref_dir} <- resolve_reference_dir(params),
-         file_path = Path.join(ref_dir, relative_path),
-         true <- safe_path?(ref_dir, file_path) do
-      dir = Path.dirname(file_path)
+  def create(conn, %{"content" => content} = params) do
+    with {:ok, ref_dir} <- resolve_reference_dir(params) do
+      base_path =
+        case {params["path"], params["title"]} do
+          {path, _} when is_binary(path) and path != "" ->
+            path
 
-      with :ok <- File.mkdir_p(dir),
-           :ok <- File.write(file_path, content) do
-        conn |> put_status(201) |> json(%{ok: true, path: relative_path})
+          {_, title} when is_binary(title) ->
+            ext = format_to_ext(params["format"])
+            slug = slugify(title)
+            "#{slug}#{ext}"
+
+          _ ->
+            "untitled.md"
+        end
+
+      relative_path =
+        case params["project_id"] do
+          pid when is_binary(pid) and pid != "" ->
+            if String.starts_with?(base_path, "projects/#{pid}/") do
+              base_path
+            else
+              Path.join(["projects", pid, base_path])
+            end
+
+          _ ->
+            base_path
+        end
+
+      file_path = Path.join(ref_dir, relative_path)
+
+      if safe_path?(ref_dir, file_path) do
+        dir = Path.dirname(file_path)
+
+        with :ok <- File.mkdir_p(dir),
+             :ok <- File.write(file_path, content) do
+          stat = File.stat!(file_path)
+
+          doc = %{
+            id: relative_path,
+            title: params["title"] || Path.basename(relative_path, Path.extname(relative_path)),
+            path: relative_path,
+            content: content,
+            format: params["format"] || "markdown",
+            project_id: params["project_id"],
+            last_edited_by: "user",
+            created_at: format_mtime(stat.mtime),
+            updated_at: format_mtime(stat.mtime)
+          }
+
+          conn |> put_status(201) |> json(%{document: doc})
+        else
+          {:error, reason} ->
+            conn |> put_status(500) |> json(%{error: friendly_error(reason)})
+        end
       else
-        {:error, reason} ->
-          conn |> put_status(500) |> json(%{error: friendly_error(reason)})
+        conn |> put_status(400) |> json(%{error: "invalid_path"})
       end
     else
-      false ->
-        conn |> put_status(400) |> json(%{error: "invalid_path"})
-
       {:error, reason} ->
         conn |> put_status(404) |> json(%{error: reason})
     end
@@ -202,29 +231,136 @@ defmodule BizforgeWeb.DocumentController do
         {:error, "workspace_not_found"}
 
       workspace ->
-        dir = Path.join([workspace.path, ".bizforge", "reference"])
+        dir = Path.join([expand_home(workspace.path), ".bizforge", "reference"])
         File.mkdir_p!(dir)
         {:ok, dir}
     end
   end
 
   defp resolve_reference_dir(_params) do
-    # Fall back to the active workspace (status = "active")
     case Repo.one(from w in Workspace, where: w.status == "active", limit: 1) do
       nil ->
         {:error, "no_active_workspace"}
 
       workspace ->
-        dir = Path.join([workspace.path, ".bizforge", "reference"])
+        dir = Path.join([expand_home(workspace.path), ".bizforge", "reference"])
         File.mkdir_p!(dir)
         {:ok, dir}
     end
   end
 
-  # Validate that a resolved path doesn't escape the reference directory via ".." traversal
+  defp expand_home("~" <> rest), do: Path.expand("~") <> rest
+  defp expand_home(path), do: path
+
   defp safe_path?(ref_dir, file_path) do
     expanded = Path.expand(file_path)
     expanded_ref = Path.expand(ref_dir)
     String.starts_with?(expanded, expanded_ref <> "/") or expanded == expanded_ref
+  end
+
+  defp format_mtime({{y, mo, d}, {h, mi, s}}) do
+    NaiveDateTime.new!(y, mo, d, h, mi, s)
+    |> NaiveDateTime.to_iso8601()
+    |> Kernel.<>("Z")
+  end
+
+  defp format_mtime(_), do: nil
+
+  defp slugify(title) do
+    title
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\s_-]/, "")
+    |> String.replace(~r/[\s-]+/, "_")
+    |> String.trim("_")
+  end
+
+  defp format_to_ext("json"), do: ".json"
+  defp format_to_ext("yaml"), do: ".yaml"
+  defp format_to_ext("text"), do: ".txt"
+  defp format_to_ext("sql"), do: ".sql"
+  defp format_to_ext("dbml"), do: ".dbml"
+  defp format_to_ext("pdf"), do: ".pdf"
+  defp format_to_ext(_), do: ".md"
+
+  defp scan_directory(dir) do
+    case File.ls(dir) do
+      {:ok, names} ->
+        names
+        |> Enum.filter(&(not String.starts_with?(&1, ".")))
+        |> Enum.flat_map(fn name ->
+          path = Path.join(dir, name)
+          stat = File.stat!(path)
+
+          if stat.type == :directory do
+            sub_files = scan_directory(path)
+            [%{name: name, path: path, size: 0, type: "directory", modified_at: format_mtime(stat.mtime)} | sub_files]
+          else
+            [%{name: name, path: path, size: stat.size, type: "file", modified_at: format_mtime(stat.mtime)}]
+          end
+        end)
+        |> Enum.sort_by(& &1.name)
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp files_to_documents(files, ref_dir) do
+    files
+    |> Enum.filter(&(&1.type == "file"))
+    |> Enum.map(fn file ->
+      rel_path = Path.relative_to(file.path, ref_dir)
+      title = Path.basename(rel_path, Path.extname(rel_path))
+      content =
+        case File.read(file.path) do
+          {:ok, c} -> c
+          _ -> ""
+        end
+
+      %{
+        id: rel_path,
+        title: title,
+        path: rel_path,
+        content: content,
+        format: ext_to_format(Path.extname(rel_path)),
+        project_id: extract_project_id(rel_path),
+        last_edited_by: "system",
+        created_at: file.modified_at,
+        updated_at: file.modified_at
+      }
+    end)
+  end
+
+  defp build_tree(files, ref_dir) do
+    files
+    |> Enum.filter(&(&1.type == "file"))
+    |> Enum.map(fn file ->
+      rel_path = Path.relative_to(file.path, ref_dir)
+      %{
+        path: rel_path,
+        name: Path.basename(rel_path),
+        type: "file"
+      }
+    end)
+  end
+
+  defp ext_to_format(".json"), do: "json"
+  defp ext_to_format(".yaml"), do: "yaml"
+  defp ext_to_format(".yml"), do: "yaml"
+  defp ext_to_format(".txt"), do: "text"
+  defp ext_to_format(".sql"), do: "sql"
+  defp ext_to_format(".dbml"), do: "dbml"
+  defp ext_to_format(".pdf"), do: "pdf"
+  defp ext_to_format(".doc"), do: "binary"
+  defp ext_to_format(".docx"), do: "binary"
+  defp ext_to_format(".xls"), do: "binary"
+  defp ext_to_format(".xlsx"), do: "binary"
+  defp ext_to_format(_), do: "markdown"
+
+  defp extract_project_id(rel_path) do
+    case Path.split(rel_path) do
+      ["projects", project_id | _rest] -> project_id
+      _ -> nil
+    end
   end
 end

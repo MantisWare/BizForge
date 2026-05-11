@@ -13,9 +13,9 @@ import type {
   DispatchRoute,
   Schedule,
   HeartbeatRun,
-  Issue,
-  Goal,
-  GoalTreeNode,
+  Task,
+  Phase,
+  PhaseTreeNode,
   Project,
   CostSummary,
   AgentCostBreakdown,
@@ -107,94 +107,19 @@ const API_PREFIX = "/api/v1";
 
 logInfo("info", `API base URL: ${BASE_URL}${API_PREFIX}`);
 
-let useMock = true;
-let mockModule: typeof import("./mock/index") | null = null;
-
-async function getMock() {
-  if (!mockModule) {
-    mockModule = await import("./mock/index");
-  }
-  return mockModule;
-}
-
-/**
- * Enable mock mode and notify the mock module so its internal guard allows
- * handleRequest calls. Also clears the response cache to prevent stale real
- * data from being served after a reconnect cycle.
- *
- * When transitioning FROM mock TO real mode, a transition gate is raised so
- * in-flight requests are held until the cache is cleared and re-auth completes,
- * preventing a mixed mock/real state.
- */
-async function setMockEnabled(enabled: boolean): Promise<void> {
-  const wasInMock = useMock;
-  useMock = enabled;
-
-  if (wasInMock !== enabled) {
-    logInfo("mock", `Mode switched: ${wasInMock ? "mock" : "live"} → ${enabled ? "mock" : "live"}`);
-  }
-
-  try {
-    localStorage.setItem("bizforge-mock-mode", String(enabled));
-  } catch {
-    // Non-fatal (SSR / blocked)
-  }
-
-  // If we're switching from mock → real, erect the transition gate BEFORE
-  // clearing caches so no racing request sneaks through with stale data.
-  if (wasInMock && !enabled) {
-    beginTransition();
-  }
-
-  // Best-effort: notify the mock module. The module may not be loaded yet when
-  // mock mode is first activated on startup — that is fine because _mockAllowed
-  // defaults to true inside the mock module.
-  if (mockModule) {
-    if (enabled) {
-      mockModule.notifyMockEnabled();
-    } else {
-      mockModule.notifyMockDisabled();
-      // Wipe mock-sourced localStorage so real data is never polluted by
-      // leftover mock agents, sessions, etc.
-      mockModule.clearAllMockData();
-    }
-  } else if (!enabled) {
-    // Mock module not loaded yet but we're disabling mock — eagerly load it
-    // just to clear localStorage so stale data doesn't survive.
-    try {
-      const mod = await getMock();
-      mod.notifyMockDisabled();
-      mod.clearAllMockData();
-    } catch {
-      // Non-fatal
-    }
-  }
-
-  // If we just started the transition, clear the cache and lower the gate.
-  // The gate was raised above to prevent requests from racing through before
-  // clearCache() completes.
-  if (wasInMock && !enabled) {
-    clearCache();
-    endTransition();
-  }
-}
-
 // ── Token Store ───────────────────────────────────────────────────────────────
-// Eagerly restore token and mock flag from localStorage so Vite HMR module
-// reloads don't wipe in-memory auth state and leave requests hanging.
+// Eagerly restore token from localStorage so Vite HMR module reloads don't
+// wipe in-memory auth state and leave requests hanging.
 
 function _restoreFromLocalStorage(): {
   token: string | null;
-  mock: boolean | null;
 } {
-  if (typeof localStorage === "undefined") return { token: null, mock: null };
+  if (typeof localStorage === "undefined") return { token: null };
   try {
     const token = localStorage.getItem("bizforge-auth-token");
-    const mockRaw = localStorage.getItem("bizforge-mock-mode");
-    const mock = mockRaw !== null ? mockRaw === "true" : null;
-    return { token: token ?? null, mock };
+    return { token: token ?? null };
   } catch {
-    return { token: null, mock: null };
+    return { token: null };
   }
 }
 
@@ -202,12 +127,6 @@ const _restored = _restoreFromLocalStorage();
 
 let _token: string | null = _restored.token;
 let _firstRun: boolean = false;
-
-// Restore the mock flag so HMR doesn't flip back to true when the backend
-// was already confirmed reachable.
-if (_restored.mock !== null) {
-  useMock = _restored.mock;
-}
 
 export function getToken(): string | null {
   return _token;
@@ -231,7 +150,7 @@ export function isFirstRun(): boolean {
 
 let _authResolve: (() => void) | null = null;
 const _authPromise: Promise<void> = new Promise<void>((resolve) => {
-  if (_token !== null || useMock) {
+  if (_token !== null) {
     resolve();
     _authResolve = null;
   } else {
@@ -314,28 +233,25 @@ async function verifyToken(token: string): Promise<VerifyResult> {
   // using it here would make verifyToken() return "valid" for stale or
   // invalid tokens, skipping re-login and sending unauthenticated requests.
   //
-  // Retry with increasing back-off — the backend may have passed its health
-  // probe but still be warming up routes when this fires on cold start.
-  // Only a definitive 401 should invalidate the token; transient errors
-  // (503, timeout, network) return "unreachable" so callers can trust the
-  // stored token rather than bouncing the user to the login page.
-  const maxAttempts = 4;
-  const delays = [1500, 2500, 3500];
+  // Two quick attempts with a short delay. The health probe already confirmed
+  // the backend is reachable, so aggressive retries are unnecessary. Transient
+  // errors return "unreachable" so callers trust the stored token rather than
+  // bouncing the user to the login page on cold-start race conditions.
+  const maxAttempts = 2;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const res = await fetch(`${BASE_URL}${API_PREFIX}/agents`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(4000),
       });
       if (res.ok) return "valid";
       if (res.status === 401) return "unauthorized";
-      // Non-401 error (503, 500, etc.) — retry after a brief wait
       if (attempt < maxAttempts - 1) {
-        await new Promise((r) => setTimeout(r, delays[attempt] ?? 3500));
+        await new Promise((r) => setTimeout(r, 500));
       }
     } catch {
       if (attempt < maxAttempts - 1) {
-        await new Promise((r) => setTimeout(r, delays[attempt] ?? 3500));
+        await new Promise((r) => setTimeout(r, 500));
       }
     }
   }
@@ -361,6 +277,17 @@ export function initializeAuth(): Promise<void> {
   // execution and avoid redundant health probes, cache clearing, and token
   // verification requests.
   if (_initPromise) return _initPromise;
+
+  // Fast path: if we already have a token from localStorage (set at module
+  // init), resolve immediately so the layout boot sequence starts at once.
+  // The full health/verify flow runs in the background — if the token turns
+  // out to be invalid, the next API call will 401 and redirect to /auth.
+  if (_token) {
+    resolveAuthGate();
+    _initPromise = _doInitializeAuth();
+    return Promise.resolve();
+  }
+
   _initPromise = _doInitializeAuth();
   return _initPromise;
 }
@@ -370,69 +297,72 @@ async function _doInitializeAuth(): Promise<void> {
   const authStartMs = performance.now();
 
   // 0a. Restore session state from Tauri disk store → localStorage.
-  // Webview localStorage can be cleared by the OS between launches; the Tauri
-  // plugin-store persists to the app data directory and survives restarts.
-  await restoreSessionFromStore();
+  // Run concurrently with the health probe since they're independent.
+  const restorePromise = restoreSessionFromStore();
 
-  // 0b. Probe backend health — if it responds, disable mock mode
+  // 0b. Probe backend health — if unreachable, resolve gate immediately.
+  let backendReachable = false;
   try {
     const probe = await fetch(`${BASE_URL}${API_PREFIX}/health`, {
       signal: AbortSignal.timeout(3000),
     });
     if (probe.ok) {
+      backendReachable = true;
       logInfo("health", `Backend reachable (${Math.round(performance.now() - authStartMs)}ms)`);
       clearCache();
-      await setMockEnabled(false);
     }
   } catch {
-    logWarn("health", `Backend unreachable at ${BASE_URL} — entering mock mode`);
-    await setMockEnabled(true);
+    logWarn("health", `Backend unreachable at ${BASE_URL} — app will show disconnected state`);
+    await restorePromise;
     resolveAuthGate();
     return;
   }
 
-  // 0b. Check auth status to determine first-run state
-  try {
-    const statusRes = await fetch(`${BASE_URL}${API_PREFIX}/auth/status`, {
+  // 0c. Check auth status and finish session restore in parallel.
+  const [authStatusResult] = await Promise.allSettled([
+    fetch(`${BASE_URL}${API_PREFIX}/auth/status`, {
       signal: AbortSignal.timeout(3000),
-    });
-    if (statusRes.ok) {
-      const status = (await statusRes.json()) as {
-        has_users: boolean;
-        registration_open: boolean;
-      };
-      _firstRun = !status.has_users;
-      logInfo("auth", `Auth status: has_users=${status.has_users}, first_run=${_firstRun}`);
-    }
-  } catch {
+    }).then(async (res) => {
+      if (res.ok) {
+        return (await res.json()) as { has_users: boolean; registration_open: boolean };
+      }
+      return null;
+    }),
+    restorePromise,
+  ]);
+
+  if (authStatusResult.status === "fulfilled" && authStatusResult.value !== null) {
+    _firstRun = !authStatusResult.value.has_users;
+    logInfo("auth", `Auth status: has_users=${authStatusResult.value.has_users}, first_run=${_firstRun}`);
+  } else {
     _firstRun = false;
     logWarn("auth", "Could not fetch auth status — assuming users exist");
   }
 
-  // 1. If no users exist yet (first run), open gate and return immediately.
   if (_firstRun) {
     logInfo("auth", "First run detected — skipping token verification, redirecting to registration");
     resolveAuthGate();
     return;
   }
 
-  // 2. Check Tauri store for a saved token
-  try {
-    const { load: loadStore } = await import("@tauri-apps/plugin-store");
-    const store = await loadStore("store.json", {
-      autoSave: true,
-      defaults: {},
-    });
-    const stored = await store.get<string>("authToken");
-    if (stored) {
-      _token = stored;
-      logInfo("auth", "Token restored from Tauri store");
+  // 1. Token was already restored at module init from localStorage.
+  //    Only check Tauri store if we still don't have one.
+  if (!_token) {
+    try {
+      const { load: loadStore } = await import("@tauri-apps/plugin-store");
+      const store = await loadStore("store.json", { autoSave: true, defaults: {} });
+      const stored = await store.get<string>("authToken");
+      if (stored) {
+        _token = stored;
+        logInfo("auth", "Token restored from Tauri store");
+      }
+    } catch {
+      logInfo("auth", "Tauri store unavailable");
     }
-  } catch {
-    logInfo("auth", "Tauri store unavailable — trying localStorage");
   }
 
-  // 3. Fall back to localStorage token if Tauri store had nothing
+  // 2. Still no token — try localStorage explicitly (covers edge cases
+  //    where module-level restore ran before localStorage was populated).
   if (!_token) {
     try {
       const stored = localStorage.getItem("bizforge-auth-token");
@@ -532,7 +462,7 @@ export class ApiError extends Error {
 
 // ── Retry with Backoff ──────────────────────────────────────────────────────
 
-const DEFAULT_RETRY = { maxRetries: 3, backoffMs: 1000, maxBackoff: 30000 };
+const DEFAULT_RETRY = { maxRetries: 2, backoffMs: 500, maxBackoff: 5000 };
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -544,6 +474,17 @@ async function withRetry<T>(
       return await fn();
     } catch (error) {
       lastError = error as Error;
+      if (error instanceof ApiError && error.status === 429) {
+        const retryAfter =
+          typeof (error.body as Record<string, unknown>)?.retry_after ===
+          "number"
+            ? ((error.body as Record<string, unknown>).retry_after as number) *
+              1000
+            : config.backoffMs * 2 ** attempt;
+        const delay = Math.min(retryAfter, config.maxBackoff);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
       if (error instanceof ApiError && error.status < 500) throw error;
       const delay = Math.min(
         config.backoffMs * 2 ** attempt,
@@ -564,6 +505,8 @@ const CACHE_TTL: Record<string, number> = {
   "/dashboard": 15_000,
   "/schedules": 30_000,
   "/costs": 30_000,
+  "/projects": 10_000,
+  "/phases": 10_000,
 };
 
 function getCacheTTL(path: string): number {
@@ -758,7 +701,7 @@ async function doFetch<T>(
   const response = await fetch(url, {
     ...options,
     headers,
-    signal: options.signal ?? AbortSignal.timeout(15_000),
+    signal: options.signal ?? AbortSignal.timeout(8_000),
   });
 
   const elapsed = Math.round(performance.now() - fetchStart);
@@ -845,9 +788,6 @@ function emitLlmIntercept(event: LlmInterceptEvent): void {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   // Wait for auth to finish before making any API call.
-  // Re-read useMock AFTER the promise resolves — initializeAuth() may have
-  // flipped it from true → false while this call was queued, which is the
-  // race condition that caused mock data to bleed into live sessions.
   await _authPromise;
 
   // If a mock→real transition is in progress, wait for it to complete so we
@@ -876,35 +816,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     });
   }
 
-  // Guard: re-check useMock after the auth gate opens so a flip that happened
-  // concurrently during initializeAuth() is always visible here.
-  if (useMock) {
-    const mock = await getMock();
-    // Second guard: useMock could flip again between the check above and
-    // getMock() completing (getMock() is async). Only dispatch to mock when
-    // the flag is still true at call time.
-    if (!useMock) {
-      // Fall through to the real fetch path below
-    } else {
-      const result = await mock.handleRequest<T>(path, options);
-      if (isLlm) {
-        emitLlmIntercept({
-          requestId: reqId,
-          path,
-          method: (options.method ?? "GET").toUpperCase(),
-          direction: "received",
-          payload: result,
-          durationMs: Math.round(performance.now() - reqStart),
-          status: "success",
-        });
-      }
-      return result;
-    }
-  }
-
-  // Guard: if the backend is live but there is no auth token, attempt
-  // silent re-login with saved credentials before failing.
-  if (!useMock && _token === null) {
+  // Guard: if there is no auth token, attempt silent re-login with saved
+  // credentials before failing.
+  if (_token === null) {
     const reAuthed = await attemptReAuth();
     if (!reAuthed) {
       throw new ApiError(401, "unauthorized");
@@ -939,12 +853,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       setCache(path, data);
       return data;
     } catch (error) {
-      if (!(error instanceof ApiError)) {
-        logWarn("net", `Network error on GET ${path} — falling back to mock`, error);
-        await setMockEnabled(true);
-        const mock = await getMock();
-        return mock.handleRequest<T>(path, options);
-      }
       throw error;
     }
   }
@@ -1137,7 +1045,6 @@ const SESSION_KEYS = [
   "bizforge-onboarding-complete",
   "bizforge-onboarding",
   "bizforge-display-name",
-  "bizforge-mock-mode",
   "bizforge-saved-email",
 ] as const;
 
@@ -1274,11 +1181,6 @@ export const health = {
         signal: AbortSignal.timeout(3000),
       });
       if (!res.ok) throw new ApiError(res.status, "Health check failed");
-      if (useMock) {
-        logInfo("health", `Backend came online — switching from mock to live (${Math.round(performance.now() - healthStart)}ms)`);
-        clearCache();
-        await setMockEnabled(false);
-      }
       const data = await res.json() as HealthResponse;
       logInfo("health", `Health OK: status=${data.status}, version=${data.version}, agents_active=${data.agents_active ?? 0} (${Math.round(performance.now() - healthStart)}ms)`);
       return data;
@@ -1287,10 +1189,8 @@ export const health = {
         logError("health", `Health check returned ${error.status}: ${error.message}`);
         throw error;
       }
-      logWarn("health", `Health probe failed (${Math.round(performance.now() - healthStart)}ms) — using mock`, (error as Error).message);
-      await setMockEnabled(true);
-      const mock = await getMock();
-      return mock.handleRequest<HealthResponse>("/health", {});
+      logWarn("health", `Health probe failed (${Math.round(performance.now() - healthStart)}ms)`, (error as Error).message);
+      throw new ApiError(0, "Backend unreachable");
     }
   },
 };
@@ -1463,7 +1363,7 @@ export const sprints = {
   create: (body: {
     name: string;
     project_id: string;
-    goal?: string;
+    objective?: string;
     start_date?: string;
     end_date?: string;
     velocity_target?: number;
@@ -1485,15 +1385,15 @@ export const sprints = {
     request<{ sprint: import("./types").Sprint; velocity: number }>(`/sprints/${id}/complete`, {
       method: "POST",
     }),
-  assignIssues: (sprintId: string, issueIds: string[]) =>
-    request<{ ok: boolean; assigned: number }>(`/sprints/${sprintId}/assign-issues`, {
+  assignTasks: (sprintId: string, taskIds: string[]) =>
+    request<{ ok: boolean; assigned: number }>(`/sprints/${sprintId}/assign-tasks`, {
       method: "POST",
-      body: JSON.stringify({ issue_ids: issueIds }),
+      body: JSON.stringify({ task_ids: taskIds }),
     }),
-  unassignIssues: (sprintId: string, issueIds: string[]) =>
-    request<{ ok: boolean; unassigned: number }>(`/sprints/${sprintId}/unassign-issues`, {
+  unassignTasks: (sprintId: string, taskIds: string[]) =>
+    request<{ ok: boolean; unassigned: number }>(`/sprints/${sprintId}/unassign-tasks`, {
       method: "POST",
-      body: JSON.stringify({ issue_ids: issueIds }),
+      body: JSON.stringify({ task_ids: taskIds }),
     }),
 };
 
@@ -1592,78 +1492,84 @@ export const workflows = {
     ).then((d) => d.run),
 };
 
-// ── Issues ────────────────────────────────────────────────────────────────────
+// ── Tasks (formerly Issues) ───────────────────────────────────────────────────
 
-export const issues = {
-  list: async (workspaceId?: string): Promise<Issue[]> => {
+export const tasks = {
+  list: async (workspaceId?: string): Promise<Task[]> => {
     const qs = workspaceId ? `?workspace_id=${workspaceId}` : "";
-    const data = await request<{ issues: Issue[] }>(`/issues${qs}`);
-    return data.issues ?? [];
+    const data = await request<{ tasks: Task[] }>(`/tasks${qs}`);
+    return data.tasks ?? [];
   },
-  get: (id: string) => request<Issue>(`/issues/${id}`),
-  create: (body: Partial<Issue>) =>
-    request<Issue>("/issues", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: Partial<Issue>) =>
-    request<Issue>(`/issues/${id}`, {
+  get: (id: string) => request<Task>(`/tasks/${id}`),
+  create: (body: Partial<Task>) =>
+    request<Task>("/tasks", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: Partial<Task>) =>
+    request<Task>(`/tasks/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
-  delete: (id: string) => request<void>(`/issues/${id}`, { method: "DELETE" }),
-  dispatch: (issueId: string) =>
-    request<{ ok: boolean; message: string }>(`/issues/${issueId}/dispatch`, {
+  delete: (id: string) => request<void>(`/tasks/${id}`, { method: "DELETE" }),
+  dispatch: (taskId: string) =>
+    request<{ ok: boolean; message: string }>(`/tasks/${taskId}/dispatch`, {
       method: "POST",
     }),
   assign: (id: string, agentId: string) =>
-    request<void>(`/issues/${id}/assign`, {
+    request<void>(`/tasks/${id}/assign`, {
       method: "POST",
       body: JSON.stringify({ agent_id: agentId }),
     }),
   comments: (id: string) =>
-    request<{ comments: unknown[] }>(`/issues/${id}/comments`),
+    request<{ comments: unknown[] }>(`/tasks/${id}/comments`),
   addComment: (id: string, body: string) =>
-    request<void>(`/issues/${id}/comments`, {
+    request<void>(`/tasks/${id}/comments`, {
       method: "POST",
       body: JSON.stringify({ body }),
     }),
   checkout: (id: string) =>
-    request<void>(`/issues/${id}/checkout`, { method: "POST" }),
+    request<void>(`/tasks/${id}/checkout`, { method: "POST" }),
 };
 
-// ── Goals ─────────────────────────────────────────────────────────────────────
+/** @deprecated Use tasks instead */
+export const issues = tasks;
 
-export const goals = {
-  list: async (projectId: string): Promise<GoalTreeNode[]> => {
-    const data = await request<{ goals: GoalTreeNode[] }>(
-      `/projects/${projectId}/goals`,
+// ── Phases (formerly Goals) ──────────────────────────────────────────────────
+
+export const phases = {
+  list: async (projectId: string): Promise<PhaseTreeNode[]> => {
+    const data = await request<{ phases: PhaseTreeNode[] }>(
+      `/projects/${projectId}/phases`,
     );
-    return data.goals ?? [];
+    return data.phases ?? [];
   },
-  get: (id: string) => request<{ goal: Goal }>(`/goals/${id}`),
-  create: (projectId: string, body: Partial<Goal>) =>
-    request<Goal>("/goals", {
+  get: (id: string) => request<{ phase: Phase }>(`/phases/${id}`),
+  create: (projectId: string, body: Partial<Phase>) =>
+    request<Phase>("/phases", {
       method: "POST",
       body: JSON.stringify({ ...body, project_id: projectId }),
     }),
-  update: (_projectId: string, id: string, body: Partial<Goal>) =>
-    request<Goal>(`/goals/${id}`, {
+  update: (_projectId: string, id: string, body: Partial<Phase>) =>
+    request<Phase>(`/phases/${id}`, {
       method: "PUT",
       body: JSON.stringify(body),
     }),
-  delete: (id: string) => request<void>(`/goals/${id}`, { method: "DELETE" }),
+  delete: (id: string) => request<void>(`/phases/${id}`, { method: "DELETE" }),
   decompose: (
-    goalId: string,
-    opts?: { max_issues?: number; auto_assign?: boolean },
+    phaseId: string,
+    opts?: { max_tasks?: number; auto_assign?: boolean },
   ) =>
-    request<{ status: string; goal_id: string; message: string }>(
-      `/goals/${goalId}/decompose`,
+    request<{ status: string; phase_id: string; message: string }>(
+      `/phases/${phaseId}/decompose`,
       {
         method: "POST",
         body: JSON.stringify(opts ?? {}),
       },
     ),
   ancestry: (id: string) =>
-    request<{ ancestry: Goal[] }>(`/goals/${id}/ancestry`),
+    request<{ ancestry: Phase[] }>(`/phases/${id}/ancestry`),
 };
+
+/** @deprecated Use phases instead */
+export const goals = phases;
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
@@ -1693,6 +1599,39 @@ export const projects = {
     request<void>(`/projects/${id}`, { method: "DELETE" }),
   workspaces: (id: string) =>
     request<{ workspaces: Workspace[] }>(`/projects/${id}/workspaces`),
+};
+
+// ── ForgeMap ──────────────────────────────────────────────────────────────────
+
+import type {
+  ForgeMapDetection,
+  ForgeMapScanResult,
+  ForgeMapEntry,
+} from './types';
+
+export const forgemap = {
+  detect: (projectId: string) =>
+    request<{ detection: ForgeMapDetection }>(`/projects/${projectId}/forgemap/detect`, {
+      method: 'POST',
+    }),
+  scan: (projectId: string, opts?: { write_headers?: boolean; session_id?: string }) =>
+    request<{ scan: ForgeMapScanResult }>(`/projects/${projectId}/forgemap/scan`, {
+      method: 'POST',
+      body: JSON.stringify(opts ?? {}),
+    }),
+  index: (projectId: string) =>
+    request<{ entries: ForgeMapEntry[] }>(`/projects/${projectId}/forgemap`),
+  updateEntry: (projectId: string, filePath: string, updates: { content?: string; tags?: string[] }) =>
+    request<{ entry: ForgeMapEntry }>(`/projects/${projectId}/forgemap/${encodeURIComponent(filePath)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }),
+  resolveExecutionOrder: (projectId: string) =>
+    request<{ ok: boolean }>(`/projects/${projectId}/resolve-execution-order`, {
+      method: 'POST',
+    }),
+  readyTasks: (projectId: string) =>
+    request<{ tasks: import('./types').Task[] }>(`/projects/${projectId}/ready-tasks`),
 };
 
 // ── Costs ─────────────────────────────────────────────────────────────────────
@@ -2085,6 +2024,7 @@ export const documents = {
     content: string;
     format?: Document["format"];
     project_id?: string | null;
+    workspace_id?: string;
   }): Promise<Document> => {
     const data = await request<Document | { document: Document }>(
       "/documents",
@@ -2116,14 +2056,17 @@ export const documents = {
 
   listByProject: async (
     projectId: string,
+    workspaceId?: string,
   ): Promise<{
     documents: Document[];
     tree: DocumentTreeNode[];
   }> => {
+    const qs = new URLSearchParams({ project_id: projectId });
+    if (workspaceId !== undefined) qs.set("workspace_id", workspaceId);
     const data = await request<{
       documents: Document[];
       tree: DocumentTreeNode[];
-    }>(`/documents?project_id=${encodeURIComponent(projectId)}`);
+    }>(`/documents?${qs.toString()}`);
     return { documents: data.documents ?? [], tree: data.tree ?? [] };
   },
 
@@ -2264,6 +2207,18 @@ export const memory = {
   },
   delete: async (id: string): Promise<void> => {
     await request<void>(`/memory/${id}`, { method: "DELETE" });
+  },
+  byProject: async (projectId: string): Promise<MemoryEntry[]> => {
+    const data = await request<{ entries: MemoryEntry[] }>(`/memory/project/${projectId}`);
+    return data.entries ?? [];
+  },
+  company: async (): Promise<MemoryEntry[]> => {
+    const data = await request<{ entries: MemoryEntry[] }>('/memory/company');
+    return data.entries ?? [];
+  },
+  resolve: async (projectId: string): Promise<MemoryEntry[]> => {
+    const data = await request<{ entries: MemoryEntry[] }>(`/memory/resolve/${projectId}`);
+    return data.entries ?? [];
   },
 };
 
@@ -3044,18 +2999,12 @@ export const reports = {
     request<Blob>(`/reports/${id}/export?format=${format}`),
 };
 
-// ── Enable/Disable Mock ──────────────────────────────────────────────────────
-// These are async because disabling mock purges localStorage and notifies the
-// mock module, both of which are best-effort async operations.
+// ── Mock Mode (disabled) ─────────────────────────────────────────────────────
+// Mock mode is permanently disabled. These stubs exist for backward compat.
 
-export async function enableMock(): Promise<void> {
-  await setMockEnabled(true);
-}
-export async function disableMock(): Promise<void> {
-  await setMockEnabled(false);
-}
+/** @deprecated Mock mode is disabled. Always returns false. */
 export function isMockEnabled(): boolean {
-  return useMock;
+  return false;
 }
 
 /**
@@ -3068,22 +3017,4 @@ export function isMockEnabled(): boolean {
  */
 export function resetInitPromise(): void {
   _initPromise = null;
-}
-
-/**
- * Purge all mock-related localStorage keys and flush in-memory mock state.
- * Safe to call at any time — no-ops when the mock module isn't loaded yet.
- */
-export async function clearMockData(): Promise<void> {
-  try {
-    const mod = await getMock();
-    mod.clearAllMockData();
-  } catch {
-    // Mock module not available — clear the well-known key directly
-    try {
-      localStorage.removeItem("bizforge-workspace-agents");
-    } catch {
-      // localStorage unavailable
-    }
-  }
 }

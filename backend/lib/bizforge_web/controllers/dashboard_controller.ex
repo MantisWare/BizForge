@@ -2,7 +2,7 @@ defmodule BizforgeWeb.DashboardController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Agent, Session, ActivityEvent, Issue, BudgetPolicy}
+  alias Bizforge.Schemas.{Agent, Session, ActivityEvent, Task, BudgetPolicy}
   import Ecto.Query
 
   def show(conn, params) do
@@ -140,22 +140,22 @@ defmodule BizforgeWeb.DashboardController do
           select: coalesce(sum(ce.cost_cents), 0)
       ) || 0
 
-    open_issues_query =
-      from i in Issue, where: i.status in ["backlog", "in_progress"]
+    open_tasks_query =
+      from i in Task, where: i.status in ["backlog", "in_progress"]
 
-    open_issues_query =
+    open_tasks_query =
       cond do
         workspace_id ->
-          where(open_issues_query, [i], i.workspace_id == ^workspace_id)
+          where(open_tasks_query, [i], i.workspace_id == ^workspace_id)
 
         user_workspace_ids != [] ->
-          where(open_issues_query, [i], i.workspace_id in ^user_workspace_ids)
+          where(open_tasks_query, [i], i.workspace_id in ^user_workspace_ids)
 
         true ->
-          open_issues_query
+          open_tasks_query
       end
 
-    open_issues = Repo.aggregate(open_issues_query, :count)
+    open_tasks = Repo.aggregate(open_tasks_query, :count)
 
     # BudgetPolicy uses scope_type/scope_id — match workspace_id via scope_id when present
     workspace_policy_query =
@@ -201,7 +201,7 @@ defmodule BizforgeWeb.DashboardController do
         active_agents: active_count,
         total_agents: total_count,
         live_runs: length(live_runs),
-        open_issues: open_issues,
+        open_tasks: open_tasks,
         budget_remaining_pct: budget_remaining_pct
       },
       live_runs: live_runs,

@@ -14,7 +14,7 @@ defmodule Bizforge.Schemas.Workspace do
     belongs_to :organization, Bizforge.Schemas.Organization
     has_many :agents, Bizforge.Schemas.Agent
     has_many :projects, Bizforge.Schemas.Project
-    has_many :issues, Bizforge.Schemas.Issue
+    has_many :tasks, Bizforge.Schemas.Task
     has_many :skills, Bizforge.Schemas.Skill
 
     timestamps()

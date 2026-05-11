@@ -108,7 +108,7 @@ defmodule Bizforge.Adapters.Gemini do
       System.get_env("GEMINI_API_KEY")
   end
 
-  defp call_gemini_stream(api_key, model, prompt, max_tokens, attachments \\ []) do
+  defp call_gemini_stream(api_key, model, prompt, max_tokens, attachments) do
     url = "#{@api_base}/#{model}:generateContent?key=#{api_key}"
 
     parts = [%{"text" => prompt}] ++ build_image_parts(attachments)

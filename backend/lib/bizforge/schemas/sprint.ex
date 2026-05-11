@@ -9,7 +9,7 @@ defmodule Bizforge.Schemas.Sprint do
 
   schema "sprints" do
     field :name, :string
-    field :goal, :string
+    field :objective, :string
     field :start_date, :date
     field :end_date, :date
     field :status, :string, default: "planned"
@@ -19,7 +19,7 @@ defmodule Bizforge.Schemas.Sprint do
 
     belongs_to :project, Bizforge.Schemas.Project
     belongs_to :workspace, Bizforge.Schemas.Workspace
-    has_many :issues, Bizforge.Schemas.Issue
+    has_many :tasks, Bizforge.Schemas.Task
 
     timestamps()
   end
@@ -28,7 +28,7 @@ defmodule Bizforge.Schemas.Sprint do
     sprint
     |> cast(attrs, [
       :name,
-      :goal,
+      :objective,
       :start_date,
       :end_date,
       :status,

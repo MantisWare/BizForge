@@ -33,14 +33,8 @@
     // initializeAuth() is a singleton — safe to call multiple times.
     // It probes /health, reads /auth/status to set _firstRun, and restores
     // or verifies any saved token.
-    const { initializeAuth, isMockEnabled, getToken, isFirstRun } = await import('$api/client');
+    const { initializeAuth, getToken, isFirstRun } = await import('$api/client');
     await initializeAuth();
-
-    // If backend is unreachable, stay in mock mode → go to offline onboarding.
-    if (isMockEnabled()) {
-      goto('/onboarding', { replaceState: true });
-      return;
-    }
 
     // Dev auto-login may have already produced a valid token — skip auth UI.
     if (getToken()) {

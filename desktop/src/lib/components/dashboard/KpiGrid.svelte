@@ -49,8 +49,8 @@
       icon={ICON_PLAY}
     />
     <MetricCard
-      label="Open Issues"
-      value={dashboardStore.kpis?.open_issues ?? 0}
+      label="Open Tasks"
+      value={dashboardStore.kpis?.open_tasks ?? 0}
       icon={ICON_TRIANGLE}
     />
     <MetricCard

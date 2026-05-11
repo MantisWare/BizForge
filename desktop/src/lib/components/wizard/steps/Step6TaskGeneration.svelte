@@ -4,7 +4,7 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
-  import { agents as agentsApi, sessions, isMockEnabled } from '$api/client';
+  import { agents as agentsApi, sessions } from '$api/client';
   import { streamMessage } from '$api/sse';
   import type { WizardTask, WizardSprintGroup, BizforgeAgent } from '$api/types';
   import type { StreamController } from '$api/sse';
@@ -91,12 +91,13 @@ Generate tasks grouped into sprints. Respond with ONLY valid JSON (no markdown f
   "sprints": [
     {
       "name": "Sprint 1: Foundation",
-      "goal": "Set up project infrastructure and core architecture",
-      "issues": [
+      "objective": "Set up project infrastructure and core architecture",
+      "tasks": [
         {
           "title": "Set up project scaffolding",
           "description": "Initialize the project structure with...",
           "priority": "high",
+          "task_type": "scaffold",
           "labels": ["setup", "infrastructure"],
           "depends_on": []
         }
@@ -108,15 +109,12 @@ Generate tasks grouped into sprints. Respond with ONLY valid JSON (no markdown f
 Guidelines:
 - Create 2-4 sprints with 3-8 tasks each
 - Priorities: critical, high, medium, low
+- task_type: prerequisite | scaffold | feature | subtask | validation
+- Prerequisite/scaffold tasks first, features next, validation last
 - Order tasks by dependency
 - Make titles concise and actionable
 - Make descriptions detailed (2-3 sentences)
 - Include relevant labels`;
-
-    if (isMockEnabled()) {
-      await mockGenerate();
-      return;
-    }
 
     try {
       const agent = await getOrCreateAgent();
@@ -157,37 +155,52 @@ Guidelines:
   }
 
   function parseAndSetTasks(raw: string): void {
+    const validTaskTypes = ['prerequisite', 'scaffold', 'feature', 'subtask', 'validation'];
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch !== null) {
         const data = JSON.parse(jsonMatch[0]) as {
           sprints: Array<{
             name: string;
-            goal: string;
-            issues: Array<{
+            objective?: string;
+            goal?: string;
+            tasks?: Array<{
               title: string;
               description: string;
               priority: string;
+              task_type?: string;
+              labels: string[];
+              depends_on?: string[];
+            }>;
+            issues?: Array<{
+              title: string;
+              description: string;
+              priority: string;
+              task_type?: string;
               labels: string[];
               depends_on?: string[];
             }>;
           }>;
         };
 
-        wizardStore.sprintGroups = data.sprints.map((sprint) => ({
-          name: sprint.name,
-          goal: sprint.goal,
-          tasks: sprint.issues.map((issue) => ({
-            id: crypto.randomUUID(),
-            title: issue.title,
-            description: issue.description,
-            priority: (['critical', 'high', 'medium', 'low'].includes(issue.priority) ? issue.priority : 'medium') as WizardTask['priority'],
-            labels: issue.labels ?? [],
-            sprintName: sprint.name,
-            dependsOn: issue.depends_on ?? [],
-            selected: true,
-          })),
-        }));
+        wizardStore.sprintGroups = data.sprints.map((sprint) => {
+          const sprintTasks = sprint.tasks ?? sprint.issues ?? [];
+          return {
+            name: sprint.name,
+            objective: sprint.objective ?? sprint.goal ?? '',
+            tasks: sprintTasks.map((item) => ({
+              id: crypto.randomUUID(),
+              title: item.title,
+              description: item.description,
+              priority: (['critical', 'high', 'medium', 'low'].includes(item.priority) ? item.priority : 'medium') as WizardTask['priority'],
+              labels: item.labels ?? [],
+              sprintName: sprint.name,
+              dependsOn: item.depends_on ?? [],
+              taskType: validTaskTypes.includes(item.task_type ?? '') ? item.task_type as WizardTask['taskType'] : null,
+              selected: true,
+            })),
+          };
+        });
       }
     } catch { /* parse failed */ }
     wizardStore.isGeneratingTasks = false;
@@ -206,31 +219,31 @@ Guidelines:
     wizardStore.sprintGroups = [
       {
         name: 'Sprint 1: Foundation',
-        goal: 'Set up project infrastructure and core architecture',
+        objective: 'Set up project infrastructure and core architecture',
         tasks: [
-          { id: crypto.randomUUID(), title: 'Initialize project repository and scaffolding', description: 'Set up the base project structure with the chosen tech stack, configure build tools, and create initial directory layout.', priority: 'high', labels: ['setup', 'infrastructure'], sprintName: 'Sprint 1: Foundation', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Configure CI/CD pipeline', description: 'Set up automated build, test, and deployment pipeline with proper staging and production environments.', priority: 'high', labels: ['devops', 'infrastructure'], sprintName: 'Sprint 1: Foundation', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Design database schema', description: 'Create the initial database schema based on domain requirements, including migrations and seed data.', priority: 'high', labels: ['backend', 'database'], sprintName: 'Sprint 1: Foundation', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Set up authentication system', description: 'Implement user registration, login, and session management with secure token handling.', priority: 'medium', labels: ['backend', 'security'], sprintName: 'Sprint 1: Foundation', dependsOn: [], selected: true },
+          { id: crypto.randomUUID(), title: 'Initialize project repository and scaffolding', description: 'Set up the base project structure with the chosen tech stack, configure build tools, and create initial directory layout.', priority: 'high', labels: ['setup', 'infrastructure'], sprintName: 'Sprint 1: Foundation', dependsOn: [], taskType: 'scaffold', selected: true },
+          { id: crypto.randomUUID(), title: 'Configure CI/CD pipeline', description: 'Set up automated build, test, and deployment pipeline with proper staging and production environments.', priority: 'high', labels: ['devops', 'infrastructure'], sprintName: 'Sprint 1: Foundation', dependsOn: [], taskType: 'prerequisite', selected: true },
+          { id: crypto.randomUUID(), title: 'Design database schema', description: 'Create the initial database schema based on domain requirements, including migrations and seed data.', priority: 'high', labels: ['backend', 'database'], sprintName: 'Sprint 1: Foundation', dependsOn: [], taskType: 'prerequisite', selected: true },
+          { id: crypto.randomUUID(), title: 'Set up authentication system', description: 'Implement user registration, login, and session management with secure token handling.', priority: 'medium', labels: ['backend', 'security'], sprintName: 'Sprint 1: Foundation', dependsOn: [], taskType: 'feature', selected: true },
         ],
       },
       {
         name: 'Sprint 2: Core Features',
-        goal: 'Implement primary user-facing functionality',
+        objective: 'Implement primary user-facing functionality',
         tasks: [
-          { id: crypto.randomUUID(), title: 'Build REST API endpoints', description: 'Implement the core CRUD API endpoints with proper validation, error handling, and documentation.', priority: 'high', labels: ['backend', 'api'], sprintName: 'Sprint 2: Core Features', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Create UI component library', description: 'Build reusable UI components (buttons, forms, modals, tables) following the design system.', priority: 'medium', labels: ['frontend', 'design'], sprintName: 'Sprint 2: Core Features', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Implement main dashboard', description: 'Build the primary dashboard view with data visualization, activity feed, and quick actions.', priority: 'medium', labels: ['frontend', 'feature'], sprintName: 'Sprint 2: Core Features', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Add real-time notifications', description: 'Implement WebSocket-based notification system for live updates on user actions and system events.', priority: 'low', labels: ['fullstack', 'feature'], sprintName: 'Sprint 2: Core Features', dependsOn: [], selected: true },
+          { id: crypto.randomUUID(), title: 'Build REST API endpoints', description: 'Implement the core CRUD API endpoints with proper validation, error handling, and documentation.', priority: 'high', labels: ['backend', 'api'], sprintName: 'Sprint 2: Core Features', dependsOn: [], taskType: 'feature', selected: true },
+          { id: crypto.randomUUID(), title: 'Create UI component library', description: 'Build reusable UI components (buttons, forms, modals, tables) following the design system.', priority: 'medium', labels: ['frontend', 'design'], sprintName: 'Sprint 2: Core Features', dependsOn: [], taskType: 'feature', selected: true },
+          { id: crypto.randomUUID(), title: 'Implement main dashboard', description: 'Build the primary dashboard view with data visualization, activity feed, and quick actions.', priority: 'medium', labels: ['frontend', 'feature'], sprintName: 'Sprint 2: Core Features', dependsOn: [], taskType: 'feature', selected: true },
+          { id: crypto.randomUUID(), title: 'Add real-time notifications', description: 'Implement WebSocket-based notification system for live updates on user actions and system events.', priority: 'low', labels: ['fullstack', 'feature'], sprintName: 'Sprint 2: Core Features', dependsOn: [], taskType: 'feature', selected: true },
         ],
       },
       {
         name: 'Sprint 3: Quality & Polish',
-        goal: 'Testing, documentation, and production readiness',
+        objective: 'Testing, documentation, and production readiness',
         tasks: [
-          { id: crypto.randomUUID(), title: 'Write integration test suite', description: 'Create comprehensive integration tests covering all critical user flows and API endpoints.', priority: 'high', labels: ['testing', 'qa'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Generate API documentation', description: 'Auto-generate OpenAPI/Swagger docs from API definitions and add usage examples.', priority: 'medium', labels: ['documentation', 'api'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], selected: true },
-          { id: crypto.randomUUID(), title: 'Performance optimization', description: 'Profile and optimize slow queries, add caching layer, and ensure sub-200ms response times.', priority: 'medium', labels: ['backend', 'performance'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], selected: true },
+          { id: crypto.randomUUID(), title: 'Write integration test suite', description: 'Create comprehensive integration tests covering all critical user flows and API endpoints.', priority: 'high', labels: ['testing', 'qa'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], taskType: 'validation', selected: true },
+          { id: crypto.randomUUID(), title: 'Generate API documentation', description: 'Auto-generate OpenAPI/Swagger docs from API definitions and add usage examples.', priority: 'medium', labels: ['documentation', 'api'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], taskType: 'validation', selected: true },
+          { id: crypto.randomUUID(), title: 'Performance optimization', description: 'Profile and optimize slow queries, add caching layer, and ensure sub-200ms response times.', priority: 'medium', labels: ['backend', 'performance'], sprintName: 'Sprint 3: Quality & Polish', dependsOn: [], taskType: 'feature', selected: true },
         ],
       },
     ];
@@ -309,7 +322,7 @@ Guidelines:
       <div class="s6-sprint">
         <div class="s6-sprint-header">
           <span class="s6-sprint-name">{group.name}</span>
-          <span class="s6-sprint-goal">{group.goal}</span>
+          <span class="s6-sprint-goal">{group.objective}</span>
         </div>
         <div class="s6-task-list">
           {#each group.tasks as task (task.id)}
@@ -320,6 +333,7 @@ Guidelines:
               <div class="s6-task-body">
                 <div class="s6-task-header">
                   {#if editingTask === task.id}
+                    <!-- svelte-ignore a11y_autofocus -->
                     <input
                       type="text"
                       class="s6-task-title-input"
@@ -329,7 +343,8 @@ Guidelines:
                       autofocus
                     />
                   {:else}
-                    <span class="s6-task-title" ondblclick={() => { editingTask = task.id; }}>{task.title}</span>
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <span class="s6-task-title" role="textbox" ondblclick={() => { editingTask = task.id; }}>{task.title}</span>
                   {/if}
                   <span class="s6-priority" style="color: {PRIORITY_COLORS[task.priority]}">{task.priority}</span>
                 </div>

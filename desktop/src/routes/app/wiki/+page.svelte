@@ -166,48 +166,48 @@
           title: 'Projects',
           route: '/app/projects',
           description:
-            'Projects are top-level containers that group goals, issues, agents, sessions, and costs together. They represent distinct workstreams or initiatives within your workspace.',
+            'Projects are top-level containers that group phases, tasks, agents, sessions, and costs together. They represent distinct workstreams or initiatives within your workspace.',
           useCase:
-            'Create a project for each major initiative (e.g., "Website Redesign", "Q4 Marketing Campaign") to keep goals, issues, and agent assignments organized.',
+            'Create a project for each major initiative (e.g., "Website Redesign", "Q4 Marketing Campaign") to keep phases, tasks, and agent assignments organized.',
           configuration: [
             'Status filter: all, active, completed, archived',
             'Search by project name',
           ],
           capabilities: [
             'Create projects with name, description, and status',
-            'Project detail view with tabs: Overview, Goals, Issues, Agents, Sessions, Costs',
-            'Track goal progress and issue resolution per project',
+            'Project detail view with tabs: Overview, Docs, Phases, Tasks, Agents, Sessions, Costs',
+            'Track phase progress and task resolution per project',
             'View agent assignments and session history scoped to the project',
             'Monitor per-project cost breakdown',
           ],
         },
         {
-          id: 'goals',
-          title: 'Goals',
-          route: '/app/goals',
+          id: 'phases',
+          title: 'Phases',
+          route: '/app/phases',
           description:
-            'Goals form a hierarchical tree under each project. They can be decomposed into sub-goals, and each goal can have associated issues. Progress aggregates upward through the tree.',
+            'Phases form a hierarchical tree under each project. They can be decomposed into sub-phases, and each phase can have associated tasks. Progress aggregates upward through the tree.',
           useCase:
-            'Define high-level objectives, then let agents decompose them into actionable sub-goals. Track progress as issues are completed against each goal.',
+            'Define implementation phases, then let agents decompose them into actionable sub-phases. Track progress as tasks are completed against each phase.',
           configuration: [
-            'Must select a project first — goals are always project-scoped',
+            'Must select a project first — phases are always project-scoped',
             'Filter by status or priority',
           ],
           capabilities: [
-            'Hierarchical goal tree with visual nesting',
-            'AI-powered decomposition: break a goal into sub-goals automatically',
-            'Progress tracking aggregated from child goals and linked issues',
-            'Create, update, and delete goals with title, description, status, and priority',
+            'Hierarchical phase tree with visual nesting',
+            'AI-powered decomposition: break a phase into sub-phases automatically',
+            'Progress tracking aggregated from child phases and linked tasks',
+            'Create, update, and delete phases with title, description, status, and priority',
           ],
         },
         {
-          id: 'issues',
-          title: 'Issues',
-          route: '/app/issues',
+          id: 'tasks',
+          title: 'Tasks',
+          route: '/app/tasks',
           description:
-            'Issues are discrete work items that can be assigned to agents, linked to goals and projects, tagged with labels, and tracked through a Kanban-style workflow.',
+            'Tasks are discrete work items that can be assigned to agents, linked to phases and projects, tagged with labels, and tracked through a Kanban-style workflow.',
           useCase:
-            'Use issues to track bugs, tasks, and feature requests. Agents can be dispatched to work on issues, and you can monitor their progress through the Kanban board.',
+            'Use tasks to track bugs, features, and work items. Agents can be dispatched to work on tasks, and you can monitor their progress through the Kanban board.',
           configuration: [
             'View mode: Kanban board, list view, or table view',
             'Filter by status, priority, assignee, and labels',
@@ -216,10 +216,10 @@
           ],
           capabilities: [
             'Kanban columns: open, in_progress, review, done, closed',
-            'Assign issues to agents for autonomous resolution',
-            'Dispatch an issue to have an agent start working on it immediately',
-            'Comments thread on each issue',
-            'Link issues to goals and projects',
+            'Assign tasks to agents for autonomous resolution',
+            'Dispatch a task to have an agent start working on it immediately',
+            'Comments thread on each task',
+            'Link tasks to phases and projects',
             'Label tagging for categorization',
           ],
         },
@@ -598,7 +598,7 @@
           description:
             'Workflows let you define multi-step automated processes with conditional logic. Each step can assign a task to an agent, check a condition, or perform a system action.',
           useCase:
-            'Automate complex processes: "When a new issue is created, assign it to Agent A for triage, if critical then escalate to Agent B, otherwise add to backlog." Workflows replace manual orchestration.',
+            'Automate complex processes: "When a new task is created, assign it to Agent A for triage, if critical then escalate to Agent B, otherwise add to backlog." Workflows replace manual orchestration.',
           configuration: [
             'Trigger type: manual, schedule (cron), webhook, or event-based',
             'Step types: agent_task, condition, transform, notification, approval, wait',
@@ -820,12 +820,12 @@
           title: 'Webhooks',
           route: '/app/webhooks',
           description:
-            'Webhooks send HTTP POST notifications to external URLs when events occur in BizForge — agent lifecycle changes, issue updates, schedule completions, etc.',
+            'Webhooks send HTTP POST notifications to external URLs when events occur in BizForge — agent lifecycle changes, task updates, schedule completions, etc.',
           useCase:
-            'Integrate BizForge with external systems: post to Slack when an agent errors, trigger a CI pipeline when an issue is completed, or log events to a monitoring service.',
+            'Integrate BizForge with external systems: post to Slack when an agent errors, trigger a CI pipeline when a task is completed, or log events to a monitoring service.',
           configuration: [
             'Target URL',
-            'Event selection: agent.started, agent.stopped, issue.created, schedule.completed, etc.',
+            'Event selection: agent.started, agent.stopped, task.created, schedule.completed, etc.',
             'Auto-generated signing secret for verification',
           ],
           capabilities: [

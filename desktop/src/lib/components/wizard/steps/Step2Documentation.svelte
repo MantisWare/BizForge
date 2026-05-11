@@ -5,7 +5,7 @@
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
-  import { agents as agentsApi, sessions, messages, isMockEnabled } from '$api/client';
+  import { agents as agentsApi, sessions, messages } from '$api/client';
   import { streamMessage } from '$api/sse';
   import type { WizardDocument, DocumentFormat, BizforgeAgent } from '$api/types';
   import type { StreamController } from '$api/sse';
@@ -17,18 +17,18 @@
 
   const ACCEPTED_EXTENSIONS: Record<string, DocumentFormat> = {
     '.md': 'markdown',
-    '.txt': 'markdown',
+    '.txt': 'text',
     '.json': 'json',
     '.yaml': 'yaml',
     '.yml': 'yaml',
-    '.csv': 'markdown',
-    '.dbml': 'markdown',
-    '.sql': 'markdown',
-    '.pdf': 'markdown',
-    '.doc': 'markdown',
-    '.docx': 'markdown',
-    '.xls': 'markdown',
-    '.xlsx': 'markdown',
+    '.csv': 'text',
+    '.dbml': 'text',
+    '.sql': 'sql',
+    '.pdf': 'pdf',
+    '.doc': 'binary',
+    '.docx': 'binary',
+    '.xls': 'binary',
+    '.xlsx': 'binary',
   };
 
   const BINARY_EXTENSIONS = new Set(['.pdf', '.doc', '.docx', '.xls', '.xlsx']);
@@ -206,11 +206,6 @@ Please analyze this and produce a structured project brief that includes:
 7. **Architecture Notes** — Any architectural patterns or considerations
 
 Write in clear prose. Be specific and actionable.`;
-
-    if (isMockEnabled()) {
-      await mockEnhance(prompt);
-      return;
-    }
 
     try {
       const agent = await getOrCreateAgent();

@@ -366,7 +366,7 @@
         </button>
 
         {#if filterDropdownOpen}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
           <div class="lip-filter-backdrop" onclick={() => { filterDropdownOpen = false; }}></div>
           <div class="lip-filter-dropdown" role="listbox">
             {#each filterOptions as opt (opt.filter.level + ':' + opt.filter.id)}

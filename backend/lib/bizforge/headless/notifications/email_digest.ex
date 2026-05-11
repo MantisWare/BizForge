@@ -135,18 +135,23 @@ defmodule Bizforge.Headless.Notifications.EmailDigest do
       auth: :always
     ]
 
-    try do
-      case :gen_smtp_client.send_blocking(
-             {config.from, [config.to], message},
-             relay_opts
-           ) do
-        receipt when is_binary(receipt) -> :ok
-        {:error, reason} -> {:error, reason}
+    if Code.ensure_loaded?(:gen_smtp_client) do
+      try do
+        case :gen_smtp_client.send_blocking(
+               {config.from, [config.to], message},
+               relay_opts
+             ) do
+          receipt when is_binary(receipt) -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+      rescue
+        e -> {:error, Exception.message(e)}
+      catch
+        :exit, reason -> {:error, reason}
       end
-    rescue
-      e -> {:error, Exception.message(e)}
-    catch
-      :exit, reason -> {:error, reason}
+    else
+      Logger.warning("[EmailDigest] gen_smtp not available — add {:gen_smtp, \"~> 1.2\"} to deps")
+      {:error, :gen_smtp_not_available}
     end
   end
 

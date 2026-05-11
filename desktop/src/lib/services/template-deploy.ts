@@ -9,7 +9,6 @@ import { agentsStore } from "$lib/stores/agents.svelte";
 import { skillsStore } from "$lib/stores/skills.svelte";
 import { toastStore } from "$lib/stores/toasts.svelte";
 import { isTauri } from "$lib/utils/platform";
-import { isMockEnabled } from "$api/client";
 import { resolveSkillsForTeam, partitionSkills } from "$lib/data/skill-dependencies";
 
 export interface DeployResult {
@@ -345,19 +344,6 @@ async function registerAgents(
   // ── Refresh stores so sidebar and hierarchy pages reflect new structure ──
   await hierarchyStore.fetchDivisions();
   await agentsStore.fetchAgents(workspaceId);
-
-  // Also persist to mock layer for offline resilience
-  if (isMockEnabled()) {
-    try {
-      const { setMockWorkspaceAgents } = await import("$api/mock/agents");
-      const freshAgents = agentsStore.agents;
-      if (freshAgents.length > 0) {
-        setMockWorkspaceAgents(workspaceId, freshAgents);
-      }
-    } catch {
-      // Mock module may not be available
-    }
-  }
 
   return { failures, warnings };
 }

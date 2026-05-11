@@ -2,7 +2,7 @@ defmodule BizforgeWeb.DelegationController do
   use BizforgeWeb, :controller
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.Issue
+  alias Bizforge.Schemas.Task
   alias Bizforge.Dispatch.{Delegation, Router}
 
   @doc """
@@ -18,7 +18,7 @@ defmodule BizforgeWeb.DelegationController do
     - `priority`       (optional) — "low" | "medium" | "high" | "critical"
   """
   def create(conn, %{"parent_task_id" => parent_id, "description" => description} = params) do
-    case Repo.get(Issue, parent_id) do
+    case Repo.get(Task, parent_id) do
       nil ->
         conn
         |> put_status(404)
@@ -32,14 +32,14 @@ defmodule BizforgeWeb.DelegationController do
           |> maybe_opt(:priority, params["priority"])
 
         case Delegation.delegate(parent, description, opts) do
-          {:ok, issue} ->
-            issue = Repo.preload(issue, [:labels, :assignee])
+          {:ok, task} ->
+            task = Repo.preload(task, [:labels, :assignee])
 
             conn
             |> put_status(201)
             |> json(%{
-              issue: serialize_issue(issue),
-              resolved_adapter: issue.adapter_override || "agent_default"
+              task: serialize_task(task),
+              resolved_adapter: task.adapter_override || "agent_default"
             })
 
           {:error, changeset} ->
@@ -132,19 +132,19 @@ defmodule BizforgeWeb.DelegationController do
     end
   end
 
-  defp serialize_issue(issue) do
+  defp serialize_task(task) do
     %{
-      id: issue.id,
-      title: issue.title,
-      description: issue.description,
-      status: issue.status,
-      priority: issue.priority,
-      adapter_override: issue.adapter_override,
-      delegation_chain: issue.delegation_chain,
-      workspace_id: issue.workspace_id,
-      assignee_id: issue.assignee_id,
-      inserted_at: issue.inserted_at,
-      updated_at: issue.updated_at
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      adapter_override: task.adapter_override,
+      delegation_chain: task.delegation_chain,
+      workspace_id: task.workspace_id,
+      assignee_id: task.assignee_id,
+      inserted_at: task.inserted_at,
+      updated_at: task.updated_at
     }
   end
 

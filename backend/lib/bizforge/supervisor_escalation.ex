@@ -12,7 +12,7 @@ defmodule Bizforge.SupervisorEscalation do
   require Logger
 
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Agent, Issue}
+  alias Bizforge.Schemas.{Agent, Task}
   import Ecto.Query, only: [from: 2]
 
   @max_escalation_depth 5
@@ -97,7 +97,7 @@ defmodule Bizforge.SupervisorEscalation do
 
     **Original context:**
     - Session ID: #{metadata[:session_id] || "N/A"}
-    - Issue ID: #{metadata[:issue_id] || "N/A"}
+    - Task ID: #{metadata[:issue_id] || "N/A"}
 
     **Last session summary:**
     #{session_summary}
@@ -116,25 +116,25 @@ defmodule Bizforge.SupervisorEscalation do
       project_id: resolve_project_id(metadata[:issue_id])
     }
 
-    case Bizforge.Work.create_issue(attrs) do
-      {:ok, issue} ->
+    case Bizforge.Work.create_task(attrs) do
+      {:ok, task} ->
         Logger.info(
-          "[SupervisorEscalation] Created escalation issue #{issue.id} assigned to #{superior.name}"
+          "[SupervisorEscalation] Created escalation task #{task.id} assigned to #{superior.name}"
         )
 
         Bizforge.EventBus.broadcast(
-          Bizforge.EventBus.workspace_topic(issue.workspace_id),
-          %{event: "issue.assigned", issue_id: issue.id, agent_id: superior.id}
+          Bizforge.EventBus.workspace_topic(task.workspace_id),
+          %{event: "task.assigned", task_id: task.id, agent_id: superior.id}
         )
 
-        {:ok, :escalated, issue}
+        {:ok, :escalated, task}
 
       {:error, changeset} ->
         Logger.error(
-          "[SupervisorEscalation] Failed to create escalation issue: #{inspect(changeset.errors)}"
+          "[SupervisorEscalation] Failed to create escalation task: #{inspect(changeset.errors)}"
         )
 
-        {:error, :issue_creation_failed}
+        {:error, :task_creation_failed}
     end
   end
 
@@ -142,7 +142,7 @@ defmodule Bizforge.SupervisorEscalation do
   defp resolve_project_id(nil), do: nil
 
   defp resolve_project_id(issue_id) do
-    case Repo.one(from i in Issue, where: i.id == ^issue_id, select: i.project_id) do
+    case Repo.one(from i in Task, where: i.id == ^issue_id, select: i.project_id) do
       nil -> nil
       project_id -> project_id
     end

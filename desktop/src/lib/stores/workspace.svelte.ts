@@ -3,7 +3,7 @@ import { browser } from "$app/environment";
 import { isTauri } from "$lib/utils/platform";
 import type { Workspace as BackendWorkspace } from "$api/types";
 import { toastStore } from "./toasts.svelte";
-import { workspaces as workspacesApi, isMockEnabled } from "$api/client";
+import { workspaces as workspacesApi } from "$api/client";
 import type { BizforgeWorkspace, WorkspaceHealthReport, RepairResult } from "$lib/types/bizforge";
 
 /**
@@ -342,16 +342,10 @@ class WorkspaceStore {
   /** Sync workspaces from the backend and set the active one */
   async syncFromBackend(): Promise<void> {
     try {
-      const { workspaces: workspacesApi, clearMockData } =
+      const { workspaces: workspacesApi } =
         await import("$api/client");
       const backendWorkspaces: BackendWorkspace[] = await workspacesApi.list();
       if (!backendWorkspaces || backendWorkspaces.length === 0) return;
-
-      // Backend responded with real workspace data — purge any mock agents or
-      // other mock state that may have been persisted to localStorage during a
-      // prior offline session. This must happen before any agents store fetch
-      // so that stale mock agents cannot be merged with real backend agents.
-      await clearMockData();
 
       // Prefer the first "active" workspace, fall back to the first in the list
       const activeBackendWs =
@@ -417,18 +411,15 @@ class WorkspaceStore {
 
     let backendId: string | null = null;
 
-    // Create workspace in backend so agents can reference it
-    if (!isMockEnabled()) {
-      try {
-        const created = await workspacesApi.create({
-          name,
-          directory: resolvedPath,
-        });
-        backendId =
-          (created as any).workspace?.id ?? (created as any).id ?? null;
-      } catch {
-        // Backend create failed — fall back to local-only
-      }
+    try {
+      const created = await workspacesApi.create({
+        name,
+        directory: resolvedPath,
+      });
+      backendId =
+        (created as any).workspace?.id ?? (created as any).id ?? null;
+    } catch {
+      // Backend create failed — fall back to local-only
     }
 
     const ws: LocalWorkspace = {

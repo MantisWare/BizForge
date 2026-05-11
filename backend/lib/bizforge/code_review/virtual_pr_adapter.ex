@@ -10,7 +10,7 @@ defmodule Bizforge.CodeReview.VirtualPRAdapter do
 
   require Logger
   alias Bizforge.Repo
-  alias Bizforge.Schemas.{Issue, Comment}
+  alias Bizforge.Schemas.{Task, Comment}
   import Ecto.Changeset, only: [change: 2]
 
   @impl true
@@ -97,7 +97,7 @@ defmodule Bizforge.CodeReview.VirtualPRAdapter do
 
       issue ->
         update_pr_status(issue, "approved")
-        Bizforge.IssueLifecycle.notify_review_approved(issue.id)
+        Bizforge.TaskLifecycle.notify_review_approved(issue.id)
         {:ok, %{handle | status: "approved"}}
     end
   end
@@ -111,7 +111,7 @@ defmodule Bizforge.CodeReview.VirtualPRAdapter do
       issue ->
         update_pr_status(issue, "changes_requested")
         add_comment(handle, "Changes requested: #{reason}", author: "reviewer")
-        Bizforge.IssueLifecycle.notify_changes_requested(issue.id)
+        Bizforge.TaskLifecycle.notify_changes_requested(issue.id)
         {:ok, %{handle | status: "changes_requested"}}
     end
   end
@@ -154,7 +154,7 @@ defmodule Bizforge.CodeReview.VirtualPRAdapter do
     import Ecto.Query
 
     Repo.one(
-      from i in Issue,
+      from i in Task,
         where: fragment("?->'pr'->>'pr_id' = ?", i.delegation_chain, ^pr_id),
         limit: 1
     )
