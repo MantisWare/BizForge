@@ -74,11 +74,36 @@ defmodule Bizforge.LifecycleConfigs do
     }
   end
 
+  @doc "Lifecycle with delivery gate — full dev pipeline with project delivery checks."
+  def delivery do
+    %{
+      "name" => "Software Delivery",
+      "states" => ["backlog", "todo", "in_progress", "in_review", "testing", "done", "blocked", "cancelled"],
+      "transitions" => [
+        %{"from" => "backlog", "to" => "in_progress", "trigger" => "assigned_and_dispatched"},
+        %{"from" => "in_progress", "to" => "in_review", "trigger" => "session_completed"},
+        %{"from" => "in_review", "to" => "testing", "trigger" => "review_approved"},
+        %{"from" => "in_review", "to" => "in_progress", "trigger" => "changes_requested"},
+        %{"from" => "testing", "to" => "done", "trigger" => "qa_pass"},
+        %{"from" => "testing", "to" => "in_progress", "trigger" => "qa_fail"},
+        %{"from" => "in_progress", "to" => "blocked", "trigger" => "escalation"},
+        %{"from" => "blocked", "to" => "in_progress", "trigger" => "unblocked"}
+      ],
+      "auto_review" => true,
+      "auto_qa" => true,
+      "require_approval_to_merge" => false,
+      "qa_skill" => "qa/automate",
+      "review_skill" => "development/code-review",
+      "delivery_gate" => true
+    }
+  end
+
   @doc "Return all available templates for the UI picker."
   def all do
     [
       %{id: "domo_development", name: "Domo Development", config: domo_development()},
       %{id: "generic_development", name: "Generic Development", config: generic_development()},
+      %{id: "delivery", name: "Software Delivery (with delivery gate)", config: delivery()},
       %{id: "minimal", name: "Minimal (no review/QA)", config: minimal()}
     ]
   end

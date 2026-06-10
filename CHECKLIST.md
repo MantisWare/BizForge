@@ -128,6 +128,7 @@ Active development phases and their progress.
 - [x] Harden GenServer startup against DB unavailability — `BudgetEnforcer` and `IssueDispatcher` now defer DB queries to `handle_continue` with automatic retry, preventing supervision tree crash when PostgreSQL starts slowly; `Scheduler.load_schedules` wrapped in deferred Task with rescue
 - [x] Add `_ensure-postgres` preflight to justfile — auto-detects `pg_isready`/`pg_ctl`/data dir across Homebrew paths; checks if PostgreSQL is running and auto-starts it if not; wired as dependency on `dev`, `app`, `backend`, and `headless` recipes; `start.sh` also calls it for early feedback
 - [x] Add `_ensure-migrations` preflight to justfile — detects pending Ecto migrations and auto-runs `mix ecto.migrate` before backend launch; prevents `PendingMigrationError` from blocking all API requests
+- [x] Add root `stop.sh` — stops backend, Vite, Tauri, and headless via `just stop` / `just headless-stop`; `./start.sh stop` forwards to `stop.sh`
 
 ### 11. Desktop UX Improvements
 
@@ -941,6 +942,13 @@ Active development phases and their progress.
 > **Auto-updated by Cursor:** Added integration status toggle and layout improvements — replaced static connected/disconnected status indicator with clickable toggle switch (green=on, gray=off) that soft-flips status via POST connect/disconnect without clearing config; separated destructive "Remove" (DELETE, splices from array) from status toggle; mock layer `mockDisconnectIntegration` now preserves config, new `mockRemoveIntegration` does destructive removal; API client `disconnect` now calls `/disconnect` sub-route, new `remove` method calls DELETE; store gains `toggleStatus` and `remove` methods; provider groups use responsive CSS grid (`repeat(auto-fill, minmax(380px, 1fr))`) for 2-column layout on wider screens; section max-width widened from 720px to 960px on 2026-05-06.
 > **Auto-updated by Cursor:** Implemented Agent Task Resilience & Supervisor Escalation — fixed `execute_and_stream` silent failure (adapter errors no longer swallowed as zero-cost success), created `SupervisorEscalation` module (walks `reports_to` chain with cycle guard to escalate failures), created `AdapterCircuitBreaker` GenServer (per-adapter health tracking, 3-failure threshold, 120s cooldown), extended Watchdog to clean up orphaned sessions/issues and escalate after 10 recovery attempts, fixed Delegation to broadcast `issue.assigned` for auto-dispatch, enforced `max_concurrent_runs` in IssueDispatcher, added Heartbeat-level retry with exponential backoff (3 attempts), added DFS cycle detection in GoalDecomposer to strip circular `depends_on` edges on 2026-05-06.
 > **Auto-updated by Cursor:** Fixed app stuck on splash screen — PostgreSQL was not running; hardened `BudgetEnforcer` and `IssueDispatcher` `init/1` to defer DB queries to `handle_continue` with automatic retry on failure, preventing supervision tree crash when database is unavailable at startup; wrapped `Scheduler.load_schedules` in deferred Task with rescue; added `_ensure-postgres` justfile recipe that auto-detects and starts PostgreSQL before any backend launch (`dev`, `app`, `backend`, `headless`); added `_ensure-migrations` recipe that auto-detects and runs pending Ecto migrations before backend launch; updated `start.sh` to call both preflights on 2026-05-08.
+
+> **Auto-updated by Cursor:** Hardened cold-start splash dismissal on 2026-06-04 — splash no longer depends on the main webview loading SvelteKit; Rust polls backend health (+ Vite in dev) and calls `close_splash`, `splash.html` polls backend as a backup with timeout, `just app` waits for two consecutive health checks and Vite HTTP before launching Tauri, `start.sh` runs `just app` once with a first-launch message.
+
+> **Auto-updated by Cursor:** Splash startup checklist on 2026-06-04 — `get_startup_status` Tauri command probes PostgreSQL, backend, database, Vite (dev), and command center readiness; splash screen shows per-service ✓/○ rows in small text and opens the main window only when all items are ready (with timeout fallback).
+
+> **Auto-updated by Cursor:** Fixed startup hang on 2026-06-10 — backend failed to compile due to JavaScript `??` operators in Elixir files (`qa/runner.ex`, `project_delivery.ex`, `code_review/auto_review.ex`); `just app` now runs `mix compile` before launch and surfaces log output when the backend exits early.
+> **Auto-updated by Cursor:** Added root `stop.sh` to shut down all dev services without restarting; `./start.sh stop` delegates to `stop.sh` on 2026-05-20.
 > **Auto-updated by Cursor:** Added compact pixel office miniview to LLM Inspector panel — zoomed-out overview of the full pixel office rendered at the top of the inspector using `renderMinimap`, shows active agent count, togglable via header button with icon highlight, visibility persisted to localStorage on 2026-05-08.
 > **Auto-updated by Cursor:** Implemented Sprint Management & Project Lifecycle Configuration — `sprints` table with full CRUD + start/complete lifecycle + issue assignment, `Sprint` schema (planned/active/complete/cancelled), `sprint_id` on Issues, `lifecycle_config` map on Projects, `Bizforge.LifecycleConfigs` module with 3 default templates (Domo Development, Generic Development, Minimal), `SprintController` with REST endpoints + lifecycle actions, `/projects/lifecycle-templates` endpoint, `IssueLifecycle` now reads `lifecycle_config` from project and respects `auto_review`/`auto_qa` flags, Sprint + LifecycleConfig TypeScript types, `sprints` API client with list/get/create/update/delete/start/complete/assignIssues, 5 `bizforge_sprint_*` MCP tools on 2026-05-08.
 > **Auto-updated by Cursor:** Implemented End-to-End Dev Team Pipeline (ERD → Tasks → Dev → Review → QA → Done) — Phase 1: multimodal `attached_files` on `messages.send` with base64 upload, vision-aware Gemini adapter; Phase 2: Playwright sidecar package (`desktop/playwright-sidecar/`) with JSON-RPC over stdio, `Bizforge.Browser.Sidecar` GenServer, `Bizforge.Browser.Tools` with `ToolPermission`-gated dispatch, `BrowserController` REST surface, `browser/automation` library skill, `browser_automation` tool permission; Phase 3: `data-modeling/erd-parse` skill (DBML/SQL/mermaid/image), ERD-aware prompt injection in `GenerateIssuesModal`, `DocumentFormat` union extended; Phase 4: `Bizforge.Dispatch.SkillRouter` scoring by skill overlap + team affinity + load, auto-assign in `Work.create_issue` when `project.config.auto_assign = true`, 70+ Domo keyword→skill mappings; Phase 5: `Bizforge.IssueLifecycle` GenServer FSM (backlog→in_progress→in_review→testing→done), `notify_session_complete` replaces direct heartbeat status-set, QA child issue fan-out via `SkillRouter.choose`, auto bug creation on QA fail; Phase 6: `Bizforge.CodeReview.Adapter` behaviour with `GithubAdapter`, `VirtualPRAdapter` (diff-based fallback when no git integration bound), `open_code_review` called on `in_review` transition; Phase 8: `resolve_integration_env` in Heartbeat injects `DOMO_INSTANCE`/`DOMO_TOKEN`/`GITHUB_TOKEN`/etc. from `IntegrationResolver` into adapter params, bash adapter passes env to Port; Phase 9: `qa/startup-probe-domo` skill (domo login + domo dev + TLS probe); Phase 10: `QaReportController` ingests QA reports, creates WorkProduct + Report rows, broadcasts `qa.report_ready`, `bizforge_qa_report_ingest` + `bizforge_browser_*` MCP tools added on 2026-05-08.
@@ -1360,7 +1368,89 @@ Active development phases and their progress.
 - [x] Prevent empty backend response from wiping cached providers — providers store now preserves localStorage cache if backend returns empty and cache was non-empty
 - [x] Reduce API retry aggression — `withRetry` reduced from 3 retries / 1s backoff / 30s max to 2 retries / 500ms backoff / 5s max; request timeout reduced from 15s to 8s
 - [x] Remove workspace_id scoping from provider fetch calls — providers are workspace-agnostic; layout and ProvidersSettings now call `providersStore.fetch()` without workspace ID
+- [x] Add structured logging across frontend and backend for traceability
+  - [x] Frontend: exported `logInfo`/`logWarn`/`logError` with new `store` and `boot` log areas
+  - [x] Frontend: boot sequence in `+layout.svelte` logs every milestone with wall-clock timestamps
+  - [x] Frontend: `providersStore.fetch()` logs start/end/cache-hit/error with timing
+  - [x] Frontend: `withRetry` logs each retry attempt with delay and reason
+  - [x] Frontend: `request()` logs when auth gate or transition gate blocks (>50ms)
+  - [x] Frontend: settings page logs tab switch events
+  - [x] Backend: `RequestLogger` plug logs every API request with method, path, status, timing, and user context
+  - [x] Backend: `Auth` plug logs token rejection reasons and auth exceptions
+  - [x] Backend: `ProviderController` logs workspace_id filter and result count
+  - [x] Frontend: every sidebar menu item click logged with label, href, timestamp, and active state
+  - [x] Frontend: SvelteKit `beforeNavigate`/`afterNavigate` hooks log navigation timing with slow-navigation warnings (>1s)
 
 > **Auto-updated by Cursor:** Fixed UI freeze on reload on 2026-05-11 — `initializeAuth()` was blocking the entire layout boot (connection polling, SSE, all store fetches) behind 3+ sequential network calls even when the user was already logged in. Now uses a fast path: if a token is already in localStorage, `initializeAuth()` resolves instantly and health/token verification runs in the background. Workspace context loads from localStorage before auth. All store fetches fire concurrently with zero sequential awaits. ProvidersSettings now passes workspace ID to avoid a duplicate race condition.
 
 > **Auto-updated by Cursor:** Fixed providers not loading and UI lockups on 2026-05-11 — Root causes: (1) Providers were created without `workspace_id` but frontend was filtering by workspace ID, returning 0 results. Fixed backend to include `is_nil(workspace_id)` in queries. (2) Frontend now fetches providers without workspace scoping since they are a global resource. (3) Reduced retry/backoff aggressiveness (2 retries, 500ms backoff, 8s timeout) to prevent cascading delays when backend is slow. (4) Providers store preserves cached data when backend returns empty results.
+
+> **Auto-updated by Cursor:** Normalized Cursor CLI adapter slug on 2026-05-11 — changed `cursor_cli` (underscore) to `cursor-cli` (hyphen) in wizard steps `Step2Documentation`, `Step3CompanySelect`, and `Step6TaskGeneration` to match the canonical slug used by the backend adapter resolver, provider catalog, and adapter registry. Wizard-created agents will now correctly resolve to `Bizforge.Adapters.CursorCli` at runtime.
+
+> **Auto-updated by Cursor:** Fixed AI Providers tab crash (`state_unsafe_mutation`) on 2026-05-11 — Root cause: `llmInspectorStore.getProviderColor()` was called from the `ProvidersSettings` template to render color swatches. When a provider had no assigned color, `ensureProviderColor()` mutated two `$state` fields (`providerColors` and `_colorIndex`) during the render cycle, violating Svelte 5's rule against state mutation inside template expressions. Fix: (1) Changed `_colorIndex` from `$state` to a plain field (not reactive, just a counter). (2) Deferred the `providerColors` `$state` write to `queueMicrotask()` so it runs after the render cycle completes, while still returning the color synchronously. (3) Also added `normalizeProvider()` to providers store ensuring `models`/`config` are never null, and defensive `?.`/`??` guards in the template as additional hardening.
+
+- [x] Per-provider default model — add `default_model` column to `providers` table (Ecto migration), update schema, changeset, and controller serializer
+- [x] Agent provider association — add `provider_id` foreign key to `agents` table (Ecto migration), update schema, changeset, and controller serializer
+- [x] TypeScript types updated — `AIProvider.default_model`, `BizforgeAgent.provider_id`, `Settings.default_provider_id`, `AIProviderCreateRequest.default_model`
+- [x] Provider store normalization — `normalizeProvider()` now includes `default_model`; settings store syncs `default_provider_id` to backend
+- [x] Per-provider default model UI — each provider card in ProvidersSettings now shows a "Default model" dropdown populated from the provider's model list, with the selected default model highlighted in the model tags
+- [x] Global default model rework — selecting a global default model now also stores the `default_provider_id`; current provider name displayed alongside the model selection
+- [x] Agent detail provider+model selector — replaced hardcoded 6-option Claude model `<select>` with a two-step provider → model selector; provider dropdown lists all configured providers; model dropdown populated from the selected provider's models (falls back to text input if no models discovered); saves `provider_id` alongside `model` on agent update
+- [x] Hire flow defaults — `HireAgentDialog` now initializes provider and model from global defaults (`settingsStore.data.default_provider_id` / `default_model`); `AgentModelConfig.handleProviderChange` prefers the provider's `default_model` when switching providers
+- [x] Model fallback chain defined — `agent.model` → `agent.provider.default_model` → `settings.default_model`
+
+> **Auto-updated by Cursor:** Implemented per-provider default model and agent provider+model selection on 2026-05-11 — Added `default_model` column to providers and `provider_id` foreign key to agents (Ecto migration). Each AI provider card now has a default model selector. The global "Default Model" section stores both `default_provider_id` and `default_model`. Agent detail Config tab replaced hardcoded Claude-only model list with a dynamic provider → model two-step selector that persists `provider_id`. Hire flow defaults to the global default provider and model. Establishes a model fallback chain: agent.model → provider.default_model → settings.default_model.
+
+---
+
+## Phase: End-to-End Software Delivery Pipeline
+
+> Transform BizForge from an AI orchestration platform into a reliable outsourced-dev-shop loop: tasks execute in the correct project directory, hybrid review closes the `in_review` gate, QA feeds the lifecycle FSM, and a stack-agnostic Project Delivery Gate certifies shippable output before marking a project complete.
+
+### 1. Project Execution Paths (Foundation)
+
+- [x] `Bizforge.ProjectExecution` module — resolves `output_path`, `working_dir`, `code_dir`, `git_root` per task type
+- [x] Wire `Heartbeat` to use `ProjectExecution.resolve_workspace(agent, task)` instead of `resolve_workspace(agent)`
+- [x] `working_dir` and `workspace_path` params now point to the project output directory for project-scoped tasks
+- [x] `TaskContext.build_context/2` injects explicit Project Paths section (output, working, code, git directories)
+- [x] Code instruction updated: "All application source MUST be written under the Code directory"
+
+### 2. Hybrid Code Review
+
+- [x] `Bizforge.CodeReview.AutoReview` module — evaluates virtual PRs: auto-approves trivial diffs, dispatches review agent task for non-trivial
+- [x] Integrated into `TaskLifecycle` after `open_code_review/2`
+- [x] Trivial diff criteria: empty/whitespace-only, or below configurable line threshold with no binary paths
+- [x] Non-trivial path: spawns review child task with diff summary, code_dir, and structured outcome instructions
+
+### 3. Project Delivery Gate (Stack-Agnostic)
+
+- [x] `Bizforge.ProjectDelivery` module — runs user-configured commands (build, test) against project output
+- [x] `POST /api/v1/projects/:id/deliver` API endpoint — runs gate, returns report
+- [x] `GET /api/v1/projects/:id/delivery-status` API endpoint — readiness + last report
+- [x] Project transitions to `completed` on pass; notifies via Dispatcher on fail
+- [x] Delivery report stored in `project.config["last_delivery"]`
+- [x] Frontend: Delivery tab on project detail page with check editor, presets, and report display
+- [x] Frontend: `DeliveryConfig`, `DeliveryReport`, `DeliveryReadiness` types added
+
+### 4. QA Pipeline Hardening
+
+- [x] Enriched QA child task description with `code_dir`, delivery checks summary, and structured instructions
+- [x] `Bizforge.Qa.Runner` module — optional pre-flight smoke check using project delivery commands
+- [x] `delivery` lifecycle template added to `LifecycleConfigs` (Software Delivery with delivery gate flag)
+- [x] QA child tasks now have `task_type: "validation"` for correct path resolution
+
+### 5. Client Intake & Operator UX
+
+- [x] Wizard `Step5ProjectSetup` — delivery checks form with Node.js preset
+- [x] Wizard store extended with `deliveryCwd` and `deliveryChecks` fields
+- [x] `Step7Review` passes delivery config when creating project
+- [x] CHECKLIST.md updated with Software Delivery Pipeline phase
+
+### 6. Greenfield Scaffold (Deferred)
+
+- [ ] Implement real `handleScaffold` → Tauri IPC `scaffold_stack` (registry: sveltekit, phoenix, etc.)
+- [ ] Or backend Mix task to copy template tarballs into `code/`
+- [ ] Wire into Automated Task Pipeline Phase 2
+
+> **Auto-updated by Cursor:** Implemented end-to-end software delivery pipeline on 2026-05-25 — Added ProjectExecution for correct working directory resolution, hybrid AutoReview for closing the in_review gate, stack-agnostic ProjectDelivery gate with configurable build/test checks, enriched QA context with code paths and delivery info, and wizard delivery config UI. BizForge can now function as an outsourced dev shop: spec in → tasks → dev → review → QA → delivery gate → completed project.
+> **Auto-updated by Cursor:** Post-implementation review on 2026-05-25 — Fixed missing `lifecycleTemplates()` method on API client (was called in wizard Step5 but never added to client.ts), removed unused variable warning in AutoReview.get_lifecycle_config, replaced `unless/else` with explicit `if` in ProjectDelivery and Qa.Runner for clarity.

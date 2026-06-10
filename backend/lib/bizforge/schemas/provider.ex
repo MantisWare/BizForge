@@ -14,6 +14,7 @@ defmodule Bizforge.Schemas.Provider do
     field :config, :map, default: %{}
     field :models, {:array, :string}, default: []
     field :is_default, :boolean, default: false
+    field :default_model, :string
     field :status, :string, default: "untested"
     field :last_tested_at, :utc_datetime
     field :error_message, :string
@@ -24,7 +25,7 @@ defmodule Bizforge.Schemas.Provider do
   end
 
   @required_fields ~w(slug name)a
-  @optional_fields ~w(category api_key endpoint config models is_default status
+  @optional_fields ~w(category api_key endpoint config models is_default default_model status
                       last_tested_at error_message workspace_id)a
 
   def changeset(provider, attrs) do

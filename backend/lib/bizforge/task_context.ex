@@ -25,6 +25,7 @@ defmodule Bizforge.TaskContext do
 
     forgemap_section = build_forgemap_section(task)
     deps_section = build_deps_section(task)
+    project_paths_section = build_project_paths_section(task, agent)
 
     """
     ## Assigned Task
@@ -39,10 +40,11 @@ defmodule Bizforge.TaskContext do
     #{task.description || "No description provided."}
     #{deps_section}
     #{forgemap_section}
+    #{project_paths_section}
 
     ### Instructions
     - Read any referenced input files before starting
-    - Write your output to the appropriate output/ subdirectory
+    - All application source code MUST be written under the Code directory listed above
     - Follow the methodology defined in your system prompt
     - Ensure output meets quality gates defined in the workspace spec
     - When modifying files, update their ForgeMap header annotations
@@ -112,6 +114,25 @@ defmodule Bizforge.TaskContext do
       ### ForgeMap (Relevant Files)
       #{file_summaries}
       """
+    end
+  end
+
+  defp build_project_paths_section(%Task{project_id: nil}, _agent), do: ""
+
+  defp build_project_paths_section(%Task{} = task, agent) do
+    case Bizforge.ProjectExecution.resolve_for_task(task, agent) do
+      {:ok, paths} ->
+        """
+
+        ### Project Paths
+        - **Output path:** `#{paths.output_path}`
+        - **Working directory:** `#{paths.working_dir}`
+        - **Code directory:** `#{paths.code_dir}`
+        - **Git root:** `#{paths.git_root}`
+        """
+
+      _ ->
+        ""
     end
   end
 

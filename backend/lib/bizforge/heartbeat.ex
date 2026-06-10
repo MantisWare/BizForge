@@ -64,9 +64,11 @@ defmodule Bizforge.Heartbeat do
       # Resolve workspace early so that any failure (missing path, bad config)
       # is caught here — before we set the agent to "working" — allowing
       # fail_session! to run and preventing a stuck "active" session.
+      # When the task belongs to a project with output_path, execution runs
+      # in the project directory instead of the .bizforge/ workspace.
       workspace =
         try do
-          resolve_workspace(agent)
+          Bizforge.ProjectExecution.resolve_workspace(agent, prefetched_issue)
         rescue
           e ->
             fail_session!(session, Exception.message(e))
@@ -140,11 +142,13 @@ defmodule Bizforge.Heartbeat do
 
       integration_env = resolve_integration_env(agent, prefetched_issue)
 
+      bizforge_workspace_path = resolve_bizforge_workspace_path(agent)
+
       params = %{
         "context" => full_context,
         "model" => agent.model,
         "working_dir" => workspace.path,
-        "workspace_path" => workspace.path,
+        "workspace_path" => bizforge_workspace_path,
         "url" => agent.config["url"],
         "env" => integration_env
       }
@@ -391,48 +395,12 @@ defmodule Bizforge.Heartbeat do
     Logger.error("[Heartbeat] Session #{session.id} failed: #{reason}")
   end
 
-  # Returns a map with :path and :strategy keys.
-  # Looks up the actual workspace path from the DB instead of using CWD.
-  defp resolve_workspace(agent) do
-    workspace_path =
-      case Repo.get(Workspace, agent.workspace_id) do
-        %Workspace{path: path} when is_binary(path) and path != "" ->
-          path
-
-        %Workspace{path: path_value} ->
-          raise "No workspace path found for agent #{agent.id} " <>
-                  "(workspace_id: #{inspect(agent.workspace_id)}, workspace.path was: #{inspect(path_value)}). " <>
-                  "Set workspace.path to a valid directory before running the heartbeat."
-
-        nil ->
-          raise "No workspace found for agent #{agent.id} " <>
-                  "(workspace_id: #{inspect(agent.workspace_id)}). " <>
-                  "The workspace record does not exist in the database."
-      end
-
-    unless File.dir?(workspace_path) do
-      Logger.warning(
-        "[Heartbeat] Workspace path #{workspace_path} does not exist on disk for agent #{agent.id}. " <>
-          "The heartbeat will likely fail. Ensure the workspace is initialized."
-      )
-    end
-
-    Logger.info("[Heartbeat] Resolved workspace path: #{workspace_path} for agent #{agent.id}")
-
-    if agent.config["workspace_strategy"] == "shared" do
-      %{path: workspace_path, strategy: :shared}
-    else
-      case Bizforge.ExecutionWorkspace.create(workspace_path, strategy: :worktree) do
-        {:ok, ws} ->
-          ws
-
-        {:error, reason} ->
-          Logger.warning(
-            "[Heartbeat] Worktree creation failed (#{inspect(reason)}), using shared workspace"
-          )
-
-          %{path: workspace_path, strategy: :shared}
-      end
+  # Returns the .bizforge/ workspace path for the agent (protocol files live here).
+  # This is separate from the execution working_dir which may point at a project's output_path.
+  defp resolve_bizforge_workspace_path(agent) do
+    case Repo.get(Workspace, agent.workspace_id) do
+      %Workspace{path: path} when is_binary(path) and path != "" -> path
+      _ -> ""
     end
   end
 

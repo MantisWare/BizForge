@@ -21,6 +21,7 @@ defmodule Bizforge.Schemas.Agent do
     field :session_continuity, :map, default: %{}
 
     belongs_to :workspace, Bizforge.Schemas.Workspace
+    belongs_to :provider, Bizforge.Schemas.Provider
     belongs_to :reports_to_agent, Bizforge.Schemas.Agent, foreign_key: :reports_to
     belongs_to :team, Bizforge.Schemas.Team
     has_many :sessions, Bizforge.Schemas.Session
@@ -49,6 +50,7 @@ defmodule Bizforge.Schemas.Agent do
       :config,
       :system_prompt,
       :workspace_id,
+      :provider_id,
       :reports_to,
       :avatar_emoji,
       :team_id,
