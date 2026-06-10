@@ -18,6 +18,7 @@
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { forgemapStore } from '$lib/stores/forgemap.svelte';
+  import { isTauri } from '$lib/utils/platform';
   import CodebaseDetector from './CodebaseDetector.svelte';
   import DependencyGraph from './DependencyGraph.svelte';
   import TaskSplitDialog from './TaskSplitDialog.svelte';
@@ -550,8 +551,19 @@
   }
 
   // ── Scaffold handler ──────────────────────────────────────────────────────────
-  function handleScaffold(_stack: string, _template: string) {
-    // Scaffold logic would invoke Tauri IPC — for now just proceed
+  async function handleScaffold(stack: string, template: string) {
+    if (outputPath !== null && outputPath !== '' && isTauri()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('scaffold_stack', {
+          outputPath,
+          stack,
+          template,
+        });
+      } catch (err) {
+        console.warn('[AutomatedTaskPipeline] scaffold_stack not available, skipping:', err);
+      }
+    }
     phase = 'generation';
     void runGeneration();
   }

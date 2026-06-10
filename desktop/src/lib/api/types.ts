@@ -251,6 +251,7 @@ export interface BizforgeAgent {
   status: AgentStatus;
   adapter: AdapterType;
   model: string;
+  provider_id?: string | null;
   system_prompt: string;
   temperature?: number;
   max_concurrent_runs?: number;
@@ -547,10 +548,47 @@ export type GoalTreeNode = PhaseTreeNode;
 
 export type ProjectStatus = "active" | "completed" | "archived";
 
+export interface DeliveryCheck {
+  name: string;
+  command: string;
+  timeout_ms?: number;
+  required?: boolean;
+}
+
+export interface DeliveryConfig {
+  cwd?: string;
+  require_all_tasks_done?: boolean;
+  checks: DeliveryCheck[];
+}
+
+export interface DeliveryCheckResult {
+  name: string;
+  command: string;
+  exit_code: number;
+  stdout: string;
+  pass: boolean;
+  required: boolean;
+  elapsed_ms: number;
+}
+
+export interface DeliveryReport {
+  timestamp: string;
+  checks: DeliveryCheckResult[];
+  overall_pass: boolean;
+  all_tasks_done: boolean;
+}
+
+export interface DeliveryReadiness {
+  ready: boolean;
+  reasons: string[];
+}
+
 export interface ProjectConfig {
   auto_assign?: boolean;
   lifecycle?: string;
   qa?: { allow_workspace_fallback?: boolean };
+  delivery?: DeliveryConfig;
+  last_delivery?: DeliveryReport;
 }
 
 export interface LifecycleConfig {
@@ -984,6 +1022,7 @@ export interface AIProvider {
   endpoint?: string;
   config: AIProviderConfig;
   models: string[];
+  default_model?: string;
   is_default: boolean;
   status: "untested" | "connected" | "error";
   last_tested_at?: string;
@@ -1002,6 +1041,7 @@ export interface AIProviderCreateRequest {
   endpoint?: string;
   config?: AIProviderConfig;
   models?: string[];
+  default_model?: string;
   is_default?: boolean;
   workspace_id?: string;
 }
@@ -1293,6 +1333,7 @@ export interface Settings {
   auto_approve_budget_under_cents: number;
   default_adapter: AdapterType;
   default_model: string;
+  default_provider_id: string;
   working_directory: string;
   // Instance configuration (merged from /config)
   max_concurrent_agents: number;

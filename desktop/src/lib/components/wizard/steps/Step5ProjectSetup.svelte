@@ -126,6 +126,43 @@
       </label>
       <span class="s5-hint">When enabled, generated tasks are automatically assigned to the best-fit agent based on skill matching.</span>
     </div>
+
+    <!-- Delivery checks (optional) -->
+    <div class="s5-delivery-section">
+      <span class="s5-label-text">Delivery Checks (optional)</span>
+      <span class="s5-hint">Define build/test commands that must pass before the project is marked as delivered.</span>
+
+      <label class="s5-label" style="margin-top: 8px;">
+        <span class="s5-hint">Working directory (relative to output path)</span>
+        <input
+          type="text"
+          class="s5-input"
+          placeholder="code"
+          bind:value={wizardStore.deliveryCwd}
+        />
+      </label>
+
+      {#each wizardStore.deliveryChecks as check, i (i)}
+        <div class="s5-delivery-row">
+          <input class="s5-input s5-delivery-name" type="text" placeholder="Name" bind:value={check.name} />
+          <input class="s5-input s5-delivery-cmd" type="text" placeholder="Command" bind:value={check.command} />
+          <button class="s5-delivery-remove" type="button" onclick={() => { wizardStore.deliveryChecks = wizardStore.deliveryChecks.filter((_, idx) => idx !== i); }} aria-label="Remove check">×</button>
+        </div>
+      {/each}
+
+      <div class="s5-delivery-actions">
+        <button class="s5-browse" type="button" onclick={() => {
+          wizardStore.deliveryChecks = [...wizardStore.deliveryChecks, { name: '', command: '', timeout_ms: 120000, required: true }];
+        }}>+ Add Check</button>
+        <button class="s5-browse" type="button" onclick={() => {
+          wizardStore.deliveryCwd = 'code';
+          wizardStore.deliveryChecks = [
+            { name: 'install', command: 'npm install', timeout_ms: 120000, required: true },
+            { name: 'build', command: 'npm run build', timeout_ms: 120000, required: true },
+          ];
+        }}>Node.js Preset</button>
+      </div>
+    </div>
   </div>
 
   <!-- Scaffold preview -->
@@ -181,6 +218,18 @@
     width: 16px; height: 16px;
   }
   .s5-toggle-text { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+  .s5-delivery-section { display: flex; flex-direction: column; gap: 6px; }
+  .s5-delivery-row { display: flex; gap: 6px; align-items: center; }
+  .s5-delivery-name { width: 100px; flex-shrink: 0; }
+  .s5-delivery-cmd { flex: 1; }
+  .s5-delivery-remove {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--text-tertiary);
+    font-size: 16px; border-radius: 4px; cursor: pointer; flex-shrink: 0;
+  }
+  .s5-delivery-remove:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .s5-delivery-actions { display: flex; gap: 6px; margin-top: 4px; }
 
   .s5-scaffold {
     margin-top: 24px; padding: 14px;

@@ -166,7 +166,7 @@
       name: 'wizard-assistant',
       display_name: 'Wizard Assistant',
       role: 'assistant',
-      adapter: 'cursor_cli',
+      adapter: 'cursor-cli',
       model,
       avatar_emoji: '🧙',
       system_prompt: 'You are a helpful project planning assistant.',

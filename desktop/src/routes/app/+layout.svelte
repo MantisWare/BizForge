@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
+  import { goto, beforeNavigate, afterNavigate } from '$app/navigation';
   import { onMount } from 'svelte';
 import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import AppFooter from '$lib/components/layout/AppFooter.svelte';
@@ -25,12 +25,26 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import { hierarchyStore } from '$lib/stores/hierarchy.svelte';
   import { providersStore } from '$lib/stores/providers.svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
-  import { initializeAuth, getToken, saveSessionToStore } from '$api/client';
+  import { initializeAuth, getToken, saveSessionToStore, logInfo, logWarn, logError } from '$api/client';
   import { wizardStore } from '$lib/stores/wizard.svelte';
 
   let { children } = $props();
 
   bindAgentsStore(agentsStore);
+
+  // ─── Navigation timing ─────────────────────────────────────────────────
+  let _navStart = 0;
+  beforeNavigate(({ from, to, type }) => {
+    _navStart = performance.now();
+    logInfo('boot', `Navigation started: ${from?.url.pathname ?? '?'} → ${to?.url.pathname ?? '?'} (${type})`);
+  });
+  afterNavigate(({ from, to, type }) => {
+    const elapsed = Math.round(performance.now() - _navStart);
+    logInfo('boot', `Navigation complete: ${to?.url.pathname ?? '?'} (${type}, ${elapsed}ms)`);
+    if (elapsed > 1000) {
+      logWarn('boot', `Slow navigation detected: ${elapsed}ms for ${to?.url.pathname ?? '?'}`);
+    }
+  });
 
   // ─── Onboarding guard ────────────────────────────────────────────────────
   // NOTE: This guard runs inside initializeAuth().then() (see the second
@@ -68,15 +82,18 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   const NAV_ROUTES = ['/app', '/app/inbox', '/app/office'];
 
   onMount(() => {
-    // Capture stopPolling in outer scope so the cleanup return can call it.
     let stopPolling: (() => void) | null = null;
+    const bootStart = performance.now();
+    const bootMs = () => Math.round(performance.now() - bootStart);
 
-    // Load workspace context from localStorage immediately so child pages
-    // have activeWorkspaceId available for their own $effect fetches.
+    logInfo('boot', `Layout onMount — loading workspace context from localStorage`);
     workspaceStore.fetchWorkspaces();
+    logInfo('boot', `Workspace context loaded (wsId: ${workspaceStore.activeWorkspaceId ?? 'none'}) [${bootMs()}ms]`);
 
+    logInfo('boot', `Calling initializeAuth()... [${bootMs()}ms]`);
     initializeAuth().then(async () => {
-      // ── Onboarding guard ───────────────────────────────────────────────
+      logInfo('boot', `initializeAuth() resolved — token: ${getToken() !== null ? 'present' : 'absent'} [${bootMs()}ms]`);
+
       if (getToken()) {
         localStorage.setItem('bizforge-onboarding-complete', 'true');
         localStorage.setItem('bizforge-onboarding', JSON.stringify({ completed: true }));
@@ -89,6 +106,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
         if (!completed) {
           const legacy = localStorage.getItem('bizforge-onboarding-complete');
           if (legacy !== 'true') {
+            logInfo('boot', `No token, onboarding incomplete — redirecting to /onboarding [${bootMs()}ms]`);
             goto('/onboarding');
             return;
           }
@@ -99,18 +117,17 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
       stopPolling = connectionStore.startPolling(30_000);
 
       if (!canFetch) {
+        logWarn('boot', `No auth token — redirecting to /auth [${bootMs()}ms]`);
         goto('/auth', { replaceState: true });
         return;
       }
 
       activityStore.subscribe();
 
-      // Read workspace context from localStorage (already loaded above).
-      // syncFromBackend will update reactively if backend disagrees.
       const wsId = workspaceStore.activeWorkspaceId ?? undefined;
       const ws = workspaceStore.activeWorkspace;
+      logInfo('boot', `Firing concurrent data fetches (wsId: ${wsId ?? 'none'}, ws: ${ws?.name ?? 'none'}) [${bootMs()}ms]`);
 
-      // Fire ALL data fetches concurrently — no sequential awaits.
       void workspaceStore.syncFromBackend().catch(() => {});
       void organizationsStore.ensureDefault().then(() => {
         if (organizationsStore.current) {
@@ -131,12 +148,14 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
           if (agentsStore.agents.length === 0) {
             void agentsStore.fetchAgents(wsId);
           }
+          logInfo('boot', `Agent scan complete [${bootMs()}ms]`);
         });
       } else {
         void agentsStore.fetchAgents(wsId);
       }
+      logInfo('boot', `All data fetches dispatched [${bootMs()}ms]`);
     }).catch((err) => {
-      console.error('[bizforge:layout] Boot sequence failed:', err);
+      logError('boot', `Boot sequence failed: ${(err as Error).message}`);
     });
 
     // Load adapter choice and miosaCloud setting from Tauri secure store

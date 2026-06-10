@@ -7,6 +7,7 @@ const LOCAL_STORAGE_KEY = "bizforge-settings-local";
 // Keys the backend ConfigController accepts via PATCH /config
 const SERVER_KEYS: ReadonlyArray<keyof Settings> = [
   "default_model",
+  "default_provider_id",
   "max_concurrent_agents",
   "session_timeout_minutes",
   "log_level",
@@ -58,6 +59,7 @@ class SettingsStore {
         ? (localStorage.getItem("bizforge-default-adapter") as AdapterType)
         : null) ?? ("osa" as AdapterType),
     default_model: "claude-sonnet-4-6",
+    default_provider_id: "",
     working_directory: "",
     max_concurrent_agents: 10,
     session_timeout_minutes: 60,

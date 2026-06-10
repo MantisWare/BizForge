@@ -60,6 +60,8 @@ class WizardStore {
   outputPath = $state("");
   lifecycleTemplate = $state("generic_development");
   autoAssign = $state(true);
+  deliveryCwd = $state("code");
+  deliveryChecks = $state<Array<{ name: string; command: string; timeout_ms: number; required: boolean }>>([]);
 
   // Step 6 — Tasks
   sprintGroups = $state<WizardSprintGroup[]>([]);
@@ -135,6 +137,8 @@ class WizardStore {
     this.outputPath = "";
     this.lifecycleTemplate = "generic_development";
     this.autoAssign = true;
+    this.deliveryCwd = "code";
+    this.deliveryChecks = [];
     this.sprintGroups = [];
     this.isGeneratingTasks = false;
     this.taskGenerationComplete = false;

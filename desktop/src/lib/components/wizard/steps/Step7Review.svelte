@@ -134,13 +134,17 @@
     // 6. Create project
     try {
       wizardStore.updateLaunchStep('project', 'running');
+      const deliveryConfig = wizardStore.deliveryChecks.length > 0
+        ? { cwd: wizardStore.deliveryCwd, require_all_tasks_done: true, checks: wizardStore.deliveryChecks }
+        : undefined;
+
       const project = await projectsStore.createProject({
         name: wizardStore.projectName,
         description: wizardStore.projectDescription || undefined,
         output_path: wizardStore.outputPath || undefined,
         workspace_id: workspaceId ?? undefined,
         lifecycle_config: { lifecycle: wizardStore.lifecycleTemplate },
-        config: { auto_assign: wizardStore.autoAssign },
+        config: { auto_assign: wizardStore.autoAssign, ...(deliveryConfig !== undefined ? { delivery: deliveryConfig } : {}) },
       } as any);
       projectId = (project as any)?.id ?? null;
       wizardStore.updateLaunchStep('project', 'done');

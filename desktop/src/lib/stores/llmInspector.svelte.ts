@@ -97,7 +97,7 @@ class LlmInspectorStore {
   searchQuery = $state("");
   activeFilter = $state<InspectorFilter>({ level: "all", id: "", label: "All" });
 
-  private _colorIndex = $state(0);
+  private _colorIndex = 0;
 
   constructor() {
     const existingColors = loadColors();
@@ -199,23 +199,22 @@ class LlmInspectorStore {
   }
 
   getProviderColor(slug: string): string {
-    return this.providerColors[slug] ?? this.ensureProviderColor(slug);
+    const existing = this.providerColors[slug];
+    if (existing !== undefined) return existing;
+    const color = PASTEL_PALETTE[this._colorIndex % PASTEL_PALETTE.length];
+    this._colorIndex += 1;
+    queueMicrotask(() => {
+      if (this.providerColors[slug] === undefined) {
+        this.providerColors = { ...this.providerColors, [slug]: color };
+        persistColors(this.providerColors);
+      }
+    });
+    return color;
   }
 
   setProviderColor(slug: string, color: string): void {
     this.providerColors = { ...this.providerColors, [slug]: color };
     persistColors(this.providerColors);
-  }
-
-  private ensureProviderColor(slug: string): string {
-    if (this.providerColors[slug] !== undefined) {
-      return this.providerColors[slug];
-    }
-    const color = PASTEL_PALETTE[this._colorIndex % PASTEL_PALETTE.length];
-    this._colorIndex += 1;
-    this.providerColors = { ...this.providerColors, [slug]: color };
-    persistColors(this.providerColors);
-    return color;
   }
 }
 

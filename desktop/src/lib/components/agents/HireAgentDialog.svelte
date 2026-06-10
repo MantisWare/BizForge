@@ -34,8 +34,8 @@
   let emoji = $state('robot');
   let role = $state('');
   let adapter = $state<AdapterType>(settingsStore.data.default_adapter ?? 'osa');
-  let model = $state('claude-sonnet-4-6');
-  let providerId = $state(providersStore.defaultProvider?.id ?? '');
+  let providerId = $state(settingsStore.data.default_provider_id || providersStore.defaultProvider?.id || '');
+  let model = $state(settingsStore.data.default_model ?? 'claude-sonnet-4-6');
   let agentTemperature = $state('');
   let systemPrompt = $state('');
   let selectedSkills = $state<string[]>([]);
@@ -148,8 +148,8 @@
     emoji = 'robot';
     role = '';
     adapter = settingsStore.data.default_adapter ?? 'osa';
-    model = 'claude-sonnet-4-6';
-    providerId = providersStore.defaultProvider?.id ?? '';
+    providerId = settingsStore.data.default_provider_id || providersStore.defaultProvider?.id || '';
+    model = settingsStore.data.default_model ?? 'claude-sonnet-4-6';
     agentTemperature = '';
     systemPrompt = '';
     selectedSkills = [];

@@ -75,10 +75,15 @@
   function handleProviderChange(newId: string) {
     onProviderId(newId);
     const prov = providersStore.getById(newId);
-    if (prov !== null && prov.models.length > 0 && !prov.models.includes(model)) {
-      onModel(prov.models[0]);
+    if (prov === null) return;
+
+    const models = Array.isArray(prov.models) ? prov.models : [];
+    if (prov.default_model !== undefined && prov.default_model !== null && models.includes(prov.default_model)) {
+      onModel(prov.default_model);
+    } else if (models.length > 0 && !models.includes(model)) {
+      onModel(models[0]);
     }
-    if (prov !== null && prov.config.temperature !== undefined) {
+    if (prov.config?.temperature !== undefined) {
       onTemperature(prov.config.temperature.toString());
     }
   }

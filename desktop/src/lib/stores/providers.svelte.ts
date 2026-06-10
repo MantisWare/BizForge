@@ -4,10 +4,19 @@ import type {
   AIProviderCreateRequest,
   AIProviderTestResult,
 } from "$api/types";
-import { providers as providersApi } from "$api/client";
+import { providers as providersApi, logInfo, logWarn, logError } from "$api/client";
 import { toastStore } from "./toasts.svelte";
 
 const CACHE_KEY = "bizforge-providers-cache";
+
+function normalizeProvider(p: AIProvider): AIProvider {
+  return {
+    ...p,
+    models: Array.isArray(p.models) ? p.models : [],
+    default_model: p.default_model ?? undefined,
+    config: (p.config !== null && p.config !== undefined) ? p.config : {},
+  };
+}
 
 function loadCache(): AIProvider[] {
   if (typeof localStorage === "undefined") return [];
@@ -15,7 +24,7 @@ function loadCache(): AIProvider[] {
   if (raw === null) return [];
   try {
     const parsed = JSON.parse(raw) as AIProvider[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeProvider) : [];
   } catch {
     return [];
   }
@@ -46,8 +55,9 @@ class ProvidersStore {
   allModels = $derived.by(() => {
     const result: { providerId: string; providerName: string; model: string }[] = [];
     for (const p of this.providers) {
-      if (p.models.length === 0) continue;
-      for (const m of p.models) {
+      const models = Array.isArray(p.models) ? p.models : [];
+      if (models.length === 0) continue;
+      for (const m of models) {
         result.push({ providerId: p.id, providerName: p.name, model: m });
       }
     }
@@ -62,11 +72,15 @@ class ProvidersStore {
 
   async fetch(workspaceId?: string): Promise<void> {
     if (this.fetchAbort !== null) {
+      logWarn("store", `[providers] Aborting in-flight fetch before starting new one`);
       this.fetchAbort.abort();
     }
     this.fetchAbort = new AbortController();
     this.loading = true;
     this.error = null;
+    const cachedCount = this.providers.length;
+    logInfo("store", `[providers] Fetch started (cached: ${cachedCount}, wsId: ${workspaceId ?? "none"})`);
+    const fetchStart = performance.now();
     try {
       const result = await Promise.race([
         providersApi.list(workspaceId),
@@ -81,15 +95,25 @@ class ProvidersStore {
           });
         }),
       ]);
-      if (result.length > 0 || this.providers.length === 0) {
-        this.providers = result;
+      const elapsed = Math.round(performance.now() - fetchStart);
+      const normalized = result.map(normalizeProvider);
+      if (normalized.length > 0 || this.providers.length === 0) {
+        this.providers = normalized;
         this.persist();
+        logInfo("store", `[providers] Fetch OK — ${result.length} providers loaded (${elapsed}ms)`);
+      } else {
+        logWarn("store", `[providers] Backend returned 0 providers but cache has ${this.providers.length} — keeping cache (${elapsed}ms)`);
       }
       this.error = null;
     } catch (e) {
+      const elapsed = Math.round(performance.now() - fetchStart);
       const msg = (e as Error).message;
-      if (msg === "aborted") return;
+      if (msg === "aborted") {
+        logInfo("store", `[providers] Fetch aborted (${elapsed}ms)`);
+        return;
+      }
       this.error = msg;
+      logError("store", `[providers] Fetch failed (${elapsed}ms): ${msg}`);
       if (!msg.includes("not_found") && !msg.includes("unauthorized")) {
         toastStore.error("Failed to load providers", msg);
       }
@@ -104,7 +128,7 @@ class ProvidersStore {
   ): Promise<AIProvider | null> {
     this.loading = true;
     try {
-      const created = await providersApi.create(req);
+      const created = normalizeProvider(await providersApi.create(req));
       this.providers = [created, ...this.providers];
       this.persist();
       this.error = null;
@@ -129,7 +153,7 @@ class ProvidersStore {
       p.id === id ? { ...p, ...data } : p,
     );
     try {
-      const updated = await providersApi.update(id, data);
+      const updated = normalizeProvider(await providersApi.update(id, data));
       this.providers = this.providers.map((p) =>
         p.id === id ? updated : p,
       );
@@ -166,7 +190,8 @@ class ProvidersStore {
     id: string,
   ): Promise<AIProviderTestResult | null> {
     try {
-      const { provider, test_result } = await providersApi.test(id);
+      const { provider: rawProvider, test_result } = await providersApi.test(id);
+      const provider = normalizeProvider(rawProvider);
       this.providers = this.providers.map((p) =>
         p.id === id ? provider : p,
       );

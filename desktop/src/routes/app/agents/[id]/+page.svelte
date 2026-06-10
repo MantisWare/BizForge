@@ -9,6 +9,8 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
+  import { providersStore } from '$lib/stores/providers.svelte';
+  import { settingsStore } from '$lib/stores/settings.svelte';
   import { environmentStore } from '$lib/stores/environment.svelte';
   import { gatewaysStore } from '$lib/stores/gateways.svelte';
   import { integrationsStore } from '$lib/stores/integrations.svelte';
@@ -57,6 +59,7 @@
 
   // Local editable copies for config & access tabs
   let localAdapter = $state<AdapterType>('osa');
+  let localProviderId = $state<string>('');
   let localModel = $state('');
   let localWorkingDir = $state('');
   let localSystemPrompt = $state('');
@@ -125,6 +128,29 @@
     await fetchAgentBindings();
   }
 
+  const selectedProvider = $derived.by(() => {
+    if (localProviderId === '') return null;
+    return providersStore.getById(localProviderId);
+  });
+
+  const availableModelsForProvider = $derived.by(() => {
+    if (selectedProvider === null) return [];
+    return Array.isArray(selectedProvider.models) ? selectedProvider.models : [];
+  });
+
+  function handleProviderChange(providerId: string) {
+    localProviderId = providerId;
+    const prov = providersStore.getById(providerId);
+    if (prov !== null) {
+      const models = Array.isArray(prov.models) ? prov.models : [];
+      if (prov.default_model !== undefined && prov.default_model !== null && models.includes(prov.default_model)) {
+        localModel = prov.default_model;
+      } else if (models.length > 0) {
+        localModel = models[0];
+      }
+    }
+  }
+
   function adapterDescription(adapter: AdapterType): string {
     return ADAPTER_OPTIONS.find(a => a.value === adapter)?.description ?? '';
   }
@@ -149,6 +175,7 @@
       await agentsApi.update(agent.id, {
         adapter: localAdapter,
         model: localModel || agent.model,
+        provider_id: localProviderId || undefined,
         system_prompt: localSystemPrompt || agent.system_prompt,
         temperature: localTemperature,
         max_concurrent_runs: localMaxConcurrent,
@@ -227,6 +254,7 @@
     // Populate editable state from agent data once loaded
     if (agent && !accessFetched) {
       localAdapter = agent.adapter;
+      localProviderId = agent.provider_id ?? settingsStore.data.default_provider_id ?? '';
       localModel = agent.model;
       localWorkingDir = (agent.config?.working_dir as string) ?? (agent.config?.workspace_path as string) ?? '';
       localSystemPrompt = agent.system_prompt ?? '';
@@ -581,15 +609,56 @@
             {/if}
 
             <div class="ad-form-group">
-              <label class="ad-form-label" for="cfg-model">Model</label>
-              <select id="cfg-model" class="ad-form-select" bind:value={localModel} aria-label="Select LLM model">
-                <option value="sonnet">Claude Sonnet</option>
-                <option value="opus">Claude Opus</option>
-                <option value="haiku">Claude Haiku</option>
-                <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-                <option value="claude-opus-4-6">Claude Opus 4.6</option>
-                <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+              <label class="ad-form-label" for="cfg-provider">Provider</label>
+              <select
+                id="cfg-provider"
+                class="ad-form-select"
+                value={localProviderId}
+                onchange={(e) => handleProviderChange((e.target as HTMLSelectElement).value)}
+                aria-label="Select AI provider"
+              >
+                <option value="">— use global default —</option>
+                {#each providersStore.providers as prov (prov.id)}
+                  <option value={prov.id}>
+                    {prov.name}{prov.is_default ? ' (default)' : ''}{prov.status === 'connected' ? '' : ` (${prov.status})`}
+                  </option>
+                {/each}
               </select>
+              {#if selectedProvider !== null}
+                <span class="ad-form-hint">
+                  {selectedProvider.slug}
+                  {#if selectedProvider.default_model}
+                    — default model: {selectedProvider.default_model}
+                  {/if}
+                </span>
+              {/if}
+            </div>
+
+            <div class="ad-form-group">
+              <label class="ad-form-label" for="cfg-model">Model</label>
+              {#if availableModelsForProvider.length > 0}
+                <select id="cfg-model" class="ad-form-select" bind:value={localModel} aria-label="Select LLM model">
+                  {#each availableModelsForProvider as m (m)}
+                    <option value={m}>{m}</option>
+                  {/each}
+                </select>
+              {:else}
+                <input
+                  id="cfg-model"
+                  class="ad-form-input"
+                  type="text"
+                  placeholder="e.g. claude-sonnet-4-6"
+                  bind:value={localModel}
+                  aria-label="Model name"
+                />
+                <span class="ad-form-hint">
+                  {#if localProviderId !== ''}
+                    No models discovered for this provider. Fetch models from Provider settings, or type a model name.
+                  {:else}
+                    Type a model name or select a provider above to browse available models.
+                  {/if}
+                </span>
+              {/if}
             </div>
 
             <div class="ad-form-group">

@@ -23,7 +23,8 @@
   import { integrationBindings as bindingsApi } from '$api/client';
   import IntegrationBindingSelector from '$lib/components/integrations/IntegrationBindingSelector.svelte';
   import { SKILLS } from '$api/mock/library/skills';
-  import type { Project, Document, IntegrationBinding, SkillIntegrationRequirement, DocumentFormat } from '$api/types';
+  import type { Project, Document, IntegrationBinding, SkillIntegrationRequirement, DocumentFormat, DeliveryReport, DeliveryReadiness, DeliveryCheck } from '$api/types';
+  import { projects as projectsApi } from '$api/client';
   import { isTauri } from '$lib/utils/platform';
   import { onMount, onDestroy } from 'svelte';
 
@@ -31,7 +32,7 @@
   const id = $derived(page.params.id ?? '');
 
   // ── Tab state — URL-persisted via ?tab= ─────────────────────────────────────
-  type ProjectTab = 'overview' | 'docs' | 'phases' | 'tasks' | 'agents' | 'sessions' | 'costs';
+  type ProjectTab = 'overview' | 'docs' | 'phases' | 'tasks' | 'agents' | 'sessions' | 'costs' | 'delivery';
   const TABS: { id: ProjectTab; label: string }[] = [
     { id: 'overview',  label: 'Overview'  },
     { id: 'docs',      label: 'Docs'      },
@@ -40,11 +41,12 @@
     { id: 'agents',    label: 'Agents'    },
     { id: 'sessions',  label: 'Sessions'  },
     { id: 'costs',     label: 'Costs'     },
+    { id: 'delivery',  label: 'Delivery'  },
   ];
 
   const activeTab = $derived.by<ProjectTab>(() => {
     const t = page.url.searchParams.get('tab');
-    if (t === 'docs' || t === 'phases' || t === 'tasks' || t === 'agents' || t === 'sessions' || t === 'costs') {
+    if (t === 'docs' || t === 'phases' || t === 'tasks' || t === 'agents' || t === 'sessions' || t === 'costs' || t === 'delivery') {
       return t;
     }
     return 'overview';
@@ -403,6 +405,83 @@
     })();
   });
   onDestroy(() => { unlistenUploadDrag?.(); });
+
+  // ── Delivery gate state ──────────────────────────────────────────────────────
+  let deliveryReadiness = $state<DeliveryReadiness | null>(null);
+  let deliveryLastReport = $state<DeliveryReport | null>(null);
+  let deliveryRunning = $state(false);
+  let deliveryError = $state<string | null>(null);
+
+  // Editable delivery checks (local form state)
+  let deliveryChecks = $state<DeliveryCheck[]>([]);
+  let deliveryCwd = $state('code');
+
+  $effect(() => {
+    if (project !== null && activeTab === 'delivery') {
+      void fetchDeliveryStatus();
+      const existingConfig = project.config?.delivery;
+      if (existingConfig !== undefined) {
+        deliveryChecks = existingConfig.checks?.map(c => ({ ...c })) ?? [];
+        deliveryCwd = existingConfig.cwd ?? 'code';
+      } else if (deliveryChecks.length === 0) {
+        deliveryChecks = [];
+        deliveryCwd = 'code';
+      }
+    }
+  });
+
+  async function fetchDeliveryStatus() {
+    if (!id) return;
+    try {
+      const data = await projectsApi.deliveryStatus(id);
+      deliveryReadiness = data.readiness;
+      deliveryLastReport = data.last_report ?? null;
+    } catch {
+      deliveryReadiness = null;
+      deliveryLastReport = null;
+    }
+  }
+
+  async function runDeliveryGate() {
+    if (!id || !project) return;
+    deliveryRunning = true;
+    deliveryError = null;
+    try {
+      await saveDeliveryConfig();
+      const result = await projectsApi.deliver(id);
+      deliveryLastReport = result.report;
+      await fetchDeliveryStatus();
+      if (result.report.overall_pass) {
+        await projectsStore.fetchProject(id);
+      }
+    } catch (err) {
+      deliveryError = (err as Error).message;
+    } finally {
+      deliveryRunning = false;
+    }
+  }
+
+  async function saveDeliveryConfig() {
+    if (!project) return;
+    const config = { ...(project.config ?? {}), delivery: { cwd: deliveryCwd, require_all_tasks_done: true, checks: deliveryChecks } };
+    await projectsStore.updateProject(project.id, { config } as Partial<Project>);
+  }
+
+  function addDeliveryCheck() {
+    deliveryChecks = [...deliveryChecks, { name: '', command: '', timeout_ms: 120000, required: true }];
+  }
+
+  function removeDeliveryCheck(index: number) {
+    deliveryChecks = deliveryChecks.filter((_, i) => i !== index);
+  }
+
+  function prefillHelloWorld() {
+    deliveryCwd = 'code';
+    deliveryChecks = [
+      { name: 'install', command: 'npm install', timeout_ms: 120000, required: true },
+      { name: 'build', command: 'npm run build', timeout_ms: 120000, required: true },
+    ];
+  }
 
   // ── Inline-edit description ───────────────────────────────────────────────────
   let editingDesc = $state(false);
@@ -1127,6 +1206,173 @@
               </div>
             {/if}
           {/if}
+
+        <!-- ── Delivery ────────────────────────────────────────────────────────── -->
+        {:else if activeTab === 'delivery'}
+          <div class="pj-tab-toolbar">
+            <h2 class="pj-tab-heading">Delivery Gate</h2>
+            <div class="pj-tab-toolbar-actions">
+              <button
+                class="pj-btn-ghost"
+                type="button"
+                onclick={prefillHelloWorld}
+                aria-label="Prefill with Node.js project checks"
+              >
+                Node.js Preset
+              </button>
+              <button
+                class="pj-btn-primary"
+                type="button"
+                onclick={runDeliveryGate}
+                disabled={deliveryRunning || deliveryChecks.length === 0}
+                aria-label="Run delivery gate checks"
+              >
+                {deliveryRunning ? 'Running…' : 'Run Delivery Gate'}
+              </button>
+            </div>
+          </div>
+
+          {#if deliveryError}
+            <div class="pj-delivery-error" role="alert">{deliveryError}</div>
+          {/if}
+
+          <!-- Readiness -->
+          {#if deliveryReadiness}
+            <div class="pj-card">
+              <div class="pj-card-header">
+                <h2 class="pj-card-title">Readiness</h2>
+                <span class="pj-delivery-badge" class:pj-delivery-badge--pass={deliveryReadiness.ready} class:pj-delivery-badge--fail={!deliveryReadiness.ready}>
+                  {deliveryReadiness.ready ? 'Ready' : 'Not Ready'}
+                </span>
+              </div>
+              {#if deliveryReadiness.reasons.length > 0}
+                <ul class="pj-delivery-reasons">
+                  {#each deliveryReadiness.reasons as reason}
+                    <li>{reason}</li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          {/if}
+
+          <!-- Check configuration -->
+          <div class="pj-card">
+            <div class="pj-card-header">
+              <h2 class="pj-card-title">Delivery Checks</h2>
+            </div>
+
+            <div class="pj-field" style="margin-bottom: 12px;">
+              <label class="pj-field-label" for="delivery-cwd">Working directory (relative to output_path)</label>
+              <input
+                id="delivery-cwd"
+                class="pj-field-input"
+                type="text"
+                placeholder="code"
+                bind:value={deliveryCwd}
+              />
+            </div>
+
+            {#if deliveryChecks.length === 0}
+              <p class="pj-empty-hint">No checks configured. Add a check or use a preset.</p>
+            {:else}
+              <div class="pj-delivery-checks">
+                {#each deliveryChecks as check, i (i)}
+                  <div class="pj-delivery-check-row">
+                    <input
+                      class="pj-field-input pj-delivery-check-name"
+                      type="text"
+                      placeholder="Check name"
+                      bind:value={check.name}
+                    />
+                    <input
+                      class="pj-field-input pj-delivery-check-cmd"
+                      type="text"
+                      placeholder="Command (e.g. npm run build)"
+                      bind:value={check.command}
+                    />
+                    <label class="pj-delivery-check-req">
+                      <input type="checkbox" bind:checked={check.required} />
+                      Req
+                    </label>
+                    <button
+                      class="pj-delivery-check-remove"
+                      type="button"
+                      onclick={() => removeDeliveryCheck(i)}
+                      aria-label="Remove check"
+                    >
+                      ×
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
+            <button
+              class="pj-btn-ghost"
+              type="button"
+              style="margin-top: 8px;"
+              onclick={addDeliveryCheck}
+            >
+              + Add Check
+            </button>
+
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+              <button
+                class="pj-btn-ghost"
+                type="button"
+                onclick={saveDeliveryConfig}
+              >
+                Save Config
+              </button>
+            </div>
+          </div>
+
+          <!-- Last report -->
+          {#if deliveryLastReport}
+            <div class="pj-card">
+              <div class="pj-card-header">
+                <h2 class="pj-card-title">Last Delivery Report</h2>
+                <span class="pj-delivery-badge" class:pj-delivery-badge--pass={deliveryLastReport.overall_pass} class:pj-delivery-badge--fail={!deliveryLastReport.overall_pass}>
+                  {deliveryLastReport.overall_pass ? 'PASS' : 'FAIL'}
+                </span>
+              </div>
+              <p class="pj-delivery-timestamp">
+                Run at {new Date(deliveryLastReport.timestamp).toLocaleString()}
+                {#if !deliveryLastReport.all_tasks_done}
+                  — <span class="pj-delivery-warn">Not all tasks are done</span>
+                {/if}
+              </p>
+              {#if deliveryLastReport.checks.length > 0}
+                <table class="pj-session-table" aria-label="Delivery check results">
+                  <thead>
+                    <tr>
+                      <th class="pj-th">Check</th>
+                      <th class="pj-th">Command</th>
+                      <th class="pj-th">Result</th>
+                      <th class="pj-th pj-th--num">Exit</th>
+                      <th class="pj-th pj-th--num">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each deliveryLastReport.checks as cr (cr.name)}
+                      <tr class="pj-cost-row">
+                        <td class="pj-td">{cr.name}{cr.required ? '' : ' (optional)'}</td>
+                        <td class="pj-td pj-meta-mono" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">{cr.command}</td>
+                        <td class="pj-td">
+                          <span class="pj-delivery-badge" class:pj-delivery-badge--pass={cr.pass} class:pj-delivery-badge--fail={!cr.pass}>
+                            {cr.pass ? 'PASS' : 'FAIL'}
+                          </span>
+                        </td>
+                        <td class="pj-td pj-td--num">{cr.exit_code}</td>
+                        <td class="pj-td pj-td--num">{(cr.elapsed_ms / 1000).toFixed(1)}s</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              {/if}
+            </div>
+          {/if}
+
         {/if}
 
       </div><!-- /pj-tab-content -->
@@ -2303,5 +2549,117 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: 6px;
     padding: 8px 12px;
+  }
+
+  /* ── Delivery tab ─────────────────────────────────────────────────────── */
+  .pj-delivery-error {
+    font-size: 12px;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+
+  .pj-delivery-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .pj-delivery-badge--pass {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #86efac;
+  }
+
+  .pj-delivery-badge--fail {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+  }
+
+  .pj-delivery-reasons {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .pj-delivery-reasons li::before {
+    content: '• ';
+    color: var(--text-muted);
+  }
+
+  .pj-delivery-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pj-delivery-check-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pj-delivery-check-name {
+    width: 120px;
+    flex-shrink: 0;
+  }
+
+  .pj-delivery-check-cmd {
+    flex: 1;
+  }
+
+  .pj-delivery-check-req {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .pj-delivery-check-remove {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .pj-delivery-check-remove:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  .pj-delivery-timestamp {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+
+  .pj-delivery-warn {
+    color: #f59e0b;
+    font-weight: 500;
   }
 </style>

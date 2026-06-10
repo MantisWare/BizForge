@@ -10,19 +10,32 @@
     const isMonitorWindow = window.location.pathname.startsWith('/monitor');
     if (isMonitorWindow) return;
 
+    const apiBase = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:9089';
+    const healthUrl = `${apiBase}/api/v1/health`;
+    const maxAttempts = 90;
+    const pollMs = 500;
+
     const dismissSplash = async () => {
       const { invoke } = await import('@tauri-apps/api/core');
-      try {
-        const response = await fetch('/api/v1/health');
-        if (!response.ok) throw new Error('Backend not ready');
-      } catch {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        return dismissSplash();
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const response = await fetch(healthUrl, {
+            signal: AbortSignal.timeout(2000),
+          });
+          if (response.ok) {
+            await invoke('close_splash');
+            return;
+          }
+        } catch {
+          // Backend still starting — keep polling
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
       }
+      // Never block the user on a stuck splash; native startup also dismisses it.
       await invoke('close_splash');
     };
 
-    dismissSplash();
+    void dismissSplash();
   });
 </script>
 
