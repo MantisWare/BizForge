@@ -102,14 +102,15 @@ app: _ensure-dirs _ensure-postgres _ensure-migrations _ensure-sidecar
     just stop 2>/dev/null || true
 
     printf "Starting backend on :9089...\n"
-    cd {{backend}} && mix phx.server > {{log_dir}}/backend.log 2>&1 &
+    cd {{backend}} && mix compile > {{log_dir}}/backend.log 2>&1 || {
+        printf "\033[31m  Backend compile failed — see: just logs backend\033[0m\n"
+        tail -20 {{log_dir}}/backend.log
+        exit 1
+    }
+    cd {{backend}} && mix phx.server >> {{log_dir}}/backend.log 2>&1 &
     echo $! > {{pid_dir}}/backend.pid
 
-    for i in $(seq 1 30); do
-        curl -sf http://127.0.0.1:9089/api/v1/health >/dev/null 2>&1 && break
-        sleep 1
-    done
-    printf "  Backend ready.\n"
+    just _wait-backend-ready
 
     # Start Vite dev server first and wait for it to be reachable.
     # This prevents the Tauri webview from loading a blank page because
@@ -119,16 +120,10 @@ app: _ensure-dirs _ensure-postgres _ensure-migrations _ensure-sidecar
     echo $! > {{pid_dir}}/vite.pid
     printf "  Vite PID: %s\n" "$(cat {{pid_dir}}/vite.pid)"
 
-    for i in $(seq 1 30); do
-        if curl -sf http://127.0.0.1:5200 >/dev/null 2>&1; then
-            printf "  Vite ready.\n"
-            break
-        fi
-        if [ "$i" -eq 30 ]; then
-            printf "  Vite may still be starting (continuing anyway).\n"
-        fi
-        sleep 1
-    done
+    just _wait-vite-ready
+
+    # Brief pause so Vite can finish compiling before WKWebView loads.
+    sleep 2
 
     # Launch Tauri with beforeDevCommand blanked out (Vite is already running).
     printf "Starting Tauri desktop app...\n"
@@ -450,6 +445,50 @@ _ensure-sidecar:
         printf "Playwright sidecar not built — building now...\n"
         just _build-sidecar
     fi
+
+# Wait until Phoenix health responds twice in a row (avoids launching on a flaky first hit).
+[private]
+_wait-backend-ready:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    consecutive=0
+    for i in $(seq 1 60); do
+        if curl -sf http://127.0.0.1:9089/api/v1/health >/dev/null 2>&1; then
+            consecutive=$((consecutive + 1))
+            if [ "$consecutive" -ge 2 ]; then
+                printf "  Backend ready.\n"
+                exit 0
+            fi
+        else
+            consecutive=0
+            pidfile="{{pid_dir}}/backend.pid"
+            if [ -f "$pidfile" ]; then
+                pid=$(cat "$pidfile")
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    printf "\033[31m  Backend exited before becoming ready.\033[0m\n"
+                    printf "  Last log lines:\n"
+                    tail -15 {{log_dir}}/backend.log 2>/dev/null || true
+                    exit 1
+                fi
+            fi
+        fi
+        sleep 1
+    done
+    printf "  Backend may still be starting (continuing anyway).\n"
+
+# Wait until the Vite dev server accepts HTTP (port open is not enough for WKWebView).
+[private]
+_wait-vite-ready:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for i in $(seq 1 45); do
+        if curl -sf http://127.0.0.1:5200/ >/dev/null 2>&1; then
+            printf "  Vite ready.\n"
+            exit 0
+        fi
+        sleep 1
+    done
+    printf "  Vite may still be starting (continuing anyway).\n"
 
 [private]
 _ensure-postgres:

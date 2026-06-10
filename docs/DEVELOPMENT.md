@@ -189,7 +189,8 @@ The desktop app has 57 mock API modules that provide complete frontend functiona
 ### Stopping Services
 
 ```bash
-just stop              # Stop all running services
+./stop.sh              # Stop all running services (root launcher)
+just stop              # Same as above via just
 just stop-backend      # Stop backend only
 just stop-desktop      # Stop desktop only
 ```
@@ -337,8 +338,10 @@ bizforge/
 │   ├── osa/                    OSA integration
 │   └── ...                     (+3 more integrations)
 │
+├── start.sh                    Root launcher (backend + Tauri)
+├── stop.sh                     Root stop script (all dev services)
 ├── scripts/                    Developer & CI tooling
-│   ├── start.sh                Full-stack launcher
+│   ├── start.sh                Full-stack launcher (legacy)
 │   ├── convert.sh              Agent → integration converter
 │   ├── install.sh              Integration installer
 │   ├── lint-agents.sh          Agent file linter

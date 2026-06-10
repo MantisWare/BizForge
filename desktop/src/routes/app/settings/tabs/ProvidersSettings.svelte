@@ -177,8 +177,8 @@
     editingId = prov.id;
     editApiKey = '';
     editEndpoint = prov.endpoint ?? '';
-    editTemperature = prov.config.temperature?.toString() ?? '';
-    editMaxTokens = prov.config.max_tokens?.toString() ?? '';
+    editTemperature = prov.config?.temperature?.toString() ?? '';
+    editMaxTokens = prov.config?.max_tokens?.toString() ?? '';
   }
 
   async function saveEdit() {
@@ -203,28 +203,43 @@
   // ── Default model ──────────────────────────────────────────────────────────
 
   interface ModelGroup {
+    providerId: string;
     providerName: string;
     models: string[];
   }
 
   const modelGroups = $derived.by<ModelGroup[]>(() => {
-    const groups = new Map<string, string[]>();
+    const groups = new Map<string, { providerId: string; models: string[] }>();
     for (const entry of providersStore.allModels) {
-      let list = groups.get(entry.providerName);
-      if (list === undefined) {
-        list = [];
-        groups.set(entry.providerName, list);
+      let existing = groups.get(entry.providerName);
+      if (existing === undefined) {
+        existing = { providerId: entry.providerId, models: [] };
+        groups.set(entry.providerName, existing);
       }
-      list.push(entry.model);
+      existing.models.push(entry.model);
     }
-    return [...groups.entries()].map(([providerName, models]) => ({ providerName, models }));
+    return [...groups.entries()].map(([providerName, { providerId, models }]) => ({ providerId, providerName, models }));
   });
 
   const defaultModel = $derived(settingsStore.data.default_model);
+  const defaultProviderId = $derived(settingsStore.data.default_provider_id);
+  const defaultProviderName = $derived.by(() => {
+    if (defaultProviderId === '' || defaultProviderId === undefined) return null;
+    const prov = providersStore.getById(defaultProviderId);
+    return prov?.name ?? null;
+  });
   const hasModels = $derived(providersStore.allModels.length > 0);
 
+  async function handleProviderDefaultModelChange(providerId: string, model: string) {
+    await providersStore.update(providerId, { default_model: model || undefined });
+  }
+
   function handleDefaultModelChange(value: string) {
+    const entry = providersStore.allModels.find((m) => m.model === value);
     settingsStore.update('default_model', value);
+    if (entry !== undefined) {
+      settingsStore.update('default_provider_id', entry.providerId);
+    }
     void settingsStore.save();
   }
 </script>
@@ -484,16 +499,16 @@
             {#if prov.endpoint}
               <span class="pst-meta-item">{prov.endpoint}</span>
             {/if}
-            {#if prov.models.length > 0}
+            {#if (prov.models ?? []).length > 0}
               <span class="pst-meta-item">{prov.models.length} model{prov.models.length !== 1 ? 's' : ''}</span>
             {/if}
             {#if prov.last_tested_at}
               <span class="pst-meta-item">Tested {new Date(prov.last_tested_at).toLocaleString()}</span>
             {/if}
-            {#if prov.config.temperature !== undefined}
+            {#if prov.config?.temperature !== undefined}
               <span class="pst-meta-item">temp: {prov.config.temperature}</span>
             {/if}
-            {#if prov.config.local_runtime !== undefined}
+            {#if prov.config?.local_runtime !== undefined}
               <span class="pst-meta-item">runtime: {prov.config.local_runtime}</span>
             {/if}
           </div>
@@ -502,14 +517,29 @@
             <div class="pst-error-msg">{prov.error_message}</div>
           {/if}
 
-          {#if prov.models.length > 0}
+          {#if (prov.models ?? []).length > 0}
             <div class="pst-models">
               {#each prov.models.slice(0, 6) as m}
-                <span class="pst-model-tag">{m}</span>
+                <span class="pst-model-tag" class:pst-model-tag--default={m === prov.default_model}>{m}</span>
               {/each}
               {#if prov.models.length > 6}
                 <span class="pst-model-tag pst-model-tag--more">+{prov.models.length - 6}</span>
               {/if}
+            </div>
+
+            <div class="pst-default-model-row">
+              <label class="pst-label" for="pst-prov-default-{prov.id}">Default model</label>
+              <select
+                id="pst-prov-default-{prov.id}"
+                class="pst-select pst-select--inline"
+                value={prov.default_model ?? ''}
+                onchange={(e) => handleProviderDefaultModelChange(prov.id, (e.target as HTMLSelectElement).value)}
+              >
+                <option value="">None</option>
+                {#each prov.models as m (m)}
+                  <option value={m}>{m}</option>
+                {/each}
+              </select>
             </div>
           {/if}
 
@@ -639,6 +669,9 @@
         {#if defaultModel}
           <span class="pst-default-model-current">
             Current: <code>{defaultModel}</code>
+            {#if defaultProviderName !== null}
+              via <strong>{defaultProviderName}</strong>
+            {/if}
           </span>
         {/if}
       </div>
@@ -1007,9 +1040,33 @@
     border: 1px solid var(--border-default);
   }
 
+  .pst-model-tag--default {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb, 59, 130, 246), 0.08);
+  }
+
   .pst-model-tag--more {
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .pst-default-model-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pst-default-model-row .pst-label {
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .pst-select--inline {
+    flex: 1;
+    max-width: 280px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
 
   .pst-edit-form {
