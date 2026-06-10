@@ -125,6 +125,10 @@ fn restore_window_state(window: &tauri::WebviewWindow, state: &WindowState) {
 
 #[tauri::command]
 fn close_splash(app: tauri::AppHandle) {
+    dismiss_splash_and_show_main(&app);
+}
+
+fn dismiss_splash_and_show_main(app: &tauri::AppHandle) {
     if let Some(splash) = app.get_webview_window("splash") {
         let _ = splash.close();
     }
@@ -132,6 +136,213 @@ fn close_splash(app: tauri::AppHandle) {
         let _ = main.show();
         let _ = main.set_focus();
     }
+}
+
+/// Raw HTTP GET — avoids adding a client crate; sufficient for local health probes.
+fn http_get_status_line(host: &str, port: u16, path: &str) -> Option<String> {
+    use std::io::{Read, Write};
+    use std::net::{SocketAddr, TcpStream};
+    use std::time::Duration;
+
+    let addr: SocketAddr = format!("{host}:{port}").parse().ok()?;
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_millis(800)).ok()?;
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(800)));
+    let request = format!(
+        "GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n"
+    );
+    stream.write_all(request.as_bytes()).ok()?;
+    let mut buf = [0u8; 256];
+    let n = stream.read(&mut buf).ok()?;
+    if n == 0 {
+        return None;
+    }
+    let response = String::from_utf8_lossy(&buf[..n]);
+    response.lines().next().map(|line| line.to_string())
+}
+
+fn backend_health_ok() -> bool {
+    http_get_status_line("127.0.0.1", 9089, "/api/v1/health")
+        .map(|line| line.contains("200"))
+        .unwrap_or(false)
+}
+
+fn tcp_port_open(host: &str, port: u16) -> bool {
+    use std::net::{SocketAddr, TcpStream};
+    use std::time::Duration;
+
+    let addr: SocketAddr = format!("{host}:{port}").parse().unwrap_or_else(|_| "127.0.0.1:0".parse().unwrap());
+    TcpStream::connect_timeout(&addr, Duration::from_millis(400)).is_ok()
+}
+
+fn vite_dev_server_http_ok() -> bool {
+    http_get_status_line("127.0.0.1", 5200, "/")
+        .map(|line| line.contains("200"))
+        .unwrap_or(false)
+}
+
+fn postgres_listening() -> bool {
+    tcp_port_open("127.0.0.1", 5432)
+}
+
+fn fetch_health_database_status() -> Option<String> {
+    use std::io::{Read, Write};
+    use std::net::{SocketAddr, TcpStream};
+    use std::time::Duration;
+
+    let host = "127.0.0.1";
+    let port = 9089u16;
+    let path = "/api/v1/health";
+    let addr: SocketAddr = format!("{host}:{port}").parse().ok()?;
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_millis(800)).ok()?;
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(1200)));
+    let request = format!(
+        "GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nConnection: close\r\n\r\n"
+    );
+    stream.write_all(request.as_bytes()).ok()?;
+    let mut buf = vec![0u8; 4096];
+    let n = stream.read(&mut buf).ok()?;
+    if n == 0 {
+        return None;
+    }
+    let response = String::from_utf8_lossy(&buf[..n]);
+    let body = response.split("\r\n\r\n").nth(1).unwrap_or("");
+    // Minimal parse — look for `"database":"connected"` in JSON body.
+    if body.contains("\"database\":\"connected\"") || body.contains("\"database\": \"connected\"") {
+        Some("connected".to_string())
+    } else if body.contains("\"database\"") {
+        Some("unavailable".to_string())
+    } else {
+        None
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct StartupCheckItem {
+    id: String,
+    label: String,
+    detail: String,
+    ready: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct StartupStatus {
+    dev_mode: bool,
+    all_ready: bool,
+    items: Vec<StartupCheckItem>,
+}
+
+#[tauri::command]
+fn get_startup_status() -> StartupStatus {
+    let postgres = postgres_listening();
+    let backend = backend_health_ok();
+    let database = fetch_health_database_status()
+        .map(|s| s == "connected")
+        .unwrap_or(false);
+
+    #[cfg(debug_assertions)]
+    let dev_mode = true;
+    #[cfg(not(debug_assertions))]
+    let dev_mode = false;
+
+    #[cfg(debug_assertions)]
+    let vite_ready = vite_dev_server_http_ok();
+    #[cfg(not(debug_assertions))]
+    let vite_ready = true;
+
+    let mut items = vec![
+        StartupCheckItem {
+            id: "postgres".into(),
+            label: "PostgreSQL".into(),
+            detail: ":5432".into(),
+            ready: postgres,
+        },
+        StartupCheckItem {
+            id: "backend".into(),
+            label: "Backend API".into(),
+            detail: ":9089".into(),
+            ready: backend,
+        },
+        StartupCheckItem {
+            id: "database".into(),
+            label: "Database".into(),
+            detail: if database {
+                "connected".into()
+            } else if backend {
+                "waiting".into()
+            } else {
+                "—".into()
+            },
+            ready: database,
+        },
+    ];
+
+    if dev_mode {
+        items.push(StartupCheckItem {
+            id: "vite".into(),
+            label: "Dev server (Vite)".into(),
+            detail: ":5200".into(),
+            ready: vite_ready,
+        });
+    }
+
+    items.push(StartupCheckItem {
+        id: "ui".into(),
+        label: "Command center".into(),
+        detail: "UI".into(),
+        ready: backend && database && vite_ready,
+    });
+
+    let all_ready = items.iter().all(|i| i.ready);
+
+    StartupStatus {
+        dev_mode,
+        all_ready,
+        items,
+    }
+}
+
+/// Safety net: dismiss splash when services are ready or after timeout, even if the
+/// splash webview is an older build without the checklist script.
+fn wait_for_startup_and_dismiss_splash(app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        use std::time::{Duration, Instant};
+
+        let start = Instant::now();
+        let timeout = Duration::from_secs(120);
+        let poll = Duration::from_millis(500);
+        let mut ready_streak: u32 = 0;
+
+        loop {
+            if start.elapsed() > timeout {
+                eprintln!(
+                    "[bizforge] Startup wait timed out after {}s — showing main window",
+                    timeout.as_secs()
+                );
+                break;
+            }
+
+            let status = get_startup_status();
+            if status.all_ready {
+                ready_streak += 1;
+                if ready_streak >= 2 {
+                    eprintln!(
+                        "[bizforge] All services ready after {:.1}s",
+                        start.elapsed().as_secs_f64()
+                    );
+                    break;
+                }
+            } else {
+                ready_streak = 0;
+            }
+
+            std::thread::sleep(poll);
+        }
+
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            dismiss_splash_and_show_main(&handle);
+        });
+    });
 }
 
 #[tauri::command]
@@ -244,6 +455,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             close_splash,
+            get_startup_status,
             open_monitor,
             filesystem::scan_bizforge_dir,
             filesystem::list_bizforge_agents,
@@ -273,6 +485,9 @@ pub fn run() {
             // this will reload them once it comes up.
             #[cfg(debug_assertions)]
             ensure_dev_server_ready(app.handle());
+
+            // Splash polls startup status; Rust also dismisses after ready/timeout.
+            wait_for_startup_and_dismiss_splash(app.handle().clone());
 
             // Restore saved window position/size before the window becomes visible
             if let Some(main) = app.get_webview_window("main") {

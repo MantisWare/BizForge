@@ -5,6 +5,7 @@ defmodule BizforgeWeb.Router do
     plug :accepts, ["json"]
     plug BizforgeWeb.Plugs.SecurityHeaders
     plug BizforgeWeb.Plugs.CORS
+    plug BizforgeWeb.Plugs.RequestLogger
   end
 
   pipeline :authenticated do
@@ -169,6 +170,10 @@ defmodule BizforgeWeb.Router do
     resources "/projects", ProjectController, except: [:new, :edit] do
       get "/phases", ProjectController, :phases, as: :phases
       get "/workspaces", ProjectController, :workspaces, as: :workspaces
+
+      # Delivery gate
+      post "/deliver", ProjectController, :deliver, as: :deliver
+      get "/delivery-status", ProjectController, :delivery_status, as: :delivery_status
 
       # ForgeMap — codebase scanning & indexing
       post "/forgemap/detect", ForgeMapController, :detect, as: :forgemap_detect

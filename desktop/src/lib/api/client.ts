@@ -74,6 +74,8 @@ import type {
   IntegrationBinding,
   IntegrationBindingOwner,
   IntegrationBindingCreateRequest,
+  DeliveryReport,
+  DeliveryReadiness,
 } from "./types";
 
 // ── Logging ──────────────────────────────────────────────────────────────────
@@ -88,15 +90,19 @@ const LOG_STYLES = {
   auth: "color: #f59e0b; font-weight: bold",
   health: "color: #06b6d4; font-weight: bold",
   net: "color: #64748b; font-weight: bold",
+  store: "color: #a855f7; font-weight: bold",
+  boot: "color: #ec4899; font-weight: bold",
 } as const;
 
-function logInfo(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+export type LogArea = keyof typeof LOG_STYLES;
+
+export function logInfo(area: LogArea, message: string, ...data: unknown[]) {
   console.log(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
 }
-function logWarn(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+export function logWarn(area: LogArea, message: string, ...data: unknown[]) {
   console.warn(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
 }
-function logError(area: keyof typeof LOG_STYLES, message: string, ...data: unknown[]) {
+export function logError(area: LogArea, message: string, ...data: unknown[]) {
   console.error(`%c${LOG_PREFIX}:${area}%c ${message}`, LOG_STYLES[area], "color: inherit", ...data);
 }
 
@@ -482,6 +488,7 @@ async function withRetry<T>(
               1000
             : config.backoffMs * 2 ** attempt;
         const delay = Math.min(retryAfter, config.maxBackoff);
+        logWarn("net", `429 rate-limited — retrying in ${delay}ms (attempt ${attempt + 1}/${config.maxRetries})`);
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
@@ -490,9 +497,11 @@ async function withRetry<T>(
         config.backoffMs * 2 ** attempt,
         config.maxBackoff,
       );
+      logWarn("net", `Request failed (${lastError.message}) — retrying in ${delay}ms (attempt ${attempt + 1}/${config.maxRetries})`);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
+  logError("net", `All ${config.maxRetries} retry attempts exhausted: ${lastError.message}`);
   throw lastError;
 }
 
@@ -787,13 +796,17 @@ function emitLlmIntercept(event: LlmInterceptEvent): void {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  // Wait for auth to finish before making any API call.
+  const gateStart = performance.now();
   await _authPromise;
+  const gateMs = Math.round(performance.now() - gateStart);
+  if (gateMs > 50) {
+    logWarn("auth", `Auth gate blocked ${(options.method ?? "GET").toUpperCase()} ${path} for ${gateMs}ms`);
+  }
 
-  // If a mock→real transition is in progress, wait for it to complete so we
-  // never send a request while the cache is being cleared and re-auth is
-  // running. The transition promise is null when no transition is active.
-  if (_transitionPromise) await _transitionPromise;
+  if (_transitionPromise) {
+    logInfo("net", `Waiting for mock→real transition before ${path}...`);
+    await _transitionPromise;
+  }
 
   const isLlm = isLlmPath(path);
   const reqId = isLlm ? crypto.randomUUID() : "";
@@ -1599,6 +1612,16 @@ export const projects = {
     request<void>(`/projects/${id}`, { method: "DELETE" }),
   workspaces: (id: string) =>
     request<{ workspaces: Workspace[] }>(`/projects/${id}/workspaces`),
+  deliver: (id: string) =>
+    request<{ report: DeliveryReport }>(`/projects/${id}/deliver`, { method: "POST" }),
+  deliveryStatus: (id: string) =>
+    request<{ readiness: DeliveryReadiness; last_report: DeliveryReport | null; project_status: string }>(
+      `/projects/${id}/delivery-status`
+    ),
+  lifecycleTemplates: () =>
+    request<{ templates: Array<{ id: string; name: string; config: Record<string, unknown> }> }>(
+      `/projects/lifecycle-templates`
+    ),
 };
 
 // ── ForgeMap ──────────────────────────────────────────────────────────────────

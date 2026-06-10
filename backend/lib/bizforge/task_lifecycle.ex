@@ -161,8 +161,9 @@ defmodule Bizforge.TaskLifecycle do
       end
 
     case adapter_mod.open_pr(task, project, opts) do
-      {:ok, _handle} ->
+      {:ok, handle} ->
         Logger.info("[TaskLifecycle] Opened code review (#{inspect(adapter_mod)}) for task #{task.id}")
+        run_auto_review(task, project, handle)
 
       {:error, reason} ->
         Logger.warning("[TaskLifecycle] Failed to open code review: #{inspect(reason)}")
@@ -170,6 +171,22 @@ defmodule Bizforge.TaskLifecycle do
   rescue
     e ->
       Logger.error("[TaskLifecycle] Code review open crashed: #{Exception.message(e)}")
+  end
+
+  defp run_auto_review(task, project, pr_handle) do
+    case Bizforge.CodeReview.AutoReview.evaluate(task, project, pr_handle) do
+      {:auto_approved, _handle} ->
+        Logger.info("[TaskLifecycle] Auto-review approved task #{task.id}, proceeding to QA")
+
+      {:review_dispatched, review_task} ->
+        Logger.info("[TaskLifecycle] Review agent task #{review_task.id} dispatched for #{task.id}")
+
+      {:skipped, reason} ->
+        Logger.info("[TaskLifecycle] Auto-review skipped for #{task.id}: #{reason}")
+    end
+  rescue
+    e ->
+      Logger.error("[TaskLifecycle] Auto-review crashed: #{Exception.message(e)}")
   end
 
   defp transition_to_testing(task) do
@@ -194,11 +211,14 @@ defmodule Bizforge.TaskLifecycle do
     qa_agent_id = find_qa_agent(parent_task)
 
     if qa_agent_id !== nil do
+      qa_description = build_qa_description(parent_task)
+
       attrs = %{
         title: "QA: #{parent_task.title}",
-        description: "Run automated QA against the work product for task #{parent_task.id}.\n\nParent task: #{parent_task.title}\nPriority: #{parent_task.priority}",
+        description: qa_description,
         workspace_id: parent_task.workspace_id,
         project_id: parent_task.project_id,
+        task_type: "validation",
         status: "backlog",
         priority: parent_task.priority,
         assignee_id: qa_agent_id,
@@ -335,6 +355,55 @@ defmodule Bizforge.TaskLifecycle do
           Logger.error("[TaskLifecycle] Failed to create bug task: #{inspect(reason)}")
       end
     end
+  end
+
+  defp build_qa_description(parent_task) do
+    project = if parent_task.project_id, do: Repo.get(Bizforge.Schemas.Project, parent_task.project_id), else: nil
+    exec_paths = Bizforge.ProjectExecution.resolve_for_task(parent_task, %{})
+
+    code_dir_info =
+      case exec_paths do
+        {:ok, paths} -> paths.code_dir
+        _ -> "(unknown)"
+      end
+
+    delivery_info =
+      if project !== nil do
+        checks = get_in(project.config || %{}, ["delivery", "checks"]) || []
+
+        if checks !== [] do
+          check_summary = Enum.map_join(checks, "\n", fn c ->
+            "  - #{c["name"]}: `#{c["command"]}` #{if c["required"] !== false, do: "(required)", else: "(optional)"}"
+          end)
+
+          "\n\n### Delivery checks to validate\n#{check_summary}"
+        else
+          ""
+        end
+      else
+        ""
+      end
+
+    """
+    **Automated QA for task #{parent_task.id}**
+
+    Parent task: #{parent_task.title}
+    Priority: #{parent_task.priority}
+
+    ### Code location
+    - **Code directory:** `#{code_dir_info}`
+
+    ### QA instructions
+    1. Navigate to the code directory listed above
+    2. Verify the code compiles and builds without errors
+    3. Run any available tests
+    4. Check for obvious defects, missing files, or broken references
+    5. Report results as a structured QA report
+
+    When complete, submit your QA report with `{"pass": true/false, "failures": [...]}`.
+    #{delivery_info}
+    """
+    |> String.trim_trailing()
   end
 
   defp map_severity_to_priority("critical"), do: "critical"

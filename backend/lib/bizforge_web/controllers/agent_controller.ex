@@ -486,6 +486,7 @@ defmodule BizforgeWeb.AgentController do
       role: a.role,
       adapter: a.adapter,
       model: a.model,
+      provider_id: a.provider_id,
       status: map_status(a.status),
       temperature: a.temperature,
       max_concurrent_runs: a.max_concurrent_runs,

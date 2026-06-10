@@ -109,6 +109,39 @@ defmodule BizforgeWeb.ProjectController do
     json(conn, %{templates: Bizforge.LifecycleConfigs.all()})
   end
 
+  def deliver(conn, %{"project_id" => id}) do
+    case Repo.get(Project, id) do
+      nil ->
+        conn |> put_status(404) |> json(%{error: "not_found"})
+
+      project ->
+        case Bizforge.ProjectDelivery.run(project) do
+          {:ok, report} ->
+            json(conn, %{report: report})
+
+          {:error, reason} ->
+            conn |> put_status(422) |> json(%{error: "delivery_failed", reason: inspect(reason)})
+        end
+    end
+  end
+
+  def delivery_status(conn, %{"project_id" => id}) do
+    case Repo.get(Project, id) do
+      nil ->
+        conn |> put_status(404) |> json(%{error: "not_found"})
+
+      project ->
+        readiness = Bizforge.ProjectDelivery.readiness(project)
+        last_report = get_in(project.config || %{}, ["last_delivery"])
+
+        json(conn, %{
+          readiness: readiness,
+          last_report: last_report,
+          project_status: project.status
+        })
+    end
+  end
+
   defp resolve_workspace_id(params, user) do
     workspace_id = params["workspace_id"]
 

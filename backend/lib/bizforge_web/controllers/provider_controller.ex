@@ -1,21 +1,26 @@
 defmodule BizforgeWeb.ProviderController do
   use BizforgeWeb, :controller
+  require Logger
 
   alias Bizforge.Repo
   alias Bizforge.Schemas.Provider
   import Ecto.Query
 
   def index(conn, params) do
+    ws_id = params["workspace_id"]
+    Logger.info("[ProviderController] index — workspace_id: #{inspect(ws_id)}")
+
     query =
       from(p in Provider, order_by: [desc: p.is_default, asc: p.inserted_at])
 
     query =
-      case params["workspace_id"] do
+      case ws_id do
         nil -> query
         ws_id -> from(p in query, where: p.workspace_id == ^ws_id or is_nil(p.workspace_id))
       end
 
     providers = Repo.all(query)
+    Logger.info("[ProviderController] index — returning #{length(providers)} providers")
     json(conn, %{providers: Enum.map(providers, &serialize/1)})
   end
 
@@ -367,6 +372,7 @@ defmodule BizforgeWeb.ProviderController do
       endpoint: p.endpoint,
       config: p.config || %{},
       models: p.models || [],
+      default_model: p.default_model,
       is_default: p.is_default,
       status: p.status,
       last_tested_at: p.last_tested_at,

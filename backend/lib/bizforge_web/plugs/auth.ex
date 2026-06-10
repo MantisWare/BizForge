@@ -2,6 +2,7 @@ defmodule BizforgeWeb.Plugs.Auth do
   @moduledoc "JWT authentication plug."
   import Plug.Conn
   import Phoenix.Controller, only: [json: 2]
+  require Logger
 
   def init(opts), do: opts
 
@@ -10,6 +11,8 @@ defmodule BizforgeWeb.Plugs.Auth do
 
     case token do
       nil ->
+        Logger.debug("[Auth] No token for #{conn.method} #{conn.request_path}")
+
         conn
         |> put_status(401)
         |> json(%{error: "unauthorized", code: "INVALID_TOKEN"})
@@ -23,14 +26,26 @@ defmodule BizforgeWeb.Plugs.Auth do
             |> assign(:current_user, user)
             |> assign(:claims, claims)
           else
+            {:error, reason} ->
+              Logger.warning("[Auth] Token rejected for #{conn.method} #{conn.request_path}: #{inspect(reason)}")
+
+              conn
+              |> put_status(401)
+              |> json(%{error: "unauthorized", code: "INVALID_TOKEN"})
+              |> halt()
+
             _ ->
+              Logger.warning("[Auth] Token invalid for #{conn.method} #{conn.request_path}")
+
               conn
               |> put_status(401)
               |> json(%{error: "unauthorized", code: "INVALID_TOKEN"})
               |> halt()
           end
         rescue
-          _ ->
+          e ->
+            Logger.error("[Auth] Exception during auth for #{conn.method} #{conn.request_path}: #{Exception.message(e)}")
+
             conn
             |> put_status(503)
             |> json(%{error: "service_unavailable", message: "Auth service initializing"})
