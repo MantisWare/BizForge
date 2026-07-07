@@ -11,10 +11,12 @@
   interface Props {
     agent: BizforgeAgent | null;
     agentOrgMap?: Map<string, AgentOrgInfo>;
+    ceoId?: string | null;
+    onMakeCeo?: () => void;
     onclose: () => void;
   }
 
-  let { agent, agentOrgMap = new Map(), onclose }: Props = $props();
+  let { agent, agentOrgMap = new Map(), ceoId = null, onMakeCeo, onclose }: Props = $props();
 
   let showTeamPicker = $state(false);
   let assigningTeam = $state(false);
@@ -172,8 +174,16 @@
       </div>
 
       <div class="odp-identity">
-        <h2 class="odp-name">{agent.display_name}</h2>
+        <h2 class="odp-name">
+          {#if ceoId === agent.id}
+            <span class="odp-ceo" title="CEO">👑</span>
+          {/if}
+          {agent.display_name}
+        </h2>
         <span class="odp-role">{agent.role}</span>
+        {#if agent.adapter}
+          <span class="odp-meta">{agent.adapter} · {agent.model.split('/').pop() ?? agent.model}</span>
+        {/if}
       </div>
 
       <button
@@ -316,6 +326,16 @@
               Terminate
             </button>
           {/if}
+
+          {#if onMakeCeo && ceoId !== agent.id}
+            <button
+              class="odp-action-btn odp-action-btn--primary"
+              onclick={onMakeCeo}
+              aria-label="Make CEO"
+            >
+              Make CEO
+            </button>
+          {/if}
         </div>
       </div>
     {/if}
@@ -420,13 +440,22 @@
   }
 
   .odp-name {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     color: var(--text-primary);
     margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .odp-ceo {
+    font-size: 14px;
+  }
+  .odp-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 2px;
   }
 
   .odp-role {

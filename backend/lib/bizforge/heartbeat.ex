@@ -85,13 +85,6 @@ defmodule Bizforge.Heartbeat do
         agent_name: agent.name
       })
 
-      BizforgeWeb.Endpoint.broadcast("activity:global", "new_event", %{
-        event: "run.started",
-        agent_id: agent.id,
-        session_id: session.id,
-        timestamp: DateTime.utc_now()
-      })
-
       persist_activity_event(
         agent,
         "run.started",
@@ -259,13 +252,6 @@ defmodule Bizforge.Heartbeat do
         cost_cents: totals.cost
       })
 
-      BizforgeWeb.Endpoint.broadcast("activity:global", "new_event", %{
-        event: "run.completed",
-        agent_id: agent.id,
-        session_id: session.id,
-        timestamp: DateTime.utc_now()
-      })
-
       persist_activity_event(
         agent,
         "run.completed",
@@ -355,13 +341,6 @@ defmodule Bizforge.Heartbeat do
       agent_id: agent.id,
       session_id: session.id,
       error: reason
-    })
-
-    BizforgeWeb.Endpoint.broadcast("activity:global", "new_event", %{
-      event: "run.failed",
-      agent_id: agent.id,
-      session_id: session.id,
-      timestamp: DateTime.utc_now()
     })
 
     persist_activity_event(
@@ -461,13 +440,27 @@ defmodule Bizforge.Heartbeat do
               }
             )
 
-            input_tokens = raw_event[:tokens_input] || raw_event["tokens_input"] || raw_event[:tokens] || raw_event["tokens"] || 0
-            output_tokens = raw_event[:tokens_output] || raw_event["tokens_output"] || 0
-            cache_tokens = raw_event[:tokens_cache] || raw_event["tokens_cache"] || 0
+            {new_input, new_output, new_cache} =
+              if event_type == "run.completed" do
+                usage = extract_final_usage(data)
+                total = usage.input + usage.output + usage.cache
 
-            new_input = acc.input + input_tokens
-            new_output = acc.output + output_tokens
-            new_cache = acc.cache + cache_tokens
+                if total > 0 do
+                  {usage.input, usage.output, usage.cache}
+                else
+                  {acc.input, acc.output, acc.cache}
+                end
+              else
+                input_tokens =
+                  raw_event[:tokens_input] || raw_event["tokens_input"] ||
+                    raw_event[:tokens] || raw_event["tokens"] || 0
+
+                output_tokens = raw_event[:tokens_output] || raw_event["tokens_output"] || 0
+                cache_tokens = raw_event[:tokens_cache] || raw_event["tokens_cache"] || 0
+
+                {acc.input + input_tokens, acc.output + output_tokens, acc.cache + cache_tokens}
+              end
+
             cost = estimate_cost(new_input, new_output, new_cache, agent.model)
 
             had_failure = acc.had_failure or event_type == "run.failed"
@@ -541,6 +534,22 @@ defmodule Bizforge.Heartbeat do
     })
     |> Repo.insert!()
   end
+
+  defp extract_final_usage(data) when is_map(data) do
+    usage = Map.get(data, "usage") || Map.get(data, :usage) || data
+
+    input =
+      (usage["input_tokens"] || usage[:input_tokens] || 0) +
+        (usage["cache_read_input_tokens"] || usage[:cache_read_input_tokens] || 0)
+
+    output = usage["output_tokens"] || usage[:output_tokens] || 0
+
+    cache = usage["cache_creation_input_tokens"] || usage[:cache_creation_input_tokens] || 0
+
+    %{input: input, output: output, cache: cache}
+  end
+
+  defp extract_final_usage(_), do: %{input: 0, output: 0, cache: 0}
 
   defp broadcast_workspace(agent, payload) do
     Bizforge.EventBus.broadcast(Bizforge.EventBus.workspace_topic(agent.workspace_id), payload)

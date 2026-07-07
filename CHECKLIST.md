@@ -1,5 +1,7 @@
 # Bizforge Checklist
 
+> **Confidence:** 91%
+
 Active development phases and their progress.
 
 ---
@@ -170,6 +172,25 @@ Active development phases and their progress.
 - [x] Redesign Reports page layout — replaced sidebar+viewer split with single scrollable column; category filters (All, Performance, Costs, Tasks, Workflows, Custom) as pill buttons at top; all filtered reports stacked as self-contained cards (header, badges, summary stats, table/chart); per-report sort state; per-report Generate/Export/Delete actions; "Export All" button for bulk export of visible reports; removed resize handle and activeReport selection model
 - [x] Restructure sidebar navigation for top-down user journey — reordered sections: Daily Drivers > Explore (Library, Chat) > Organize (Organization, Projects, Goals, Issues, Documents) > Agents (tree + Skills + Memory) > Automate (Workflows, Schedules, Alerts) > Observe (Activity, Sessions, Work Products, Costs, Analytics, Reports) > Platform (Integrations, Secrets, Users & Access, Environment, Datasets); removed "Data" and "System" sections; moved Library from Automate and Chat from bottom pinned into new "Explore" section; moved Organization from System into "Organize"; moved Skills/Memory into Agents; moved Work Products into Observe; moved Datasets into Platform; updated collapsed-mode icons
 
+### 11e. Chat, Kanban & Design System Enhancements
+
+- [x] Create `chatRuns.svelte.ts` store — multi-tab chat sessions with localStorage persistence and conversation binding
+- [x] Create `ActiveSessionsBar.svelte` — tab bar for switching active chat runs with close/new actions
+- [x] Create `ContextGauge.svelte` — context window usage progress indicator in chat header
+- [x] Create `QueuedMessages.svelte` — message queue UI while agent is generating
+- [x] Wire multi-run chat UX into `/app/chat` (ActiveSessionsBar, ContextGauge, QueuedMessages, chatRuns sync)
+- [x] Add `vitest.config.ts` and unit tests for `chatRuns` store and session activity event mapping
+- [x] Create `design-system.css` — shared semantic component classes and extended theme CSS tokens
+- [x] Add UI primitives `Button.svelte` and `EmptyState.svelte` under `components/ui/`
+- [x] Add `font.svelte.ts` store and font family picker in AppearanceSettings (Inter, System, Manrope)
+- [x] Extend theme store with Nord, Dracula, Tokyo Night, and Gruvbox Dark themes
+- [x] Add dedicated `/app/kanban` route — full-page TaskKanban board with task detail drawer and empty state
+- [x] Add Kanban nav item to sidebar Daily Drivers section
+- [x] Add `SidebarRecentSessions.svelte` — collapsible recent sessions quick-resume in sidebar
+- [x] Create `OfficeChatModal.svelte` — in-office quick chat modal wired into VirtualOffice
+
+> **Auto-updated by Cursor:** Reconciled Agent Integration Configuration items (binding selector wiring, API, mock layer, runtime injection) and added Chat/Kanban/Design System enhancements on 2026-07-07.
+
 ### 10d. General Settings Enhancements
 
 - [x] Replace Default Model text input with categorized dropdown — models grouped by provider name using `<optgroup>`, populated from `providersStore.allModels`
@@ -272,12 +293,12 @@ Active development phases and their progress.
 - [x] Add connect/disconnect toggle switch to integration config cards (soft status flip without clearing config)
 - [x] Separate "Remove" (destructive delete) from "Disconnect" (status-only toggle) in mock layer, API client, and store
 - [x] Convert integration provider groups to responsive multi-column CSS grid layout (2/3/4+ columns as screen widens)
-- [ ] Wire `IntegrationBindingSelector` into Agent editor page
-- [ ] Wire `IntegrationBindingSelector` into Project detail page
-- [ ] Wire `IntegrationBindingSelector` into Team editor
-- [ ] Add integration_bindings API endpoints (CRUD) to backend controller
-- [ ] Add integration_bindings to mock API client layer
-- [ ] Runtime session injection — resolver fetches bound configs + secrets and injects into adapter environment on session start
+- [x] Wire `IntegrationBindingSelector` into Agent editor page
+- [x] Wire `IntegrationBindingSelector` into Project detail page
+- [x] Wire `IntegrationBindingSelector` into Team editor
+- [x] Add integration_bindings API endpoints (CRUD) to backend controller
+- [x] Add integration_bindings to mock API client layer
+- [x] Runtime session injection — resolver fetches bound configs + secrets and injects into adapter environment on session start
 
 ### 15. Analytics
 

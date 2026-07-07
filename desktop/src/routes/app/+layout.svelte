@@ -79,7 +79,7 @@ import Sidebar from '$lib/components/layout/Sidebar.svelte';
   }
 
   // Nav routes for ⌘1–⌘3 (Core section)
-  const NAV_ROUTES = ['/app', '/app/inbox', '/app/office'];
+  const NAV_ROUTES = ['/app', '/app/inbox', '/app/office', '/app/chat'];
 
   onMount(() => {
     let stopPolling: (() => void) | null = null;

@@ -2,9 +2,11 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { isTauri, isMacOS } from '$lib/utils/platform';
+  import { fontStore } from '$lib/stores/font.svelte';
   let { children } = $props();
 
   onMount(() => {
+    void fontStore.font;
     if (!isTauri()) return;
 
     const isMonitorWindow = window.location.pathname.startsWith('/monitor');

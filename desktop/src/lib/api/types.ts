@@ -714,6 +714,9 @@ export type ActivityEventType =
   | "heartbeat_started"
   | "heartbeat_completed"
   | "heartbeat_failed"
+  | "run.started"
+  | "run.completed"
+  | "run.failed"
   | "task_created"
   | "task_updated"
   | "phase_completed"
@@ -1326,7 +1329,16 @@ export interface LogEntry {
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 export interface Settings {
-  theme: "dark" | "glass" | "color" | "light" | "system";
+  theme:
+    | "dark"
+    | "glass"
+    | "color"
+    | "light"
+    | "system"
+    | "nord"
+    | "dracula"
+    | "tokyo-night"
+    | "gruvbox-dark";
   font_size: number;
   sidebar_default_collapsed: boolean;
   notifications_enabled: boolean;

@@ -201,6 +201,20 @@ export function syncAgentsToCharacters3D(
           }
         }
       }
+
+      // If agent finished working, walk toward lounge area
+      if ((newState === 'idle' || newState === 'sleep') && prevState === 'type') {
+        const loungeX = 11;
+        const loungeZ = 6.5;
+        const [startGX, startGZ] = worldToGrid(existing.worldX, existing.worldZ);
+        const [endGX, endGZ] = worldToGrid(loungeX, loungeZ);
+        const path = findPath3D(walkable, startGX, startGZ, endGX, endGZ);
+        if (path.length > 0) {
+          existing.path = path;
+          existing.state = 'walk';
+          existing.moveProgress = 0;
+        }
+      }
       result.push(existing);
     } else {
       const facingAngle = seat.facingZ > 0 ? 0 : Math.PI;

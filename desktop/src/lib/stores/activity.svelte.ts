@@ -95,7 +95,7 @@ class ActivityStore {
           // Convert both into our ActivityEvent shape.
           const raw = event as unknown as Record<string, unknown>;
 
-          const meta = (raw.data ?? raw.metadata ?? {}) as Record<
+          const meta = (raw.metadata ?? raw.data ?? {}) as Record<
             string,
             unknown
           >;

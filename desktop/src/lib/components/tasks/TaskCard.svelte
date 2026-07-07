@@ -8,9 +8,10 @@
     task: Task;
     ondragstart?: (e: DragEvent) => void;
     ondragend?: (e: DragEvent) => void;
+    onclick?: () => void;
   }
 
-  let { task, ondragstart }: Props = $props();
+  let { task, ondragstart, onclick }: Props = $props();
 
   const PRIORITY_COLORS: Record<string, string> = {
     low: '#3b82f6', medium: '#f59e0b', high: '#f97316', critical: '#ef4444',
@@ -37,6 +38,10 @@
   style="--priority-color: {priorityColor}"
   draggable="true"
   {ondragstart}
+  role="button"
+  tabindex="0"
+  onclick={onclick}
+  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onclick?.(); } }}
   aria-label="Task: {task.title}, priority {PRIORITY_LABELS[task.priority]}, status {task.status}"
   role="listitem"
 >

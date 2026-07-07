@@ -4,9 +4,13 @@
   import { tick } from 'svelte';
   import { agentsStore } from '$lib/stores/agents.svelte';
   import { conversationsStore } from '$lib/stores/conversations.svelte';
+  import { chatRunsStore } from '$lib/stores/chatRuns.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import type { Conversation } from '$api/types';
   import AgentIcon from '$lib/components/shared/AgentIcon.svelte';
+  import ActiveSessionsBar from '$lib/components/chat/ActiveSessionsBar.svelte';
+  import ContextGauge from '$lib/components/chat/ContextGauge.svelte';
+  import QueuedMessages from '$lib/components/chat/QueuedMessages.svelte';
 
   // ── Local state ──────────────────────────────────────────────────────────
   let messageInput = $state('');
@@ -14,6 +18,7 @@
   let textareaEl = $state<HTMLTextAreaElement | null>(null);
   let showNewChatPanel = $state(false);
   let selectedNewAgentId = $state('');
+  let queuedMessages = $state<{ id: string; text: string }[]>([]);
 
   // ── Derived ──────────────────────────────────────────────────────────────
   let activeConv = $derived(conversationsStore.activeConversation);
@@ -35,12 +40,25 @@
   // ── Lifecycle ────────────────────────────────────────────────────────────
   $effect(() => {
     const wsId = workspaceStore.activeWorkspaceId ?? undefined;
+    void agentsStore.fetchAgents(wsId);
     conversationsStore.fetchConversations(wsId).then(() => {
-      if (conversationsStore.conversations.length > 0) {
+      chatRunsStore.syncFromConversations(conversationsStore.conversations);
+      if (conversationsStore.conversations.length > 0 && !conversationsStore.activeConversation) {
         const first = conversationsStore.conversations[0];
-        void conversationsStore.fetchConversation(first.id);
+        void chatRunsStore.openConversation(first);
       }
     });
+  });
+
+  $effect(() => {
+    const run = chatRunsStore.activeRun;
+    if (!run?.conversationId) return;
+    const conv = conversationsStore.conversations.find((c) => c.id === run.conversationId);
+    if (!conv) return;
+    if (conversationsStore.activeConversation?.id !== conv.id) {
+      conversationsStore.setActiveConversation(conv);
+      void conversationsStore.fetchConversation(conv.id);
+    }
   });
 
   // Auto-scroll when messages change
@@ -63,18 +81,40 @@
 
   // ── Actions ──────────────────────────────────────────────────────────────
   async function selectConversation(conv: Conversation) {
-    conversationsStore.setActiveConversation(conv);
-    await conversationsStore.fetchConversation(conv.id);
+    await chatRunsStore.openConversation(conv);
   }
 
   async function handleSend() {
     const content = messageInput.trim();
-    if (!content || !activeConv || sending) return;
-    messageInput = '';
-    if (textareaEl) {
-      textareaEl.style.height = 'auto';
+    if (!content || !activeConv) return;
+
+    if (sending) {
+      queuedMessages = [...queuedMessages, { id: crypto.randomUUID(), text: content }];
+      messageInput = '';
+      if (textareaEl) textareaEl.style.height = 'auto';
+      return;
     }
-    await conversationsStore.sendMessage(activeConv.id, content);
+
+    messageInput = '';
+    if (textareaEl) textareaEl.style.height = 'auto';
+
+    const run = chatRunsStore.activeRun;
+    if (run) chatRunsStore.setLoading(run.runId, true);
+
+    try {
+      await conversationsStore.sendMessage(activeConv.id, content);
+      if (run) {
+        chatRunsStore.setTitle(run.runId, content.slice(0, 60));
+      }
+    } finally {
+      if (run) chatRunsStore.setLoading(run.runId, false);
+      if (queuedMessages.length > 0) {
+        const next = queuedMessages[0];
+        queuedMessages = queuedMessages.slice(1);
+        messageInput = next.text;
+        await handleSend();
+      }
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -88,8 +128,10 @@
     if (!selectedNewAgentId) return;
     const agent = agentsStore.agents.find(a => a.id === selectedNewAgentId);
     const title = agent ? `Chat with ${agent.display_name || agent.name}` : undefined;
+    const run = chatRunsStore.mintRun(selectedNewAgentId, title ?? 'New chat');
     const conv = await conversationsStore.createConversation(selectedNewAgentId, title);
     if (conv) {
+      chatRunsStore.bindConversation(run.runId, conv);
       showNewChatPanel = false;
       selectedNewAgentId = '';
     }
@@ -136,6 +178,9 @@
 </script>
 
 <div class="ch-root">
+  <ActiveSessionsBar onNewChat={() => { showNewChatPanel = true; }} />
+
+  <div class="ch-body">
   <!-- LEFT PANEL: Conversation list -->
   <aside class="ch-sidebar">
     <div class="ch-sidebar-header">
@@ -243,6 +288,10 @@
           </div>
         </div>
         <div class="ch-chat-header-actions">
+          <ContextGauge
+            used={messages.reduce((sum, m) => sum + m.content.length, 0) / 4}
+            total={128_000}
+          />
           {#if activeConv.status === 'active'}
             <button
               class="ch-btn ch-btn--ghost ch-btn--sm"
@@ -318,6 +367,11 @@
         {/if}
       </div>
 
+      <QueuedMessages
+        items={queuedMessages}
+        onRemove={(id) => { queuedMessages = queuedMessages.filter((m) => m.id !== id); }}
+      />
+
       <!-- Input bar -->
       <div class="ch-input-bar" class:ch-input-bar--disabled={activeConv.status !== 'active'}>
         {#if activeConv.status !== 'active'}
@@ -351,17 +405,26 @@
       </div>
     {/if}
   </main>
+  </div>
 </div>
 
 <style>
   /* ── Root layout ─────────────────────────────────────────────────────────── */
   .ch-root {
     display: flex;
+    flex-direction: column;
     height: 100%;
     overflow: hidden;
     background: var(--surface-0, #0f0f10);
     color: var(--text-primary, #e8e8ed);
     font-family: var(--font-sans, system-ui, sans-serif);
+  }
+
+  .ch-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* ── Left sidebar ────────────────────────────────────────────────────────── */

@@ -2,12 +2,17 @@
 <script lang="ts">
   import { settingsStore } from '$lib/stores/settings.svelte';
   import { themeStore, type ThemeMode } from '$lib/stores/theme.svelte';
+  import { fontStore, FONT_OPTIONS } from '$lib/stores/font.svelte';
 
   const THEMES: { id: ThemeMode; label: string; bg: string; accent: string; surface: string }[] = [
     { id: 'dark',   label: 'Dark',   bg: '#0f1117',              accent: '#fb923c', surface: '#1e2433' },
     { id: 'glass',  label: 'Glass',  bg: 'rgba(15,17,23,0.55)',  accent: '#fb923c', surface: 'rgba(251,146,60,0.08)' },
     { id: 'color',  label: 'Color',  bg: '#0c0a1a',              accent: '#fb923c', surface: 'rgba(251,146,60,0.10)' },
     { id: 'light',  label: 'Light',  bg: '#fefdfb',              accent: '#f97316', surface: '#f8f7f4' },
+    { id: 'nord',   label: 'Nord',   bg: '#2e3440',              accent: '#88c0d0', surface: '#3b4252' },
+    { id: 'dracula', label: 'Dracula', bg: '#282a36',            accent: '#ff79c6', surface: '#343746' },
+    { id: 'tokyo-night', label: 'Tokyo Night', bg: '#1a1b26',    accent: '#7aa2f7', surface: '#24283b' },
+    { id: 'gruvbox-dark', label: 'Gruvbox', bg: '#282828',       accent: '#fe8019', surface: '#32302f' },
     { id: 'system', label: 'System', bg: 'linear-gradient(135deg,#0f1117 50%,#fefdfb 50%)', accent: '#fb923c', surface: '#8a94a8' },
   ];
 
@@ -40,6 +45,27 @@
               <div class="stg-theme-dot" style="background: {theme.accent};"></div>
             </div>
             <span class="stg-theme-name">{theme.label}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="stg-sep"></div>
+
+    <div class="stg-field">
+      <span class="stg-label">Font Family</span>
+      <p class="stg-desc">Choose the interface typeface.</p>
+      <div class="stg-theme-grid" role="radiogroup" aria-label="Font selection">
+        {#each FONT_OPTIONS as font (font.id)}
+          {@const isActive = fontStore.font === font.id}
+          <button
+            class="stg-theme-card"
+            class:stg-theme-card--active={isActive}
+            onclick={() => fontStore.setFont(font.id)}
+            role="radio"
+            aria-checked={isActive}
+          >
+            <span class="stg-theme-name">{font.label}</span>
           </button>
         {/each}
       </div>

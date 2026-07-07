@@ -4,6 +4,12 @@
   import { tasksStore } from '$lib/stores/tasks.svelte';
   import TaskCard from './TaskCard.svelte';
 
+  interface Props {
+    onSelect?: (taskId: string) => void;
+  }
+
+  let { onSelect }: Props = $props();
+
   const COLUMNS: { status: TaskStatus; label: string }[] = [
     { status: 'backlog',     label: 'Backlog'      },
     { status: 'todo',        label: 'Todo'         },
@@ -69,7 +75,12 @@
       </header>
       <div class="kb-cards" role="list">
         {#each colTasks as task (task.id)}
-          <TaskCard {task} ondragstart={(e) => handleDragStart(e, task.id)} ondragend={handleDragEnd} />
+          <TaskCard
+            {task}
+            ondragstart={(e) => handleDragStart(e, task.id)}
+            ondragend={handleDragEnd}
+            onclick={() => onSelect?.(task.id)}
+          />
         {/each}
         {#if colTasks.length === 0}
           <div class="kb-empty" role="status" aria-label="No tasks in {col.label}">Drop tasks here</div>

@@ -6,6 +6,17 @@
   import PixelOffice from './pixel/PixelOffice.svelte';
   import Office3D from './Office3D.svelte';
   import OfficeDetailPanel from './OfficeDetailPanel.svelte';
+  import OfficeChatModal from './OfficeChatModal.svelte';
+
+  const CEO_STORAGE_KEY = 'bizforge:office:ceo';
+
+  function readStoredCeo(): string | null {
+    try {
+      return localStorage.getItem(CEO_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  }
 
   interface Props {
     agents: BizforgeAgent[];
@@ -17,6 +28,18 @@
   let { agents, viewMode = '2d', agentOrgMap = new Map(), onViewModeChange }: Props = $props();
   let selectedAgent = $state<BizforgeAgent | null>(null);
   let legendOpen = $state(false);
+  let chatOpen = $state(false);
+  let ceoId = $state<string | null>(readStoredCeo());
+
+  function setCeo(id: string | null): void {
+    ceoId = id;
+    try {
+      if (id) localStorage.setItem(CEO_STORAGE_KEY, id);
+      else localStorage.removeItem(CEO_STORAGE_KEY);
+    } catch {
+      /* localStorage unavailable */
+    }
+  }
 
   function handleAgentClick(agent: BizforgeAgent) {
     selectedAgent = selectedAgent?.id === agent.id ? null : agent;
@@ -76,6 +99,7 @@
       <div class="vo-mode-float">
         <button class="vo-mode-btn vo-mode-btn--active" onclick={toggleMode}>Pixel</button>
         <button class="vo-mode-btn" onclick={toggleMode}>3D</button>
+        <button class="vo-chat-btn" onclick={() => { chatOpen = true; }} title="Office Chat">Chat</button>
       </div>
     </div>
   {:else}
@@ -93,6 +117,7 @@
       <div class="vo-mode-toggle" role="group" aria-label="View mode">
         <button class="vo-mode-btn" onclick={toggleMode}>Pixel</button>
         <button class="vo-mode-btn vo-mode-btn--active" onclick={toggleMode}>3D</button>
+        <button class="vo-chat-btn" onclick={() => { chatOpen = true; }} title="Office Chat">Chat</button>
       </div>
     </div>
     <div class="vo-canvas">
@@ -106,8 +131,16 @@
   {/if}
 
   {#if selectedAgent}
-    <OfficeDetailPanel agent={selectedAgent} {agentOrgMap} onclose={handleClosePanel} />
+    <OfficeDetailPanel
+      agent={selectedAgent}
+      {agentOrgMap}
+      ceoId={ceoId}
+      onMakeCeo={() => setCeo(selectedAgent?.id ?? null)}
+      onclose={handleClosePanel}
+    />
   {/if}
+
+  <OfficeChatModal open={chatOpen} {agents} onClose={() => { chatOpen = false; }} />
 
   <!-- Team / Division legend overlay -->
   {#if legendData.divisions.length > 0 || legendData.unassigned > 0}
@@ -232,6 +265,22 @@
   }
   .vo-mode-btn:hover:not(.vo-mode-btn--active) {
     color: var(--text-secondary);
+  }
+  .vo-chat-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--bg-elevated);
+    color: var(--accent-primary);
+    cursor: pointer;
+    margin-left: 4px;
+    transition: all 120ms ease;
+  }
+  .vo-chat-btn:hover {
+    background: var(--accent-primary);
+    color: #fff;
   }
   .vo-canvas {
     flex: 1;

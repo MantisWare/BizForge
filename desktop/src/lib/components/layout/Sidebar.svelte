@@ -11,6 +11,7 @@
   import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
   import SidebarNavItem from './SidebarNavItem.svelte';
   import SidebarSection from './SidebarSection.svelte';
+  import SidebarRecentSessions from './SidebarRecentSessions.svelte';
 
   interface User {
     name: string;
@@ -62,6 +63,7 @@
     inbox:        'M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661z',
     office:       'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21',
     phases:       'M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5',
+    kanban:       'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
     tasks:        'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z',
     documents:    'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
     activity:     'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
@@ -204,7 +206,10 @@
       <SidebarNavItem href="/app" label="Home" icon={ICONS.dashboard} shortcut={!isCollapsed ? '⌘1' : undefined} active={isActive('/app')} description="Your workspace command center with KPIs, active runs, activity feed, and system health." />
       <SidebarNavItem href="/app/inbox" label="Inbox" icon={ICONS.inbox} shortcut={!isCollapsed ? '⌘2' : undefined} badge={inboxBadge} active={isActive('/app/inbox')} description="Unified notifications: approvals, alerts, agent mentions, failure reports, and budget warnings." />
       <SidebarNavItem href="/app/office" label="Office" icon={ICONS.office} shortcut={!isCollapsed ? '⌘3' : undefined} active={isActive('/app/office')} description="Pixel-art virtual office showing your agents in themed rooms with real-time status indicators." />
+      <SidebarNavItem href="/app/chat" label="Chat" icon={ICONS.chat} shortcut={!isCollapsed ? '⌘4' : undefined} active={isActive('/app/chat')} description="Real-time conversations with your agents. Multi-turn, streaming responses with full session history." />
     </div>
+
+    <SidebarRecentSessions collapsed={isCollapsed} />
 
     {#if !isCollapsed}
       <div class="sb-divider" aria-hidden="true"></div>
@@ -212,7 +217,6 @@
       <!-- ═══ EXPLORE — Discover templates and talk to agents ═══ -->
       <SidebarSection label="Explore" description="Browse the template marketplace and chat with your agents. Start here to discover what BizForge can do.">
         <SidebarNavItem href="/app/library" label="Library" icon={ICONS.library} active={isActive('/app/library')} description="Marketplace of 330+ agent templates, skills, team configs, and company blueprints ready to deploy." />
-        <SidebarNavItem href="/app/chat" label="Chat" icon={ICONS.chat} active={isActive('/app/chat')} description="Real-time conversations with your agents. Multi-turn, streaming responses with full session history." />
       </SidebarSection>
 
       <div class="sb-divider" aria-hidden="true"></div>
@@ -222,7 +226,8 @@
         <SidebarNavItem href="/app/hierarchy" label="Organization" icon={ICONS.hierarchy} active={isActive('/app/hierarchy') || isActive('/app/organizations') || isActive('/app/divisions') || isActive('/app/departments') || isActive('/app/teams')} description="Full org tree: Organization → Divisions → Departments → Teams → Agents. Structure your AI company." />
         <SidebarNavItem href="/app/projects" label="Projects" icon={ICONS.workspaces} active={isActive('/app/projects')} description="Top-level containers that group phases, tasks, agents, and costs into distinct workstreams." />
         <SidebarNavItem href="/app/phases" label="Phases" icon={ICONS.phases} active={isActive('/app/phases')} description="Hierarchical implementation phases under each project. Phases can be decomposed into sub-phases and linked to tasks." />
-        <SidebarNavItem href="/app/tasks" label="Tasks" icon={ICONS.tasks} active={isActive('/app/tasks')} description="Track bugs, tasks, and features. Assign to agents, view as Kanban board, list, or table." />
+        <SidebarNavItem href="/app/kanban" label="Kanban" icon={ICONS.kanban} active={isActive('/app/kanban')} description="Visual task board with drag-and-drop columns for tracking agent work across your workspace." />
+        <SidebarNavItem href="/app/tasks" label="Tasks" icon={ICONS.tasks} active={isActive('/app/tasks') || isActive('/app/kanban')} description="Track bugs, tasks, and features. Assign to agents, view as Kanban board, list, or table." />
         <SidebarNavItem href="/app/documents" label="Documents" icon={ICONS.documents} active={isActive('/app/documents')} description="Workspace documentation tree. Manage SYSTEM.md files, skill definitions, and agent prompts." />
       </SidebarSection>
 

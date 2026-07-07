@@ -337,9 +337,22 @@ class SessionsStore {
   handleActivityEvent(event: ActivityEvent): void {
     const meta = event.metadata as Record<string, unknown>;
     const sessionId =
-      typeof meta.session_id === "string" ? meta.session_id : null;
+      typeof meta.session_id === "string"
+        ? meta.session_id
+        : typeof (event as unknown as Record<string, unknown>).session_id === "string"
+          ? ((event as unknown as Record<string, unknown>).session_id as string)
+          : null;
 
-    if (event.type === "session_started") {
+    const isSessionStart =
+      event.type === "session_started" || event.type === "run.started";
+    const isSessionComplete =
+      event.type === "session_completed" ||
+      event.type === "heartbeat_completed" ||
+      event.type === "run.completed";
+    const isSessionFailed =
+      event.type === "heartbeat_failed" || event.type === "run.failed";
+
+    if (isSessionStart) {
       if (!sessionId) return;
       // Add a new active session entry if we don't already have it
       const exists = this.sessions.some((s) => s.id === sessionId);
@@ -367,22 +380,19 @@ class SessionsStore {
       return;
     }
 
-    if (
-      event.type === "session_completed" ||
-      event.type === "heartbeat_completed" ||
-      event.type === "heartbeat_failed"
-    ) {
+    if (isSessionComplete || isSessionFailed) {
       if (!sessionId) return;
-      const finalStatus: Session["status"] =
-        event.type === "session_completed" ||
-        event.type === "heartbeat_completed"
-          ? "completed"
-          : "failed";
+      const finalStatus: Session["status"] = isSessionComplete
+        ? "completed"
+        : "failed";
+      const costCents =
+        typeof meta.cost_cents === "number" ? meta.cost_cents : undefined;
       this.sessions = this.sessions.map((s) =>
         s.id === sessionId
           ? {
               ...s,
               status: finalStatus,
+              cost_cents: costCents ?? s.cost_cents,
               completed_at:
                 typeof meta.completed_at === "string"
                   ? meta.completed_at
@@ -390,11 +400,11 @@ class SessionsStore {
             }
           : s,
       );
-      // Sync detail view if this is the currently selected session
       if (this.selectedSession?.id === sessionId) {
         this.selectedSession = {
           ...this.selectedSession,
           status: finalStatus,
+          cost_cents: costCents ?? this.selectedSession.cost_cents,
           completed_at:
             typeof meta.completed_at === "string"
               ? meta.completed_at

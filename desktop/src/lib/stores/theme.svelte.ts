@@ -1,8 +1,17 @@
 // src/lib/stores/theme.svelte.ts
 // Theme store — 5 themes: dark, glass, color, light, system
 
-export type ThemeMode = "dark" | "glass" | "color" | "light" | "system";
-export type ResolvedTheme = "dark" | "glass" | "color" | "light";
+export type ThemeMode =
+  | "dark"
+  | "glass"
+  | "color"
+  | "light"
+  | "system"
+  | "nord"
+  | "dracula"
+  | "tokyo-night"
+  | "gruvbox-dark";
+export type ResolvedTheme = Exclude<ThemeMode, "system">;
 
 const STORAGE_KEY = "bizforge-theme";
 
@@ -21,7 +30,11 @@ class ThemeStore {
       stored === "glass" ||
       stored === "color" ||
       stored === "light" ||
-      stored === "system"
+      stored === "system" ||
+      stored === "nord" ||
+      stored === "dracula" ||
+      stored === "tokyo-night" ||
+      stored === "gruvbox-dark"
     ) {
       this.mode = stored;
     }
